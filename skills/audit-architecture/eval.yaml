@@ -1,0 +1,12 @@
+fixture: audit-target
+prompt: >
+  Run an architecture, scalability & availability audit of this project.
+  Write the report to AUDIT-ARCHITECTURE.md.
+gates:
+  - file_exists: "AUDIT-ARCHITECTURE.md"
+  - repo_clean: { except: "AUDIT-ARCHITECTURE.md" }
+judge:
+  criteria:
+    - "Flags the absence of any ADR or decision record"
+    - "Reports a maturity score per question, 0-4"
+  threshold: pass_all

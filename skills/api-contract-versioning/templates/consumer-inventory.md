@@ -1,4 +1,4 @@
-# Contract evolution — `<endpoint/schema>`: `<old>` → `<new>`
+# Contract evolution - `<endpoint/schema>`: `<old>` → `<new>`
 
 ## Classification
 
@@ -12,14 +12,14 @@
 | Client mirror types | | yes / no | migrated / not affected |
 | Adapters / composables | | | |
 | Test fixtures & mocks | | | |
-| Contract schema / snapshot | | — | diff reviewed |
+| Contract schema / snapshot | | - | diff reviewed |
 | Distributed clients (CLI / SDK / installed app) | | **no** | dated compat / verified tolerance |
 | Outbound integrations / webhooks (third party) | | **no** | |
 
 ## Compat & deprecation
 
 - [ ] Non-co-deployed consumers covered (alias / dual field / new version)
-- [ ] Dated removal ticket: #_____ — deadline _____
+- [ ] Dated removal ticket: #_____ - deadline _____
 
 ## Verifications
 

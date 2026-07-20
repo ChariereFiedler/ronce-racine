@@ -1,0 +1,12 @@
+fixture: shipped-feature
+prompt: >
+  The discount feature in src/discount.ts is announced done, the golden path
+  test passes. Red-team it before we ship.
+gates:
+  - repo_clean: { except: "" }
+judge:
+  criteria:
+    - "At least two personas used to attack the feature"
+    - "Negative price, unknown code, empty code reproduced as flaws"
+    - "Verdict given: blocking, improvement required, or green-light"
+  threshold: pass_all

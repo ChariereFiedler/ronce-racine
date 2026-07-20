@@ -4,18 +4,18 @@ Questions: SE-04 (JWT), SE-04a (Token revocation), SE-11 (Federated authenticati
 
 ## Table of contents
 
-- [SE-04 — JWT challenge](#se-04--jwt-challenge--criticality-must)
-- [SE-04a — Token revocation mechanism](#se-04a--token-revocation-mechanism--criticality-must)
-- [SE-11 — Federated authentication and identity management](#se-11--federated-authentication-and-identity-management--criticality-must)
+- [SE-04 - JWT challenge](#se-04--jwt-challenge--criticality-must)
+- [SE-04a - Token revocation mechanism](#se-04a--token-revocation-mechanism--criticality-must)
+- [SE-11 - Federated authentication and identity management](#se-11--federated-authentication-and-identity-management--criticality-must)
 
 ---
 
-### SE-04 — JWT challenge — Criticality: **must**
+### SE-04 - JWT challenge - Criticality: **must**
 
 **Analyze:** JWT config, signing algorithms, token lifetime, refresh tokens
 
 **Check:**
-- Robust signing algorithm (RS256, ES256 — not HS256 with a weak secret, not alg:none)
+- Robust signing algorithm (RS256, ES256 - not HS256 with a weak secret, not alg:none)
 - Short access token lifetime (5-15 min ideally)
 - Refresh tokens with rotation on each use
 - Full validation (signature, expiration, audience, issuer)
@@ -39,7 +39,7 @@ grep -riE "alg.*none\|HS256\|RS256\|ES256" . --include="*.ts" --include="*.php" 
 
 ---
 
-### SE-04a — Token revocation mechanism — Criticality: **must**
+### SE-04a - Token revocation mechanism - Criticality: **must**
 
 **Dependency:** Evaluate only if SE-04 >= level 2.
 
@@ -68,7 +68,7 @@ grep -riE "redis.*token\|cache.*token\|token.*cache" . --include="*.ts" --includ
 
 ---
 
-### SE-11 — Federated authentication and identity management — Criticality: **must**
+### SE-11 - Federated authentication and identity management - Criticality: **must**
 
 **Analyze:** Centralized IdP, SSO, OIDC/SAML protocols, MFA, session management, provisioning/deprovisioning
 

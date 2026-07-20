@@ -1,4 +1,4 @@
-# Fuzz payloads — one per line (# lines are comments)
+# Fuzz payloads - one per line (# lines are comments)
 # Typical usage: for p in $(grep -v '^#' fuzz-payloads.txt); do curl -X POST -d "{\"name\":\"$p\"}" ...; done
 
 # Empty and boundaries

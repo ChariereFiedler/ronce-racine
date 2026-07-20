@@ -7,21 +7,21 @@ metadata:
   category: process
 ---
 
-# CI Pipeline Orchestration — drive the pipeline end-to-end after a push
+# CI Pipeline Orchestration - drive the pipeline end-to-end after a push
 
-> If the current repo has a project-specific pipeline skill (e.g. acme-app → `pipeline-orchestration`), it wins — it knows the CI provider, its commands and the deploy URLs.
+> If the current repo has a project-specific pipeline skill (e.g. acme-app → `pipeline-orchestration`), it wins - it knows the CI provider, its commands and the deploy URLs.
 
 ## This skill vs. others
 
-- **This skill** when: a push happened and the CI pipeline must be checked, diagnosed, retried, or its post-deploy validated — CI red, job reruns, HTTP header checks
+- **This skill** when: a push happened and the CI pipeline must be checked, diagnosed, retried, or its post-deploy validated - CI red, job reruns, HTTP header checks
 - **`commit-readiness-review`** instead if: the errors are local and the code is **not pushed yet** (pre-commit checks)
-- **`production-incident-diagnostic`** instead if: production is down or misbehaving outside of an in-progress deploy — that is an incident, not the pipeline
+- **`production-incident-diagnostic`** instead if: production is down or misbehaving outside of an in-progress deploy - that is an incident, not the pipeline
 
 > Quick rule: red pipeline after a push → this skill; local errors before push → `commit-readiness-review`; prod broken outside a deploy → incident diagnostic.
 
 ## Principle
 
-- **End-to-end**: from pipeline status through post-deploy validation (HTTP headers, smoke test) — a green pipeline does not prove the app responds.
+- **End-to-end**: from pipeline status through post-deploy validation (HTTP headers, smoke test) - a green pipeline does not prove the app responds.
 - **Diagnose before rerunning**: map the failure to a precise cause. Blind reruns mask a real bug and burn runner minutes.
 - **Track the recurring**: the same failure 2+ times = a ticket, not yet another rerun.
 
@@ -43,8 +43,8 @@ metadata:
 - [ ] 5. Recurring failure (2+) → ticket
 ```
 
-1. **Current status** — list the latest pipelines/runs and fetch the job statuses for the target commit. Identify what is `passed`, `failed`, `running`, `manual`.
-2. **Diagnosis** — for each `failed` job, read the tail of the logs and map it to a **cause**, not just a symptom:
+1. **Current status** - list the latest pipelines/runs and fetch the job statuses for the target commit. Identify what is `passed`, `failed`, `running`, `manual`.
+2. **Diagnosis** - for each `failed` job, read the tail of the logs and map it to a **cause**, not just a symptom:
 
    | Symptom in the logs | Likely cause → action |
    |------------------------|--------------------------|
@@ -55,11 +55,11 @@ metadata:
    | missing secret/variable | CI config to fix, not the code |
 
 3. **Act**:
-   - **Real bug**: fix on a branch, repush — the pipeline re-triggers. No rerun without a fix.
+   - **Real bug**: fix on a branch, repush - the pipeline re-triggers. No rerun without a fix.
    - **Confirmed infra flake** (runner system failure, network timeout): rerun the targeted job. Document the rerun.
    - **Manual deploy job**: **ask the user to confirm** before triggering it, especially toward production.
    - **Never** `--no-verify` on push even if a hook fails.
-4. **Post-deploy** — a green pipeline is not enough:
+4. **Post-deploy** - a green pipeline is not enough:
    - **Smoke test**: call the healthcheck / key endpoint, verify a real 2xx.
    - **HTTP headers** (`curl -I <url>/health`):
      - `Strict-Transport-Security` present in prod
@@ -67,7 +67,7 @@ metadata:
      - `Cache-Control` consistent (no aggressive caching on an API)
      - `Access-Control-Allow-Origin` = expected domain
    - App not responding despite a green pipeline → read the deploy logs before declaring success.
-5. **Recurrence** — the same failure 2+ times → create a CI bug ticket (logs + context + criterion "the job passes on the default branch") instead of rerunning an Nth time.
+5. **Recurrence** - the same failure 2+ times → create a CI bug ticket (logs + context + criterion "the job passes on the default branch") instead of rerunning an Nth time.
 
 ## Templates
 
@@ -103,8 +103,8 @@ Pipeline still `failed` with no ticket and no fix = not done.
 
 ## Tooling
 
-- The CI provider's CLI depending on the project (`gh run view/rerun`, `glab ci`, REST API) — spot the available command before acting, do not hardcode a single provider.
+- The CI provider's CLI depending on the project (`gh run view/rerun`, `glab ci`, REST API) - spot the available command before acting, do not hardcode a single provider.
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial version, derived from a project workflow and decoupled from the CI provider
+- 1.0.0 (2026-06-19) - initial version, derived from a project workflow and decoupled from the CI provider

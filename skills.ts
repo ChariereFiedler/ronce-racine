@@ -54,9 +54,13 @@ function parseFrontmatter(raw: string): { fm: Frontmatter; body: string } {
   return { fm, body };
 }
 
-/** Refs to reference/, scripts/, templates/ in the body (excluding <…> placeholders). */
+/**
+ * Refs to reference/, scripts/, templates/ in the body (excluding <…> placeholders).
+ * A path preceded by `<dir>/` (e.g. `audit-report/reference/…`) targets ANOTHER
+ * skill's material - it is not resolvable inside this skill's folder, skip it.
+ */
 function referencedPaths(body: string): string[] {
-  const re = /(?:reference|scripts|templates)\/[\w./-]+/g;
+  const re = /(?<![\w-]\/)(?:reference|scripts|templates)\/[\w./-]+/g;
   return [...new Set(body.match(re) ?? [])].filter((p) => !p.includes("<"));
 }
 
@@ -88,6 +92,10 @@ function validateSkill(dir: string): string[] {
 
   for (const ref of referencedPaths(body)) {
     if (!existsSync(join(SKILLS, dir, ref))) errs.push(`${dir}: broken link → ${ref}`);
+  }
+  // Cross-skill refs (`other-skill/reference/x.md`) resolve from the skills/ root.
+  for (const ref of body.match(/(?<![\w./-])[\w-]+\/(?:reference|scripts|templates)\/[\w./-]+/g) ?? []) {
+    if (!existsSync(join(SKILLS, ref))) errs.push(`${dir}: broken cross-skill link → ${ref}`);
   }
 
   const lines = body.split("\n").length;
@@ -172,7 +180,7 @@ function triggersCheck(): void {
     process.exit(1);
   }
   console.log(
-    `✓ ${tested} triggers tested — each ranks its skill in the top-${K} (${skipped} skills without a quoted trigger, skipped)`,
+    `✓ ${tested} triggers tested - each ranks its skill in the top-${K} (${skipped} skills without a quoted trigger, skipped)`,
   );
 }
 

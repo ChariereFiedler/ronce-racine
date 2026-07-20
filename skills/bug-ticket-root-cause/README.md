@@ -1,6 +1,6 @@
 # `bug-ticket-root-cause`
 
-> Turn an observed bug into a ticket that names the actual mechanism at `file:line` and pins down the tests that will prove it fixed — without fixing it now.
+> Turn an observed bug into a ticket that names the actual mechanism at `file:line` and pins down the tests that will prove it fixed - without fixing it now.
 
 | | |
 |---|---|
@@ -13,14 +13,14 @@
 
 `bug-ticket-root-cause` defines the **content** of a good bug ticket, independent of the tracker. It takes an observed defect and produces a ticket that cites the real root cause in the production code, lays out reproduction scenarios, and specifies the confirmation tests that must fail before a fix and pass after. It deliberately stops short of fixing anything.
 
-It is a **content** skill: if your repo has a project-specific ticketing skill (e.g. `add-bug`, `jira-bug`), that one owns the **format and tracker** — this one owns what goes inside.
+It is a **content** skill: if your repo has a project-specific ticketing skill (e.g. `add-bug`, `jira-bug`), that one owns the **format and tracker** - this one owns what goes inside.
 
 ## Why it exists
 
 Most bug tickets fail in one of two ways:
 
 1. **No cited cause.** "Login is broken, probably the token refresh" is a design hypothesis dressed up as an analysis. The next person re-investigates from scratch or fixes by trial and error. A ticket must name the *mechanism* and cite `file:line`, or honestly mark the cause `to investigate`.
-2. **No confirmation tests.** Without a test that fails before the fix and passes after, nothing proves the bug is closed — and nothing stops it regressing. The confirmation-tests table is the heart of the ticket, not an afterthought.
+2. **No confirmation tests.** Without a test that fails before the fix and passes after, nothing proves the bug is closed - and nothing stops it regressing. The confirmation-tests table is the heart of the ticket, not an afterthought.
 
 The skill also enforces a hard boundary: it produces a ticket, *not* a fix. Mixing the fix into the investigation blurs the trace and defeats the purpose of documenting.
 
@@ -62,6 +62,6 @@ The ticket records that mechanism, three scenarios (submit without avatar → cl
 
 ## Related artifacts
 
-- [`bug-triage-structured`](../bug-triage-structured/) — when reproduction and the fix/ticket decision are still open.
-- [`recurring-bug-root-cause`](../recurring-bug-root-cause/) — when the bug is the Nth of its class in the same scope.
-- [`recording-decisions`](../recording-decisions/) — for design choices, not bugs.
+- [`bug-triage-structured`](../bug-triage-structured/) - when reproduction and the fix/ticket decision are still open.
+- [`recurring-bug-root-cause`](../recurring-bug-root-cause/) - when the bug is the Nth of its class in the same scope.
+- [`recording-decisions`](../recording-decisions/) - for design choices, not bugs.

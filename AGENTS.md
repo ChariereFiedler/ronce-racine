@@ -1,11 +1,11 @@
-# Agent guide — Ronce Racine
+# Agent guide - Ronce Racine
 
 Doc aimed at an agent (LLM) that **works on** this repo or uses it to **equip another project**. For the conceptual detail, see `docs/architecture.md`.
 
 ## What this repo is
 
 Canonical source of **generic Claude Code config** (project-agnostic), installable in any repository:
-`rules/` (always-on, by `paths`) · `skills/` (on-demand workflows) · `hooks/` (settings.json scripts — granular, one hook per `.ts` file) · `agents/` (subagents) · `scripts/` (executable detections). CLI: `install.ts` is the single tool (all families; rules-only via `--rules-only`). `rules.ts` is deprecated (still works, prints a deprecation notice) in favor of `install.ts install <repo> --rules-only`.
+`rules/` (always-on, by `paths`) · `skills/` (on-demand workflows) · `hooks/` (settings.json scripts - granular, one hook per `.ts` file) · `agents/` (subagents) · `scripts/` (executable detections). CLI: `install.ts` is the single tool (all families; rules-only via `--rules-only`). `rules.ts` is deprecated (still works, prints a deprecation notice) in favor of `install.ts install <repo> --rules-only`.
 
 ## Non-negotiable rules
 
@@ -64,11 +64,11 @@ The `install.ts` installer merges the hook wirings for the selected hooks into `
 ## Harness (`npm test`)
 
 Five axes, all must pass:
-- `skills.ts validate` — frontmatter, version, sections, `reference/`/`scripts/`/`templates/` links, depth ≤ 1.
-- `skills.ts triggers` — routing discriminability (each quoted trigger classifies its skill in the top-3).
-- `skills.ts rules` — versioning of the rules.
-- `skills.ts scripts` — existence and non-emptiness of each `.ts` in `scripts/`.
-- `skills.ts hooks` — presence and validity of `@version` (semver) and `@last-reviewed` (ISO date) in each `hooks/*.ts`.
+- `skills.ts validate` - frontmatter, version, sections, `reference/`/`scripts/`/`templates/` links, depth ≤ 1.
+- `skills.ts triggers` - routing discriminability (each quoted trigger classifies its skill in the top-3).
+- `skills.ts rules` - versioning of the rules.
+- `skills.ts scripts` - existence and non-emptiness of each `.ts` in `scripts/`.
+- `skills.ts hooks` - presence and validity of `@version` (semver) and `@last-reviewed` (ISO date) in each `hooks/*.ts`.
 
 Useful commands: `npm run skills:list`, `npm run skills:triggers`, `npm run rules:validate`, `npm run typecheck`.
 

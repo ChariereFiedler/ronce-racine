@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * Stop hook — writes the session memo OUTSIDE the repo, to
+ * Stop hook - writes the session memo OUTSIDE the repo, to
  * `~/.claude/projects/<repo-slug>/sessions/<branch>.md`.
  *
  * The file is stored outside the repository to avoid polluting git status
  * and to stay relevant independently of the target project.
  *
  * Event      : Stop
- * Matcher    : (none — applies to every session end)
+ * Matcher    : (none - applies to every session end)
  * Input      : stdin JSON { transcript_path?: string, stop_hook_active?: boolean }
  * Output     : nothing (silent exit 0)
  *
@@ -116,7 +116,7 @@ export function sessionPathFor(repoRoot: string, branch: string): string {
 /** Builds the memo markdown. Pure and deterministic given `now`. */
 export function buildMemo(branch: string, lastIntent: string | null, now: string): string {
   const lines: string[] = [
-    `# Session — ${now}`,
+    `# Session - ${now}`,
     '',
     `**Branch:** \`${branch}\``,
   ]
@@ -135,7 +135,7 @@ export function persistMemo(repoRoot: string, transcriptPath: string | undefined
     const lastIntent = extractLastUserMessage(entries)
     mkdirSync(sessionsDir(repoRoot), { recursive: true })
     writeFileSync(sessionPathFor(repoRoot, branch), buildMemo(branch, lastIntent, now), 'utf-8')
-  } catch { /* non-fatal — a hook must never break the session */ }
+  } catch { /* non-fatal - a hook must never break the session */ }
 }
 
 function main(): void {

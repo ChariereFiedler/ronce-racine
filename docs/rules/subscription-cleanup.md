@@ -1,6 +1,6 @@
-# Rule — `subscription-cleanup`
+# Rule - `subscription-cleanup`
 
-> Anything that subscribes or registers must have a matching teardown — or it leaks memory, fires ghost handlers, and runs twice.
+> Anything that subscribes or registers must have a matching teardown - or it leaks memory, fires ghost handlers, and runs twice.
 
 | | |
 |---|---|
@@ -23,7 +23,7 @@ Every resource that subscribes or registers is explicitly torn down:
 
 ## Why it matters
 
-A subscription without teardown is a slow-motion outage. Each time a component mounts, it registers another listener or stream; when it unmounts without cleanup, that registration survives — holding references (a memory leak) and still reacting to events (a ghost handler). Navigate back and forth a few times and the same callback fires three, five, ten times, causing duplicated network calls, doubled state updates, and bugs that only appear after a while and are miserable to reproduce.
+A subscription without teardown is a slow-motion outage. Each time a component mounts, it registers another listener or stream; when it unmounts without cleanup, that registration survives - holding references (a memory leak) and still reacting to events (a ghost handler). Navigate back and forth a few times and the same callback fires three, five, ten times, causing duplicated network calls, doubled state updates, and bugs that only appear after a while and are miserable to reproduce.
 
 Binding cleanup to the component's own lifecycle hook makes teardown deterministic: it happens exactly when the thing that created the subscription goes away, not on a hopeful "later" that never comes. This is the single most common source of leaks in long-lived SPA sessions.
 
@@ -32,10 +32,10 @@ Binding cleanup to the component's own lifecycle hook makes teardown determinist
 ### Never a bare subscribe
 
 ```ts
-// Bad — leaks on every re-render / re-navigation
+// Bad - leaks on every re-render / re-navigation
 source$.subscribe((v) => this.value = v);
 
-// Good — completes with the component
+// Good - completes with the component
 source$.pipe(takeUntilDestroyed()).subscribe((v) => this.value = v);
 ```
 
@@ -59,5 +59,5 @@ useEffect(() => {
 
 ## Related
 
-- [`refactoring-shared-component-api`](../../skills/refactoring-shared-component-api/) — when reworking a shared component, audit its teardown paths.
+- [`refactoring-shared-component-api`](../../skills/refactoring-shared-component-api/) - when reworking a shared component, audit its teardown paths.
 - Companion rule: [`ui-states-complete`](ui-states-complete.md) (the other half of robust async UI).

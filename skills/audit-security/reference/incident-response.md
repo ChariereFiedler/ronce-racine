@@ -4,13 +4,13 @@ Questions: SE-07 (Incident response plan), SE-07a (Crisis communication), SE-10 
 
 ## Table of contents
 
-- [SE-07 — Security incident response plan](#se-07--security-incident-response-plan--criticality-must)
-- [SE-07a — Crisis communication](#se-07a--crisis-communication--criticality-should)
-- [SE-10 — Security post-mortem](#se-10--security-post-mortem--criticality-should)
+- [SE-07 - Security incident response plan](#se-07--security-incident-response-plan--criticality-must)
+- [SE-07a - Crisis communication](#se-07a--crisis-communication--criticality-should)
+- [SE-10 - Security post-mortem](#se-10--security-post-mortem--criticality-should)
 
 ---
 
-### SE-07 — Security incident response plan — Criticality: **must**
+### SE-07 - Security incident response plan - Criticality: **must**
 
 **Analyze:** IRP documentation, playbooks, roles (incident commander, technical lead, communications lead), simulation exercises
 
@@ -39,7 +39,7 @@ grep -riE "incident.response\|playbook\|tabletop\|red.team\|bug.bounty" . --incl
 
 ---
 
-### SE-07a — Crisis communication — Criticality: **should**
+### SE-07a - Crisis communication - Criticality: **should**
 
 **Dependency:** Evaluate only if SE-07 >= level 2.
 
@@ -70,7 +70,7 @@ find . -iname "*crisis*" -o -iname "*communication*plan*" -o -iname "*status*pag
 
 ---
 
-### SE-10 — Security post-mortem — Criticality: **should**
+### SE-10 - Security post-mortem - Criticality: **should**
 
 **Analyze:** Post-mortem process, templates, tracking of corrective actions, recurrence metrics
 

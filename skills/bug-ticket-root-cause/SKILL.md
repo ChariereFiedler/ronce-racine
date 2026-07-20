@@ -9,7 +9,7 @@ metadata:
 
 # Bug ticket with root cause
 
-> If the current repo has a specific ticketing skill (e.g. acme-app → `add-bug`, beta-app → `jira-bug`), it wins — this skill defines the **content**, the project skill defines the **format/tracker**.
+> If the current repo has a specific ticketing skill (e.g. acme-app → `add-bug`, beta-app → `jira-bug`), it wins - this skill defines the **content**, the project skill defines the **format/tracker**.
 
 ## This skill vs. others
 
@@ -22,15 +22,15 @@ metadata:
 
 - A ticket with no cited root cause is an invitation to fix by trial and error
 - A ticket with no confirmation tests is incomplete
-- **This workflow produces a ticket, not a fix** — fix nothing, modify no application file
+- **This workflow produces a ticket, not a fix** - fix nothing, modify no application file
 
 ## Tooling
 
-- `templates/bug-ticket.md` — full ticket skeleton (context, root cause, scenarios, confirmation-tests table, priority)
+- `templates/bug-ticket.md` - full ticket skeleton (context, root cause, scenarios, confirmation-tests table, priority)
 
 ## Context to gather (before acting)
 
-- Tracker + repo format/label conventions (project bug skill if one exists) — do not invent a format
+- Tracker + repo format/label conventions (project bug skill if one exists) - do not invent a format
 - Project test commands (`package.json` / `Cargo.toml` / CI config) to fill the confirmation-tests table with real targets
 - Access to production code? If not, mark the cause `to investigate` without disguising it
 - Bug already open? search existing tickets before creating a duplicate
@@ -43,14 +43,14 @@ What (observed vs expected) · Where (page/endpoint/module) · Since when (commi
 ### 2. Root-cause investigation (if code access)
 - Read the real production code, trace the flow end to end (UI → state → call → handler → data)
 - Git archaeology: `git log`/`git blame` on the suspect files → introducing commit
-- Confront the facts where possible (an existing test that should have failed — why didn't it?, a query, a log)
+- Confront the facts where possible (an existing test that should have failed - why didn't it?, a query, a log)
 - Deliverable: **mechanism** (≠ symptom) + **cited code `file:line`** + introducing commit + hypothesis status (`confirmed` / `strong` / `to validate`)
-- Without code access: say so explicitly and mark the cause `to investigate` — do not disguise a design hypothesis as a root cause
+- Without code access: say so explicitly and mark the cause `to investigate` - do not disguise a design hypothesis as a root cause
 
 ### 3. Ticket content
 - **Context**: symptom, expected behavior, user impact
 - **Root-cause analysis** (section above)
-- **Reproduction scenarios**: (1) reproduce the bug — fails today, (2) nominal behavior post-fix, (3) related edge case
+- **Reproduction scenarios**: (1) reproduce the bug - fails today, (2) nominal behavior post-fix, (3) related edge case
 - **Required confirmation tests**: table Type (UT/E2E/API) · target file · key assertion · ❌ before fix / ✅ after. Each test MUST fail before the fix and pass after
 - **Argued priority** (prod down/data loss → critical ; broken with no workaround → high ; workaround possible → medium ; cosmetic → low)
 
@@ -75,7 +75,7 @@ If the scope has already had 2+ recent fixes → a "Recurrence" section in the t
 ## Exit condition
 
 - [ ] Root cause = mechanism + cited `file:line` (or explicitly `to investigate` for lack of code access)
-- [ ] Confirmation-tests table filled — each test fails before the fix, passes after
+- [ ] Confirmation-tests table filled - each test fails before the fix, passes after
 - [ ] 3 scenarios present (repro, nominal post-fix, related edge case)
 - [ ] Argued priority
 - [ ] No application file modified
@@ -83,4 +83,4 @@ If the scope has already had 2+ recent fixes → a "Recurrence" section in the t
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

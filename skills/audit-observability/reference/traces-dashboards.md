@@ -1,15 +1,15 @@
-# Traces & Dashboards section — Visualization and distributed tracing
+# Traces & Dashboards section - Visualization and distributed tracing
 
 2 questions. Real-time dashboards, distributed traces.
 
 ## Table of contents
 
-- [ob-05 — Real-time dashboards](#ob-05--real-time-dashboards--criticality-should)
-- [ob-06 — Distributed traces (OTel, Elastic APM)](#ob-06--distributed-traces-otel-elastic-apm--criticality-could)
+- [ob-05 - Real-time dashboards](#ob-05--real-time-dashboards--criticality-should)
+- [ob-06 - Distributed traces (OTel, Elastic APM)](#ob-06--distributed-traces-otel-elastic-apm--criticality-could)
 
 ---
 
-### ob-05 — Real-time dashboards · Criticality: **SHOULD**
+### ob-05 - Real-time dashboards · Criticality: **SHOULD**
 
 **Analyze:** Grafana files (JSON), dashboard configs, links to dashboards in the docs, hierarchical structure
 
@@ -49,7 +49,7 @@ grep -ri "grafana\|dashboard\|datadog\|kibana" --include="*.md" --include="*.yam
 
 ---
 
-### ob-06 — Distributed traces (OTel, Elastic APM) · Criticality: **COULD**
+### ob-06 - Distributed traces (OTel, Elastic APM) · Criticality: **COULD**
 
 **Analyze:** OpenTelemetry config, Jaeger, Zipkin, Elastic APM, in-code instrumentation, sampling strategy
 

@@ -4,13 +4,13 @@ Questions: SE-01 (TLS), SE-02 (DB encryption), SE-02a (Key management).
 
 ## Table of contents
 
-- [SE-01 — TLS 1.2+ / TLS 1.3](#se-01--tls-12--tls-13--criticality-must)
-- [SE-02 — DB encryption (AES-256) of sensitive data](#se-02--db-encryption-aes-256-of-sensitive-data--criticality-must)
-- [SE-02a — Encryption key management](#se-02a--encryption-key-management--criticality-must)
+- [SE-01 - TLS 1.2+ / TLS 1.3](#se-01--tls-12--tls-13--criticality-must)
+- [SE-02 - DB encryption (AES-256) of sensitive data](#se-02--db-encryption-aes-256-of-sensitive-data--criticality-must)
+- [SE-02a - Encryption key management](#se-02a--encryption-key-management--criticality-must)
 
 ---
 
-### SE-01 — TLS 1.2+ / TLS 1.3 — Criticality: **must**
+### SE-01 - TLS 1.2+ / TLS 1.3 - Criticality: **must**
 
 **Analyze:** Nginx/Caddy/Traefik configs, certificates, HTTPS configs in the app
 
@@ -39,7 +39,7 @@ grep -riE "ssl_protocols|ssl_ciphers|tls_version" . --include="*.conf" --include
 
 ---
 
-### SE-02 — DB encryption (AES-256) of sensitive data — Criticality: **must**
+### SE-02 - DB encryption (AES-256) of sensitive data - Criticality: **must**
 
 **Analyze:** DB config (encryption at rest), application-level encryption code, sensitive columns
 
@@ -67,7 +67,7 @@ grep -ri "cast.*encrypted\|EncryptedString\|encryptable" . --include="*.php" 2>/
 
 ---
 
-### SE-02a — Encryption key management — Criticality: **must**
+### SE-02a - Encryption key management - Criticality: **must**
 
 **Dependency:** Evaluate only if SE-02 >= level 2.
 

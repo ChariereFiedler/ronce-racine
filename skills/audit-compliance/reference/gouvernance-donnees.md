@@ -1,19 +1,19 @@
-# Section DG — Data Governance (8 questions)
+# Section DG - Data Governance (8 questions)
 
 ## Table of contents
 
-- [DG-01 — Data ownership and stewardship](#dg-01--data-ownership-and-stewardship--criticality--should)
-- [DG-02 — Data catalog and metadata dictionary](#dg-02--data-catalog-and-metadata-dictionary--criticality--should)
-- [DG-03 — Migrations and schema evolution](#dg-03--migrations-and-schema-evolution--criticality--must)
-- [DG-04 — Data contracts between producers and consumers](#dg-04--data-contracts-between-producers-and-consumers--criticality--should)
-- [DG-05 — Continuous data-quality monitoring](#dg-05--continuous-data-quality-monitoring--criticality--should)
-- [DG-06 — Classification and protection of sensitive data](#dg-06--classification-and-protection-of-sensitive-data--criticality--must)
-- [DG-07 — Retention policies and data lifecycle](#dg-07--retention-policies-and-data-lifecycle--criticality--must)
-- [DG-08 — Data architecture and topology (Data Mesh)](#dg-08--data-architecture-and-topology-data-mesh--criticality--should)
+- [DG-01 - Data ownership and stewardship](#dg-01--data-ownership-and-stewardship--criticality--should)
+- [DG-02 - Data catalog and metadata dictionary](#dg-02--data-catalog-and-metadata-dictionary--criticality--should)
+- [DG-03 - Migrations and schema evolution](#dg-03--migrations-and-schema-evolution--criticality--must)
+- [DG-04 - Data contracts between producers and consumers](#dg-04--data-contracts-between-producers-and-consumers--criticality--should)
+- [DG-05 - Continuous data-quality monitoring](#dg-05--continuous-data-quality-monitoring--criticality--should)
+- [DG-06 - Classification and protection of sensitive data](#dg-06--classification-and-protection-of-sensitive-data--criticality--must)
+- [DG-07 - Retention policies and data lifecycle](#dg-07--retention-policies-and-data-lifecycle--criticality--must)
+- [DG-08 - Data architecture and topology (Data Mesh)](#dg-08--data-architecture-and-topology-data-mesh--criticality--should)
 
 ---
 
-### DG-01 — Data ownership and stewardship — Criticality: **SHOULD**
+### DG-01 - Data ownership and stewardship - Criticality: **SHOULD**
 
 **Analyze:** Documentation of data models, data dictionary, responsibilities
 
@@ -40,7 +40,7 @@ grep -ri "data.owner\|data.steward\|responsable.*donnee" . --include="*.md" --in
 
 ---
 
-### DG-02 — Data catalog and metadata dictionary — Criticality: **SHOULD**
+### DG-02 - Data catalog and metadata dictionary - Criticality: **SHOULD**
 
 **Analyze:** DB constraints, application validations, data-quality monitoring
 
@@ -67,7 +67,7 @@ find . -name "*catalog*" -o -name "*dictionar*" -o -name "*metadata*" 2>/dev/nul
 
 ---
 
-### DG-03 — Migrations and schema evolution — Criticality: **MUST**
+### DG-03 - Migrations and schema evolution - Criticality: **MUST**
 
 **Analyze:** Migration files (SQLx, Prisma, Knex, Flyway, Alembic), migration strategy
 
@@ -97,7 +97,7 @@ grep -ri "migration\|migrate\|sqlx" package.json Cargo.toml 2>/dev/null
 
 ---
 
-### DG-04 — Data contracts between producers and consumers — Criticality: **SHOULD**
+### DG-04 - Data contracts between producers and consumers - Criticality: **SHOULD**
 
 **Analyze:** Data contracts, schema registries, data APIs, SLA on data
 
@@ -126,7 +126,7 @@ grep -ri "confluent\|glue.*registry\|schema.*version" . 2>/dev/null | head -5
 
 ---
 
-### DG-05 — Continuous data-quality monitoring — Criticality: **SHOULD**
+### DG-05 - Continuous data-quality monitoring - Criticality: **SHOULD**
 
 **Analyze:** Data-quality tools, data tests, alerts on anomalies
 
@@ -154,7 +154,7 @@ grep -ri "freshness\|completeness\|accuracy\|consistency\|uniqueness\|validity" 
 
 ---
 
-### DG-06 — Classification and protection of sensitive data — Criticality: **MUST**
+### DG-06 - Classification and protection of sensitive data - Criticality: **MUST**
 
 **Analyze:** Classification policy, automatic PII detection, masking, access controls
 
@@ -182,7 +182,7 @@ grep -ri "pii.*detect\|data.*masking\|tokeniz\|column.*encrypt" . --include="*.t
 
 ---
 
-### DG-07 — Retention policies and data lifecycle — Criticality: **MUST**
+### DG-07 - Retention policies and data lifecycle - Criticality: **MUST**
 
 **Analyze:** Lifecycle policy, archiving, irreversible deletion, tiered storage
 
@@ -211,7 +211,7 @@ grep -ri "legal.hold\|gel.judiciaire\|retention.as.code" . --include="*.md" --in
 
 ---
 
-### DG-08 — Data architecture and topology (Data Mesh) — Criticality: **SHOULD**
+### DG-08 - Data architecture and topology (Data Mesh) - Criticality: **SHOULD**
 
 **Analyze:** Data organization, data domains, data products, self-service platform
 

@@ -7,14 +7,14 @@ metadata:
   category: feature
 ---
 
-# DDD Backend Implementation — build a feature layer by layer
+# DDD Backend Implementation - build a feature layer by layer
 
-> If the current repo has a specific implementation skill (e.g. acme-app → `feature-implementation-rust-axum`), it wins — it knows the stack, the paths and the project commands.
+> If the current repo has a specific implementation skill (e.g. acme-app → `feature-implementation-rust-axum`), it wins - it knows the stack, the paths and the project commands.
 
 ## This skill vs. others
 
 - **This skill** when: the model is settled and you write the code layer by layer (domain → application → infrastructure → handler)
-- **`domain-modeling-design`** instead if: aggregates, invariants and placement are not decided yet (upstream of this skill — its output is this skill's input)
+- **`domain-modeling-design`** instead if: aggregates, invariants and placement are not decided yet (upstream of this skill - its output is this skill's input)
 - **`superpowers:test-driven-development`** as a complement: this skill says *where* the code goes and in what order; TDD says *how* to write each layer (red test → green)
 
 ## Principle
@@ -26,31 +26,31 @@ The implementation respects two non-negotiable constraints: **the order of the l
 - Framework + commands: read `package.json` / `Cargo.toml` / `pom.xml` / `Makefile` / CI config for fmt, lint, test, build
 - Read **one already-implemented neighboring module** in the same context and copy its structure (layer split, naming, error handling, route wiring) before inventing anything
 - The architecture in place: where domain / application / infrastructure / API live; how ports are declared and injected (DI, application state)
-- The spec produced by the design phase (aggregates, invariants, commands/queries, ports, events) — if missing, go back to `domain-modeling-design`
+- The spec produced by the design phase (aggregates, invariants, commands/queries, ports, events) - if missing, go back to `domain-modeling-design`
 
 ## Protocol
 
 Implement in this order, never the reverse, never a short-circuit. Test each layer before moving to the next.
 
-1. **Domain** — aggregate + invariants
+1. **Domain** - aggregate + invariants
    - Value object for every constrained field, never a bare primitive; validate the constraint at construction
    - Invariants validated in the aggregate's **constructor / methods**, nowhere else
    - Methods = domain verbs (transitions, decisions), not getters/setters
    - The domain imports **nothing** from infrastructure or the framework. Pure domain tests, no I/O
-2. **Application** — CQRS + ports
+2. **Application** - CQRS + ports
    - Separate **commands** (mutations) and **queries** (reads); a query does not mutate state
    - Define the **ports** (interfaces) here, on the application/domain side; not their implementation
-   - A command handler orchestrates: load the aggregate, call its methods, persist through the port — no business rule here
+   - A command handler orchestrates: load the aggregate, call its methods, persist through the port - no business rule here
    - Queries return read DTOs, not the domain aggregate
-3. **Infrastructure** — adapters
+3. **Infrastructure** - adapters
    - Implement the ports declared in application (repos, network clients, queues)
    - This is the **only** layer that depends on the concrete technology (DB, ORM, queries). Parameterized queries, never string concatenation (injection)
    - Infrastructure depends on domain/application, never the reverse
-4. **Handler / API** — the edge
+4. **Handler / API** - the edge
    - The handler **parses input → calls the command/query → serializes output**. Nothing else
    - Authn/authz and multi-tenancy handled at the edge (extractor / middleware), not in the domain
    - Document the exposed contract (OpenAPI/IDL schema) if the project generates one
-5. **Integration tests** — from the edge down to persistence, on the happy path + at least one invariant rejection
+5. **Integration tests** - from the edge down to persistence, on the happy path + at least one invariant rejection
 
 ```
 - [ ] Domain: aggregate + value objects + invariants, pure tests green
@@ -84,7 +84,7 @@ Implement in this order, never the reverse, never a short-circuit. Test each lay
 - [ ] Dependency direction respected: domain independent of infra and framework
 - [ ] Commands and queries separated; ports in application, implementations in infra
 - [ ] Integration tests green: happy path + at least one invariant rejection
-- [ ] fmt / lint / typecheck / build of the scope run, output pasted — never "it should pass"
+- [ ] fmt / lint / typecheck / build of the scope run, output pasted - never "it should pass"
 
 ## Tooling
 
@@ -92,4 +92,4 @@ Implement in this order, never the reverse, never a short-circuit. Test each lay
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial generic version extracted from a project workflow, decoupled from any stack and any tracker
+- 1.0.0 (2026-06-19) - initial generic version extracted from a project workflow, decoupled from any stack and any tracker

@@ -1,8 +1,8 @@
-# Decision log — Ronce Racine
+# Decision log - Ronce Racine
 
 Non-obvious decisions of the project. Never modify an entry: add one that supersedes it.
 
-## 2026-07-10 — Product decisions from the outside-in review
+## 2026-07-10 - Product decisions from the outside-in review
 
 **Context**: two adversarial "external adopter" review passes surfaced product/adoption objections beyond the bugs (which were fixed and covered by `tests.ts`). These four shape how the repo presents and behaves; decided with the owner.
 
@@ -16,18 +16,18 @@ Non-obvious decisions of the project. Never modify an entry: add one that supers
 
 **Status**: Accepted · implementation in progress.
 
-## 2026-07-10 — OSS strategy: the whole repo, public GitHub, MIT
+## 2026-07-10 - OSS strategy: the whole repo, public GitHub, MIT
 
-**Context**: the repo (canonical source of generic Claude Code config) has always been designed to be project-agnostic — genericity is a hard admission criterion. The question "do we make it public OSS, and in what form?" had never been settled or recorded. Today it is framed to unblock preparation (license, hosting, cleanup).
+**Context**: the repo (canonical source of generic Claude Code config) has always been designed to be project-agnostic - genericity is a hard admission criterion. The question "do we make it public OSS, and in what form?" had never been settled or recorded. Today it is framed to unblock preparation (license, hosting, cleanup).
 
-**Options**: *Scope* — the whole repo vs. just `rules/`+`skills/` vs. a curated subset. *Hosting* — public GitHub vs. public GitLab vs. staying private. *License* — MIT vs. Apache-2.0.
+**Options**: *Scope* - the whole repo vs. just `rules/`+`skills/` vs. a curated subset. *Hosting* - public GitHub vs. public GitLab vs. staying private. *License* - MIT vs. Apache-2.0.
 
 **Decision**:
 - **Scope**: **the whole repo** (rules + skills + hooks + agents + scripts + installer) becomes the OSS product.
 - **Hosting**: **public GitHub** (better visibility for the Claude Code / plugins / skills ecosystem). The prior private repository stays or becomes a mirror/private source depending on infra needs.
 - **License**: **MIT** (permissive, de facto standard, maximum adoption).
 
-**Consequences** — blockers to lift before public release:
+**Consequences** - blockers to lift before public release:
 1. Add an MIT `LICENSE` file.
 2. **Replace the private project names** embedded in the `skills/*/SKILL.md` routing examples and `templates/` with fictional example names (`acme-app`, `beta-app`).
 3. Reframe the README (from an internal-projects framing) into a public positioning.
@@ -38,15 +38,25 @@ To reassess if: the genericity scope changes, or an infra constraint requires ke
 
 **Status**: Accepted (strategy locked) · preparation in progress.
 
-## 2026-06-25 — Repo name: "Ronce Racine"
+## 2026-06-25 - Repo name: "Ronce Racine"
 
 **Context**: the repo (canonical source of the generic Claude config) needs a name in the same evocative vein as the rest of the ecosystem, replacing the working name `claude-rules`.
 
 **Options**: explored several registers (garden/plant, forge/workshop, runic). Convergence on the **root** theme (the buried source from which everything else grows), then adjective+noun short-lists. Final proposal chosen, coming from the user.
 
 **Decision**: **Ronce Racine** (slug `ronce-racine`).
-Rationale: memorable alliteration; the meaning fits the repo — a bramble (*ronce*) roots (*racine*) and spreads everywhere, unkillable, like a layer of always-on disciplines distributed into every project, with a thorny side that says "discipline". A two-nouns-joined form, both words singular.
+Rationale: memorable alliteration; the meaning fits the repo - a bramble (*ronce*) roots (*racine*) and spreads everywhere, unkillable, like a layer of always-on disciplines distributed into every project, with a thorny side that says "discipline". A two-nouns-joined form, both words singular.
 
 **Consequences**: the **actual rename** (local folder, git remote, occurrences of `claude-rules` in README/AGENTS/docs/`package.json`) is a separate operation. The internal name `claude-rules` stays valid until the rename is done.
 
 **Status**: Accepted (name locked) · rename to implement.
+
+## 2026-07-20 - Rename completed; public release via an orphan branch
+
+**Context**: supersedes the "rename to implement" status of the 2026-06-25 entry. The rename to **Ronce Racine** is done everywhere (README, AGENTS, docs, `package.json`, lockfile name `.ronce-racine.json`); `claude-rules` only survives in historical entries of this file. Separately, the first public release had to decide what git history to publish: 46 of the 62 work commits contained private project names (the cleanup had only covered the working tree).
+
+**Decision**: publish on GitHub (`ChariereFiedler/ronce-racine`, branch `main`, tag `v0.1.0`) from an **orphan branch** carrying a single initial commit of the clean tree. The full work history stays on the private GitLab remote.
+
+**Consequences**: any future publication must regenerate the orphan branch from the private work branch - never push the work history to the public remote. The public repo's history starts at v0.1.0 by design.
+
+**Status**: Done.

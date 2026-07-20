@@ -1,29 +1,29 @@
-# Audit grid — QA & DevOps section
+# Audit grid - QA & DevOps section
 
 16 questions. Tests, CI/CD, code quality, dependency security, observability, code review, DORA metrics.
 
 ## Table of contents
 
-- [QA-01 — Coverage measurement and tracking (unit + integration)](#qa-01--coverage-measurement-and-tracking-unit--integration--criticality-must)
-- [QA-01a — Test strategy by criticality](#qa-01a--test-strategy-by-criticality--criticality-should)
-- [QA-02 — Post-deployment smoke tests](#qa-02--post-deployment-smoke-tests--criticality-must)
-- [QA-03 — Single artifact promotion](#qa-03--single-artifact-promotion--criticality-should)
-- [QA-04 — CI/CD quality gates](#qa-04--cicd-quality-gates--criticality-must)
-- [QA-05 — CI/CD feedback speed](#qa-05--cicd-feedback-speed--criticality-should)
-- [QA-06 — Code quality & debt](#qa-06--code-quality--debt--criticality-should)
-- [QA-07 — Dependency security (SCA)](#qa-07--dependency-security-sca--criticality-must)
-- [QA-07a — Dependency update process](#qa-07a--dependency-update-process--criticality-should)
-- [QA-08 — Incident reproducibility](#qa-08--incident-reproducibility--criticality-should)
-- [QA-09 — Realistic test datasets](#qa-09--realistic-test-datasets--criticality-should)
-- [QA-10 — Application profiling](#qa-10--application-profiling--criticality-could)
-- [QA-11 — CI/CD security](#qa-11--cicd-security--criticality-must)
-- [QA-12 — Product-oriented observability](#qa-12--product-oriented-observability--criticality-should)
-- [QA-13 — Code review process](#qa-13--code-review-process--criticality-must)
-- [QA-14 — DORA metrics](#qa-14--dora-metrics--criticality-should)
+- [QA-01 - Coverage measurement and tracking (unit + integration)](#qa-01--coverage-measurement-and-tracking-unit--integration--criticality-must)
+- [QA-01a - Test strategy by criticality](#qa-01a--test-strategy-by-criticality--criticality-should)
+- [QA-02 - Post-deployment smoke tests](#qa-02--post-deployment-smoke-tests--criticality-must)
+- [QA-03 - Single artifact promotion](#qa-03--single-artifact-promotion--criticality-should)
+- [QA-04 - CI/CD quality gates](#qa-04--cicd-quality-gates--criticality-must)
+- [QA-05 - CI/CD feedback speed](#qa-05--cicd-feedback-speed--criticality-should)
+- [QA-06 - Code quality & debt](#qa-06--code-quality--debt--criticality-should)
+- [QA-07 - Dependency security (SCA)](#qa-07--dependency-security-sca--criticality-must)
+- [QA-07a - Dependency update process](#qa-07a--dependency-update-process--criticality-should)
+- [QA-08 - Incident reproducibility](#qa-08--incident-reproducibility--criticality-should)
+- [QA-09 - Realistic test datasets](#qa-09--realistic-test-datasets--criticality-should)
+- [QA-10 - Application profiling](#qa-10--application-profiling--criticality-could)
+- [QA-11 - CI/CD security](#qa-11--cicd-security--criticality-must)
+- [QA-12 - Product-oriented observability](#qa-12--product-oriented-observability--criticality-should)
+- [QA-13 - Code review process](#qa-13--code-review-process--criticality-must)
+- [QA-14 - DORA metrics](#qa-14--dora-metrics--criticality-should)
 
 ---
 
-### QA-01 — Coverage measurement and tracking (unit + integration) — Criticality: **must**
+### QA-01 - Coverage measurement and tracking (unit + integration) - Criticality: **must**
 
 **Analyze:** Coverage tools (Istanbul/nyc, JaCoCo, coverage.py, PCOV), coverage quality gates, mutation testing
 
@@ -55,7 +55,7 @@ grep -ri "stryker\|infection" package.json composer.json 2>/dev/null
 
 ---
 
-### QA-01a — Test strategy by criticality — Criticality: **should**
+### QA-01a - Test strategy by criticality - Criticality: **should**
 
 **Analyze:** Test prioritization by business risk, criticality mapping, differentiated coverage by area
 
@@ -84,7 +84,7 @@ grep -ri "critical\|high-risk\|business-critical" tests/ 2>/dev/null | head -10
 
 ---
 
-### QA-02 — Post-deployment smoke tests — Criticality: **must**
+### QA-02 - Post-deployment smoke tests - Criticality: **must**
 
 **Analyze:** Post-deploy smoke-test scripts, health checks, automatic rollback
 
@@ -114,7 +114,7 @@ grep -ri "rollback" .github/ .gitlab-ci.yml scripts/ 2>/dev/null
 
 ---
 
-### QA-03 — Single artifact promotion — Criticality: **should**
+### QA-03 - Single artifact promotion - Criticality: **should**
 
 **Analyze:** Build pipeline, artifact registry, promotion strategy across environments
 
@@ -147,7 +147,7 @@ grep -ri "cosign\|content.trust\|slsa" .github/ .gitlab-ci.yml 2>/dev/null
 
 ---
 
-### QA-04 — CI/CD quality gates — Criticality: **must**
+### QA-04 - CI/CD quality gates - Criticality: **must**
 
 **Analyze:** Branch protection, SonarQube quality gates, mandatory CI before merge
 
@@ -180,7 +180,7 @@ gh api repos/{owner}/{repo}/branches/main/protection 2>/dev/null | head -20
 
 ---
 
-### QA-05 — CI/CD feedback speed — Criticality: **should**
+### QA-05 - CI/CD feedback speed - Criticality: **should**
 
 **Analyze:** CI pipeline duration, parallelization, caching, flaky tests
 
@@ -212,7 +212,7 @@ gh run list --limit 5 2>/dev/null
 
 ---
 
-### QA-06 — Code quality & debt — Criticality: **should**
+### QA-06 - Code quality & debt - Criticality: **should**
 
 **Analyze:** ESLint/Biome/Pylint configs, SonarQube, cyclomatic complexity, duplication, code smells
 
@@ -248,7 +248,7 @@ grep -ri "complexity\|max-depth\|max-lines" eslint.config.* .eslintrc* 2>/dev/nu
 
 ---
 
-### QA-07 — Dependency security (SCA) — Criticality: **must**
+### QA-07 - Dependency security (SCA) - Criticality: **must**
 
 **Analyze:** SCA tools (Snyk, Trivy, Dependabot), SBOM, license compliance
 
@@ -281,7 +281,7 @@ grep -ri "sbom\|cyclonedx\|spdx" .github/ Makefile 2>/dev/null
 
 ---
 
-### QA-07a — Dependency update process — Criticality: **should**
+### QA-07a - Dependency update process - Criticality: **should**
 
 **Analyze:** Dependabot/Renovate, auto-merge patches, upgrade sprints
 
@@ -312,7 +312,7 @@ composer outdated 2>/dev/null | head -20
 
 ---
 
-### QA-08 — Incident reproducibility — Criticality: **should**
+### QA-08 - Incident reproducibility - Criticality: **should**
 
 **Analyze:** Staging environment, snapshots, request replay, debug tools
 
@@ -344,7 +344,7 @@ find . -name "*seed*" -o -name "*fixture*" -o -name "*factory*" 2>/dev/null | he
 
 ---
 
-### QA-09 — Realistic test datasets — Criticality: **should**
+### QA-09 - Realistic test datasets - Criticality: **should**
 
 **Analyze:** Fixtures, seeds, anonymized data, synthetic data generation, property-based testing
 
@@ -375,7 +375,7 @@ grep -ri "fast-check\|hypothesis\|quickcheck\|property.test" package.json tests/
 
 ---
 
-### QA-10 — Application profiling — Criticality: **could**
+### QA-10 - Application profiling - Criticality: **could**
 
 **Analyze:** APM (Datadog, New Relic), continuous profiling, flame graphs, SQL query analysis
 
@@ -406,7 +406,7 @@ grep -ri "bullet\|nplusone\|telescope" composer.json package.json 2>/dev/null
 
 ---
 
-### QA-11 — CI/CD security — Criticality: **must**
+### QA-11 - CI/CD security - Criticality: **must**
 
 **Analyze:** Secret scanning, ephemeral runners, signed commits, SLSA compliance
 
@@ -440,7 +440,7 @@ grep -ri "password\|secret\|api.key" .env 2>/dev/null | head -5
 
 ---
 
-### QA-12 — Product-oriented observability — Criticality: **should**
+### QA-12 - Product-oriented observability - Criticality: **should**
 
 **Analyze:** Business SLOs, customer-impact dashboards, feature usage tracking, technical-business correlation
 
@@ -472,7 +472,7 @@ grep -ri "launchdarkly\|feature.flag\|unleash\|flagsmith" package.json .env* 2>/
 
 ---
 
-### QA-13 — Code review process — Criticality: **must**
+### QA-13 - Code review process - Criticality: **must**
 
 **Analyze:** PR workflow, CODEOWNERS, review SLA, review guidelines
 
@@ -507,7 +507,7 @@ gh pr list --state merged --limit 5 --json additions,deletions 2>/dev/null
 
 ---
 
-### QA-14 — DORA metrics — Criticality: **should**
+### QA-14 - DORA metrics - Criticality: **should**
 
 **Analyze:** Deployment Frequency, Lead Time for Changes, Change Failure Rate, MTTR
 

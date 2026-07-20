@@ -10,7 +10,7 @@ An artifact (rule, skill, hook, agent, script) lives here **only if it is truly 
 - no imposed tracker (Jira, GitLab, GitHub…), no imposed stack;
 - examples use **fictional** project names (`acme-app`, `beta-app`).
 
-If an idea is useful but coupled to a project, **split it**: the generic principle goes here, the project-specific tooling stays in the project's own repo (via a routing override — "e.g. `acme-app` → `my-skill`, it wins").
+If an idea is useful but coupled to a project, **split it**: the generic principle goes here, the project-specific tooling stays in the project's own repo (via a routing override - "e.g. `acme-app` → `my-skill`, it wins").
 
 Detailed criteria:
 - Rules → [`docs/writing-a-rule.md`](docs/writing-a-rule.md)
@@ -23,7 +23,7 @@ The repository is **English-facing**: rules, skills, docs, and user-facing tooli
 
 ## Contribution workflow
 
-1. Fork + branch from `master`.
+1. Fork + branch from `main`.
 2. Add or modify your artifact, following its type's contract (frontmatter, semver `version`, `metadata`).
 3. Run the local checks:
    ```bash
@@ -43,7 +43,7 @@ Format `type(scope): description` with `type` ∈ `feat | fix | refactor | test 
 
 ## Structural decisions
 
-A non-obvious choice (a new artifact family, a contract change, an architectural trade-off) is recorded in [`docs/decisions.md`](docs/decisions.md) at the moment the decision is made — never modify an existing entry, add one that supersedes it.
+A non-obvious choice (a new artifact family, a contract change, an architectural trade-off) is recorded in [`docs/decisions.md`](docs/decisions.md) at the moment the decision is made - never modify an existing entry, add one that supersedes it.
 
 ## Security
 

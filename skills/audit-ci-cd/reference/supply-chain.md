@@ -4,11 +4,11 @@ Questions: ci-10 (Pipeline security / Supply Chain Security).
 
 ## Table of contents
 
-- [ci-10 — Pipeline security (Supply Chain Security)](#ci-10--pipeline-security-supply-chain-security--should)
+- [ci-10 - Pipeline security (Supply Chain Security)](#ci-10--pipeline-security-supply-chain-security--should)
 
 ---
 
-### ci-10 — Pipeline security (Supply Chain Security) — `should`
+### ci-10 - Pipeline security (Supply Chain Security) - `should`
 
 **Analyze:** Actions/plugins used in the pipeline, permissions, secrets management in CI, SLSA compliance
 

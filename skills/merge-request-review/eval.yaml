@@ -1,0 +1,13 @@
+fixture: fullstack-ci
+prompt: >
+  Treat the staged changes in this repo as an incoming merge request about to
+  be merged into master. Review it end to end and write your verdict to
+  REVIEW.md.
+gates:
+  - file_exists: "REVIEW.md"
+  - repo_clean: { except: "REVIEW.md" }
+judge:
+  criteria:
+    - "REVIEW.md states an explicit verdict: approve or request changes"
+    - "The review checks for debug leftovers and hard-coded waits"
+  threshold: pass_all

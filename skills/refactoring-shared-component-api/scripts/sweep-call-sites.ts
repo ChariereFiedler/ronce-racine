@@ -4,7 +4,7 @@
  * Usage: npx tsx sweep-call-sites.ts <ComponentName> [rootDir]
  * Output: markdown checklist of call sites (PascalCase, kebab-case,
  * dynamic usages, spreads, suspicious wrappers, stories/fixtures/mocks).
- * Zero dependency — node builtins only.
+ * Zero dependency - node builtins only.
  */
 import * as fs from 'node:fs'
 import * as path from 'node:path'
@@ -68,9 +68,9 @@ const wrappers = [...new Set(external.map((h) => h.file))].filter((f) => {
   return base !== name && (base.includes(name) || /legacy|wrapper|compat|adapter/i.test(base))
 })
 
-console.log(`# Sweep call sites — ${name} (kebab: ${kebab})\n`)
+console.log(`# Sweep call sites - ${name} (kebab: ${kebab})\n`)
 if (wrappers.length) {
-  console.log('## ⚠️ Suspicious wrappers/adapters — FIRST-CLASS call sites\n')
+  console.log('## ⚠️ Suspicious wrappers/adapters - FIRST-CLASS call sites\n')
   for (const w of wrappers) console.log(`- [ ] ${w}`)
   console.log()
 }

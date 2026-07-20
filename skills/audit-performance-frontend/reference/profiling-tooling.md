@@ -1,16 +1,16 @@
-# Grid — Profiling & Tooling
+# Grid - Profiling & Tooling
 
 Category 6 · 3 questions (PF-27 to PF-29).
 
 ## Table of contents
 
-- [PF-27 — Methodical profiling and instrumentation](#pf-27--methodical-profiling-and-instrumentation--criticality-must)
-- [PF-28 — Sub-100ms performance metrics](#pf-28--sub-100ms-performance-metrics--criticality-must)
-- [PF-29 — Automated performance regression](#pf-29--automated-performance-regression--criticality-must)
+- [PF-27 - Methodical profiling and instrumentation](#pf-27--methodical-profiling-and-instrumentation--criticality-must)
+- [PF-28 - Sub-100ms performance metrics](#pf-28--sub-100ms-performance-metrics--criticality-must)
+- [PF-29 - Automated performance regression](#pf-29--automated-performance-regression--criticality-must)
 
 ---
 
-### PF-27 — Methodical profiling and instrumentation · Criticality: **MUST**
+### PF-27 - Methodical profiling and instrumentation · Criticality: **MUST**
 
 **Analyze:** Use of `performance.mark/measure`, PerformanceObserver, CPU throttling, methodology
 
@@ -38,7 +38,7 @@ grep -ri "lighthouse\|webpagetest\|pagespeed\|web-vitals" package.json .gitlab-c
 
 ---
 
-### PF-28 — Sub-100ms performance metrics · Criticality: **MUST**
+### PF-28 - Sub-100ms performance metrics · Criticality: **MUST**
 
 **Analyze:** Core Web Vitals, custom metrics, per-phase budgets
 
@@ -67,7 +67,7 @@ grep -ri "performance.*budget\|lighthouse.*budget\|budget\.json" . 2>/dev/null |
 
 ---
 
-### PF-29 — Automated performance regression · Criticality: **MUST**
+### PF-29 - Automated performance regression · Criticality: **MUST**
 
 **Analyze:** Performance CI, Lighthouse CI, bundle size monitoring, heap regression detection
 

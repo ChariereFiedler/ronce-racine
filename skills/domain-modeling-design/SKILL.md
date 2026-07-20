@@ -7,9 +7,9 @@ metadata:
   category: feature
 ---
 
-# Domain Modeling — design the model BEFORE the code
+# Domain Modeling - design the model BEFORE the code
 
-> If the current repo has a specific design skill, it wins — it knows its contexts, its stack and its placement conventions.
+> If the current repo has a specific design skill, it wins - it knows its contexts, its stack and its placement conventions.
 
 ## This skill vs. others
 
@@ -19,7 +19,7 @@ metadata:
 
 ## Principle
 
-A good domain model is designed **before** the code, otherwise it gets inferred from the shape of the tables and the first layer written — and you inherit an anemic model. The output of this skill is a **spec** (aggregates, contexts, invariants, contracts, justified placement), not code. Until placement and invariants are decided, refuse to implement.
+A good domain model is designed **before** the code, otherwise it gets inferred from the shape of the tables and the first layer written - and you inherit an anemic model. The output of this skill is a **spec** (aggregates, contexts, invariants, contracts, justified placement), not code. Until placement and invariants are decided, refuse to implement.
 
 ## Context to gather (before acting)
 
@@ -35,16 +35,16 @@ A good domain model is designed **before** the code, otherwise it gets inferred 
    - One transaction modifies **a single aggregate**: that is the consistency boundary. If a rule requires modifying two aggregates atomically, the boundary is misplaced
    - List the invariants the aggregate guarantees at all times (always true whatever the state)
 2. **Delimit the bounded contexts**
-   - The same word can name different concepts depending on the context — separate rather than force-unify
+   - The same word can name different concepts depending on the context - separate rather than force-unify
    - Define the relationships between contexts (who depends on whom, in which direction)
-3. **Decide the placement** — in this order, document both the choice AND the rejection of the alternatives:
+3. **Decide the placement** - in this order, document both the choice AND the rejection of the alternatives:
    - Extend an existing context if the concept is a continuation of it
    - New module in an existing context if CRUD/orchestration, few invariants
    - New bounded context **reserved for**: rich business invariants + own lifecycle + need for pure domain tests
    - Deciding criterion: "must the rule be testable without I/O (DB, network)?" → logic in the domain, isolated from infrastructure
 4. **Define the contracts**
    - Commands/queries that evolve the aggregate; what they reject (invariant violation)
-   - Ports (interfaces) on the domain/application side, implementations on the infrastructure side — the domain does not depend on infra
+   - Ports (interfaces) on the domain/application side, implementations on the infrastructure side - the domain does not depend on infra
    - **A domain event for every silent decision** (deletion, skip, auto-resolution): without an event, no one can answer "why did nothing happen?"
 
 ```
@@ -80,4 +80,4 @@ A good domain model is designed **before** the code, otherwise it gets inferred 
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial generic version extracted from a project workflow, decoupled from any stack and any tracker
+- 1.0.0 (2026-06-19) - initial generic version extracted from a project workflow, decoupled from any stack and any tracker

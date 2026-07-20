@@ -17,7 +17,7 @@ claude-config:drift:
     - apk add --no-cache git
     - git clone "$CLAUDE_RULES_REPO" /tmp/ronce-racine
     # Pin the canonical checkout to the SHA recorded in the lockfile at install
-    # time, so drift is measured against a FIXED target — cloning the default
+    # time, so drift is measured against a FIXED target - cloning the default
     # branch HEAD would flag every downstream repo the moment canonical evolves.
     - REF=$(node -e "try{process.stdout.write((require('./.claude/.ronce-racine.json').source)||'')}catch(e){}")
     - if [ -n "$REF" ] && [ "$REF" != "local" ]; then git -C /tmp/ronce-racine checkout -q "$REF"; fi

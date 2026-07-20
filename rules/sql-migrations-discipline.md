@@ -8,7 +8,7 @@ metadata:
   last-reviewed: 2026-06-19
 ---
 
-# SQL migrations — discipline
+# SQL migrations - discipline
 
 - **Never modify an already-applied migration**: most tools (SQLx, Flyway, Liquibase, Alembic, Knex…) store a checksum; any change breaks validation. To fix, create a **new** migration (forward-only).
 - **Idempotence**: `IF NOT EXISTS` / `IF EXISTS` on DDL, conditional logic in a block (`DO $$ … $$` in PostgreSQL, equivalent elsewhere).

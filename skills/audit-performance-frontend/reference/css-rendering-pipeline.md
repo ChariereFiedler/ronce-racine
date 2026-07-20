@@ -1,18 +1,18 @@
-# Grid — CSS & Rendering Pipeline
+# Grid - CSS & Rendering Pipeline
 
 Category 2 · 5 questions (PF-05 to PF-09).
 
 ## Table of contents
 
-- [PF-05 — CSS selectors and WebKit style resolution](#pf-05--css-selectors-and-webkit-style-resolution--criticality-should)
-- [PF-06 — Layout triggers and CSS property cost](#pf-06--layout-triggers-and-css-property-cost--criticality-must)
-- [PF-07 — Paint, compositing and WebKit GPU](#pf-07--paint-compositing-and-webkit-gpu--criticality-should)
-- [PF-08 — CSS custom properties and recalc cost](#pf-08--css-custom-properties-and-recalc-cost--criticality-could)
-- [PF-09 — Font rendering and text layout](#pf-09--font-rendering-and-text-layout--criticality-should)
+- [PF-05 - CSS selectors and WebKit style resolution](#pf-05--css-selectors-and-webkit-style-resolution--criticality-should)
+- [PF-06 - Layout triggers and CSS property cost](#pf-06--layout-triggers-and-css-property-cost--criticality-must)
+- [PF-07 - Paint, compositing and WebKit GPU](#pf-07--paint-compositing-and-webkit-gpu--criticality-should)
+- [PF-08 - CSS custom properties and recalc cost](#pf-08--css-custom-properties-and-recalc-cost--criticality-could)
+- [PF-09 - Font rendering and text layout](#pf-09--font-rendering-and-text-layout--criticality-should)
 
 ---
 
-### PF-05 — CSS selectors and WebKit style resolution · Criticality: **SHOULD**
+### PF-05 - CSS selectors and WebKit style resolution · Criticality: **SHOULD**
 
 **Analyze:** CSS selector complexity, key selector, style recalculation time
 
@@ -41,7 +41,7 @@ grep -rn ">>>\|/deep/\|::v-deep" . --include="*.vue" --include="*.css" 2>/dev/nu
 
 ---
 
-### PF-06 — Layout triggers and CSS property cost · Criticality: **MUST**
+### PF-06 - Layout triggers and CSS property cost · Criticality: **MUST**
 
 **Analyze:** Animated CSS properties, containment, animation cost
 
@@ -56,7 +56,7 @@ grep -rn "content-visibility" . --include="*.css" --include="*.scss" --include="
 ```
 
 **Check:**
-- Animations only on `transform`, `opacity`, `filter` (Tier 1 — composite only)
+- Animations only on `transform`, `opacity`, `filter` (Tier 1 - composite only)
 - `contain: layout` or `contain: strict` on self-contained subtrees
 - `content-visibility: auto` for deferred off-viewport rendering
 - No Tier 3/4 properties (width, height, font-size) animated
@@ -72,7 +72,7 @@ grep -rn "content-visibility" . --include="*.css" --include="*.scss" --include="
 
 ---
 
-### PF-07 — Paint, compositing and WebKit GPU · Criticality: **SHOULD**
+### PF-07 - Paint, compositing and WebKit GPU · Criticality: **SHOULD**
 
 **Analyze:** Composite layer count, VRAM, will-change, implicit layer promotion
 
@@ -101,7 +101,7 @@ grep -rn "translateZ(0)\|translate3d(0" . --include="*.css" --include="*.scss" -
 
 ---
 
-### PF-08 — CSS custom properties and recalc cost · Criticality: **COULD**
+### PF-08 - CSS custom properties and recalc cost · Criticality: **COULD**
 
 **Analyze:** Use of `--var`, mutations on `:root`, `@property`, animating custom properties
 
@@ -127,7 +127,7 @@ grep -rn "setProperty\|style\.set\|:root" . --include="*.ts" --include="*.js" --
 
 ---
 
-### PF-09 — Font rendering and text layout · Criticality: **SHOULD**
+### PF-09 - Font rendering and text layout · Criticality: **SHOULD**
 
 **Analyze:** `font-display`, subsetting, WOFF2, fallback metrics, font CLS
 

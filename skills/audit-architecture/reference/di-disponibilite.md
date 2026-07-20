@@ -1,22 +1,22 @@
-# Section DI — Availability & SLA (9 questions)
+# Section DI - Availability & SLA (9 questions)
 
 ## Questions
 
-- DI-01 — RPO definition (Recovery Point Objective) (MUST)
-- DI-02 — RTO definition (Recovery Time Objective) (MUST)
-- DI-03 — Target availability (99.5%, 99.9%) (MUST)
-- DI-03a — Cost of the availability level (COULD)
-- DI-04 — Qualifying critical SLOs + error budget (MUST)
-- DI-04a — Error budget usage (SHOULD)
-- DI-05 — SLI dashboard (SHOULD)
-- DI-06 — Alerts on breaches / SLO overruns (MUST)
-- DI-07 — Automated export of actual SLAs (SHOULD)
-- DI-08 — Shared dashboard (status page) (SHOULD)
-- DI-09 — External verification (synthetic monitoring) (SHOULD)
+- DI-01 - RPO definition (Recovery Point Objective) (MUST)
+- DI-02 - RTO definition (Recovery Time Objective) (MUST)
+- DI-03 - Target availability (99.5%, 99.9%) (MUST)
+- DI-03a - Cost of the availability level (COULD)
+- DI-04 - Qualifying critical SLOs + error budget (MUST)
+- DI-04a - Error budget usage (SHOULD)
+- DI-05 - SLI dashboard (SHOULD)
+- DI-06 - Alerts on breaches / SLO overruns (MUST)
+- DI-07 - Automated export of actual SLAs (SHOULD)
+- DI-08 - Shared dashboard (status page) (SHOULD)
+- DI-09 - External verification (synthetic monitoring) (SHOULD)
 
 ---
 
-### DI-01 — RPO definition (Recovery Point Objective) · Criticality: **MUST**
+### DI-01 - RPO definition (Recovery Point Objective) · Criticality: **MUST**
 
 **Analyze:** RPO per data class, continuous backup, synchronous replication, tiered RPO
 
@@ -39,7 +39,7 @@ grep -ri "continuous.backup\|wal.*shipping\|binlog.*replication\|synchronous.*re
 
 ---
 
-### DI-02 — RTO definition (Recovery Time Objective) · Criticality: **MUST**
+### DI-02 - RTO definition (Recovery Time Objective) · Criticality: **MUST**
 
 **Analyze:** Auto-failover, multi-region deployment, runbooks, DR drills
 
@@ -61,7 +61,7 @@ grep -ri "rto\|recovery.time\|failover\|multi.az\|multi.region" . --include="*.m
 
 ---
 
-### DI-03 — Target availability (99.5%, 99.9%) · Criticality: **MUST**
+### DI-03 - Target availability (99.5%, 99.9%) · Criticality: **MUST**
 
 **Analyze:** Contractual SLA, error budgets, multi-9s architecture, availability zones
 
@@ -84,7 +84,7 @@ grep -ri "multi.az\|availability.zone\|active.active\|active.passive" . --includ
 
 ---
 
-### DI-03a — Cost of the availability level · Criticality: **COULD**
+### DI-03a - Cost of the availability level · Criticality: **COULD**
 
 **Condition:** Evaluate if DI-03 >= 2
 
@@ -101,7 +101,7 @@ grep -ri "multi.az\|availability.zone\|active.active\|active.passive" . --includ
 
 ---
 
-### DI-04 — Qualifying critical SLOs + error budget · Criticality: **MUST**
+### DI-04 - Qualifying critical SLOs + error budget · Criticality: **MUST**
 
 **Analyze:** SLIs, SLOs, error budget policies, burn rate alerting
 
@@ -123,7 +123,7 @@ grep -ri "slo\|sli\|error.budget\|burn.rate\|service.level" . --include="*.yml" 
 
 ---
 
-### DI-04a — Error budget usage · Criticality: **SHOULD**
+### DI-04a - Error budget usage · Criticality: **SHOULD**
 
 **Condition:** Evaluate if DI-04 >= 3
 
@@ -140,7 +140,7 @@ grep -ri "slo\|sli\|error.budget\|burn.rate\|service.level" . --include="*.yml" 
 
 ---
 
-### DI-05 — SLI dashboard · Criticality: **SHOULD**
+### DI-05 - SLI dashboard · Criticality: **SHOULD**
 
 **Analyze:** Grafana, Datadog, real-time dashboards, drill-down, executive summaries
 
@@ -163,7 +163,7 @@ find . -name "*dashboard*" -o -name "*grafana*" 2>/dev/null | head -5
 
 ---
 
-### DI-06 — Alerts on breaches / SLO overruns · Criticality: **MUST**
+### DI-06 - Alerts on breaches / SLO overruns · Criticality: **MUST**
 
 **Analyze:** Multi-window alerting, burn rate alerts, alert correlation, escalation policies
 
@@ -185,7 +185,7 @@ grep -ri "alert\|burn.rate\|escalat\|pagerduty\|opsgenie" . --include="*.yml" --
 
 ---
 
-### DI-07 — Automated export of actual SLAs · Criticality: **SHOULD**
+### DI-07 - Automated export of actual SLAs · Criticality: **SHOULD**
 
 **Analyze:** Automated SLA reporting, audit trail, customer-facing reports, compliance dashboards
 
@@ -207,7 +207,7 @@ grep -ri "sla.*report\|uptime.*report\|availability.*report" . --include="*.md" 
 
 ---
 
-### DI-08 — Shared dashboard (status page) · Criticality: **SHOULD**
+### DI-08 - Shared dashboard (status page) · Criticality: **SHOULD**
 
 **Analyze:** Statuspage.io, Cachet, Instatus, incident communication, maintenance windows
 
@@ -229,7 +229,7 @@ grep -ri "statuspage\|cachet\|instatus\|status.page" . --include="*.yml" --inclu
 
 ---
 
-### DI-09 — External verification (synthetic monitoring) · Criticality: **SHOULD**
+### DI-09 - External verification (synthetic monitoring) · Criticality: **SHOULD**
 
 **Analyze:** Pingdom, Datadog Synthetics, Checkly, RUM, third-party validation
 

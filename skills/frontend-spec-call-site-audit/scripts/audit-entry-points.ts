@@ -5,7 +5,7 @@
  * Usage: npx tsx audit-entry-points.ts <ComponentName|-> <route|-> [rootDir]
  *   e.g. audit-entry-points.ts WebhookList /webhooks ./frontend
  *   "-" to omit either of the two criteria.
- * Zero dependencies — node builtins only.
+ * Zero dependencies - node builtins only.
  */
 import * as fs from 'node:fs'
 import * as path from 'node:path'
@@ -45,14 +45,14 @@ function grep(pattern: RegExp): Array<{ file: string; line: number; text: string
 function section(title: string, hits: Array<{ file: string; line: number; text: string }>): void {
   console.log(`\n## ${title}\n`)
   if (!hits.length) {
-    console.log('_No results — to interpret: new component/route, or criterion to broaden._')
+    console.log('_No results - to interpret: new component/route, or criterion to broaden._')
     return
   }
-  for (const h of hits.slice(0, 40)) console.log(`- ${h.file}:${h.line} — ${h.text}`)
+  for (const h of hits.slice(0, 40)) console.log(`- ${h.file}:${h.line} - ${h.text}`)
   if (hits.length > 40) console.log(`… ${hits.length - 40} more`)
 }
 
-console.log(`# Preliminary codebase audit — component: ${component} · route: ${route ?? '-'}\n`)
+console.log(`# Preliminary codebase audit - component: ${component} · route: ${route ?? '-'}\n`)
 console.log(`Scanned root: ${root} (${files.length} files)`)
 
 if (component !== '-') {
@@ -68,9 +68,9 @@ if (route && route !== '-') {
 }
 
 const navFiles = files.filter((f) => NAV_HINT.test(path.basename(f)))
-console.log(`\n## Global navigation — files to audit manually (sidebar, header, "+ New")\n`)
+console.log(`\n## Global navigation - files to audit manually (sidebar, header, "+ New")\n`)
 for (const f of navFiles.slice(0, 30)) console.log(`- [ ] ${path.relative(root, f)}`)
-if (!navFiles.length) console.log('_No navigation file detected by name heuristic — search manually._')
+if (!navFiles.length) console.log('_No navigation file detected by name heuristic - search manually._')
 
 console.log(`\n## Reminders to complete in the ticket
 - [ ] Data scope: global / per organization / per project?

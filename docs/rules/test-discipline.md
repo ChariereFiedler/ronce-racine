@@ -1,4 +1,4 @@
-# Rule — `test-discipline`
+# Rule - `test-discipline`
 
 > Tests wait for state, not for the clock; select by intent, not by fragile markup; and every feature and bug ships with the tests that prove it.
 
@@ -12,17 +12,17 @@
 
 ## What it enforces
 
-- **Zero `waitForTimeout`** — wait for a state/locator, never an arbitrary delay.
-- **`data-testid` selectors only** — no bare `text=` nor fragile CSS selector.
-- **Scoped locators** (`parent.getByTestId('child')`) — no ambiguous global locator.
-- **Page objects** for E2E — no selectors scattered across specs.
+- **Zero `waitForTimeout`** - wait for a state/locator, never an arbitrary delay.
+- **`data-testid` selectors only** - no bare `text=` nor fragile CSS selector.
+- **Scoped locators** (`parent.getByTestId('child')`) - no ambiguous global locator.
+- **Page objects** for E2E - no selectors scattered across specs.
 - **FIRST** principles: Fast, Isolated, Repeatable, Self-validating, Timely.
 - Every feature/fix → **UT + E2E + API** tests (deterministic golden dataset).
 - Every bug → one UT + one E2E confirmation test written **with** the fix.
 
 ## Why it matters
 
-Arbitrary sleeps are the number-one source of flaky E2E suites: too short and the test races the app, too long and the suite crawls — and either way the timeout says nothing about the actual condition you care about. Waiting for a state or locator makes the test both faster and deterministic.
+Arbitrary sleeps are the number-one source of flaky E2E suites: too short and the test races the app, too long and the suite crawls - and either way the timeout says nothing about the actual condition you care about. Waiting for a state or locator makes the test both faster and deterministic.
 
 Selecting by visible text or CSS couples the test to wording and styling that change for reasons unrelated to behavior, so refactors break green tests and teams learn to distrust the suite. A stable `data-testid` expresses *what* element matters, decoupled from *how* it looks. Scoping the locator and centralizing selectors in page objects keeps that intent unambiguous and maintainable as the UI grows.
 
@@ -33,11 +33,11 @@ Shipping the confirming tests **with** each feature and each fix is what makes c
 ### Wait for state, not time
 
 ```ts
-// Bad — flaky and slow
+// Bad - flaky and slow
 await page.waitForTimeout(2000);
 expect(await page.locator('.result').count()).toBe(1);
 
-// Good — deterministic
+// Good - deterministic
 await expect(page.getByTestId('result')).toBeVisible();
 ```
 

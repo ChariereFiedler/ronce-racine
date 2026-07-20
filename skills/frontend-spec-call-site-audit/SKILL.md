@@ -1,9 +1,9 @@
 ---
 name: frontend-spec-call-site-audit
 description: Use BEFORE writing any frontend feature ticket or spec - new page, new component, new dashboard section, "add an X page", "ajoute une page X". Use when drafting acceptance criteria for a UI change in an existing app.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-07-20
   category: frontend
 ---
 
@@ -27,9 +27,9 @@ A frontend ticket **never** describes a component in a vacuum. Every page/compon
 
 - Router + navigation files: read the route config, the sidebar/header/global menu to know where an entry gets added
 - Read a neighbouring page already specced and copy its conventions (empty states, breadcrumbs, i18n) before inventing
-- Data scope: global / per organization / per project — determines where the page lives and which menus are affected
+- Data scope: global / per organization / per project - determines where the page lives and which menus are affected
 
-## Audit checklist — to paste into the ticket
+## Audit checklist - to paste into the ticket
 
 1. **Call sites of the main component**: grep the frontend code; list every page/component that uses it
 2. **Routes / incoming links**: grep the target route; who points at it (sidebar, header, breadcrumb, links)?
@@ -70,9 +70,13 @@ A scenario like "I click the card → I see the detail" says nothing about the s
 
 ## Tooling
 
-- `scripts/audit-entry-points.ts <ComponentName|-> <route|-> [rootDir]` — pre-fills the audit: call sites, incoming links to the route, navigation files (sidebar/header/menu) to check
-- `templates/ticket-frontend.md` — ticket skeleton with the blocking audit section
+- Test procedure: `scripts/audit-entry-points.test.ts` - deterministic behavioral test of the script (positive + negative fixture). Run `npx tsx scripts/audit-entry-points.test.ts` from the canonical repo after any change to the script (also picked up by `npm test`). Not distributed to target repos.
+
+- `scripts/audit-entry-points.ts <ComponentName|-> <route|-> [rootDir]` - pre-fills the audit: call sites, incoming links to the route, navigation files (sidebar/header/menu) to check
+- `templates/ticket-frontend.md` - ticket skeleton with the blocking audit section
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)
+- 1.0.1 (2026-07-20) - co-located test procedure for audit-entry-points.ts (scripts/audit-entry-points.test.ts)
+
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

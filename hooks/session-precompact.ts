@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 /**
- * PreCompact hook — persists a fresh session memo BEFORE a compaction, so the
+ * PreCompact hook - persists a fresh session memo BEFORE a compaction, so the
  * SessionStart(compact) hook can re-inject up-to-date context afterwards.
  *
  * Note: PreCompact CANNOT influence the compaction summary itself (the event has
  * no mechanism to inject text into the summary prompt; `systemMessage` is only a
  * user-facing notice). So instead of trying to steer the summary, this hook
- * captures the current context to disk — the same memo file session-writer uses:
+ * captures the current context to disk - the same memo file session-writer uses:
  * `~/.claude/projects/<repo-slug>/sessions/<branch>.md`.
  *
  * Event      : PreCompact
- * Matcher    : (none — applies to every compaction)
+ * Matcher    : (none - applies to every compaction)
  * Input      : stdin JSON { transcript_path?: string, cwd?: string }
  * Output     : nothing (silent exit 0)
  *

@@ -4,12 +4,12 @@ Questions: SE-05 (Roles and permissions), SE-06 (Access audit log).
 
 ## Table of contents
 
-- [SE-05 — Fine-grained roles and permissions for internal systems](#se-05--fine-grained-roles-and-permissions-for-internal-systems--criticality-must)
-- [SE-06 — Access audit log](#se-06--access-audit-log--criticality-must)
+- [SE-05 - Fine-grained roles and permissions for internal systems](#se-05--fine-grained-roles-and-permissions-for-internal-systems--criticality-must)
+- [SE-06 - Access audit log](#se-06--access-audit-log--criticality-must)
 
 ---
 
-### SE-05 — Fine-grained roles and permissions for internal systems — Criticality: **must**
+### SE-05 - Fine-grained roles and permissions for internal systems - Criticality: **must**
 
 **Analyze:** Authorization middleware, guards, policies, defined roles, cloud IAM, Kubernetes RBAC
 
@@ -38,7 +38,7 @@ grep -riE "iam\|serviceAccount\|clusterRole" . --include="*.yml" --include="*.ya
 
 ---
 
-### SE-06 — Access audit log — Criticality: **must**
+### SE-06 - Access audit log - Criticality: **must**
 
 **Analyze:** Audit logs, access traceability, immutability, retention, SIEM integration
 

@@ -1,4 +1,4 @@
-# Incident report — <short summary>
+# Incident report - <short summary>
 
 ## Summary
 - **Scope**: <everything / endpoint / feature / subset of users>
@@ -23,11 +23,11 @@
 - <reproduction command + output>
 
 ## Root cause
-<hypothesis supported by the evidence above — no unproven speculation>
+<hypothesis supported by the evidence above - no unproven speculation>
 
 ## Mitigation
 - <rollback / forward-fix / confirmed restart / confirmed purge>
 
 ## Follow-up
-- [ ] <hardening action> — ticket #<iid>
-- [ ] <missing observability to add if the incident did not alert> — ticket #<iid>
+- [ ] <hardening action> - ticket #<iid>
+- [ ] <missing observability to add if the incident did not alert> - ticket #<iid>

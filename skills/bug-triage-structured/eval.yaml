@@ -1,0 +1,14 @@
+fixture: buggy-app
+prompt: >
+  The cart item counter undercounts by one. Reproduce this bug, find the
+  root cause, and decide whether to fix now or open a ticket. No tracker
+  is configured here - write the triage sheet to TRIAGE.md.
+gates:
+  - file_exists: "TRIAGE.md"
+  - repo_clean: { except: "docs/, .claude/, TRIAGE.md, src/cart.ts, src/cart.test.ts" }
+judge:
+  criteria:
+    - "Reproduction confirms the off-by-one via a failing test"
+    - "Root cause cites cart.ts with a line number"
+    - "Recurrence is flagged due to 3 prior fix(cart) commits"
+  threshold: pass_all

@@ -4,11 +4,11 @@ Questions: ci-07 (Infrastructure as Code).
 
 ## Table of contents
 
-- [ci-07 — Infrastructure as Code (IaC)](#ci-07--infrastructure-as-code-iac--should)
+- [ci-07 - Infrastructure as Code (IaC)](#ci-07--infrastructure-as-code-iac--should)
 
 ---
 
-### ci-07 — Infrastructure as Code (IaC) — `should`
+### ci-07 - Infrastructure as Code (IaC) - `should`
 
 **Analyze:** Terraform, Pulumi, CloudFormation, Ansible, CDK, Dockerfile, docker-compose files
 

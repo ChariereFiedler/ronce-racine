@@ -1,0 +1,12 @@
+fixture: audit-target
+prompt: >
+  Run a compliance, data governance & finops audit of this project.
+  Write the report to AUDIT-COMPLIANCE.md.
+gates:
+  - file_exists: "AUDIT-COMPLIANCE.md"
+  - repo_clean: { except: "AUDIT-COMPLIANCE.md" }
+judge:
+  criteria:
+    - "Flags PII, the user email, logged without retention policy"
+    - "Reports a maturity score per question, 0-4"
+  threshold: pass_all

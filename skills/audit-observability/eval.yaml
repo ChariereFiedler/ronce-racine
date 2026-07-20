@@ -1,0 +1,12 @@
+fixture: audit-target
+prompt: >
+  Run an observability & alerting audit of this project.
+  Write the report to AUDIT-OBSERVABILITY.md.
+gates:
+  - file_exists: "AUDIT-OBSERVABILITY.md"
+  - repo_clean: { except: "AUDIT-OBSERVABILITY.md" }
+judge:
+  criteria:
+    - "Flags PII, the user email, logged via console.log"
+    - "Reports a maturity score per question, 0-4"
+  threshold: pass_all

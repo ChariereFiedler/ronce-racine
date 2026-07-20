@@ -12,7 +12,7 @@ metadata:
 
 # Subscription cleanup
 
-Any resource that "subscribes" or registers must have an explicit teardown — otherwise memory leaks, ghost handlers, double execution.
+Any resource that "subscribes" or registers must have an explicit teardown - otherwise memory leaks, ghost handlers, double execution.
 
 - **Observables / streams**: `unsubscribe()`, a completion operator (`takeUntil(destroy$)`, `takeUntilDestroyed()`, `take(1)`), or the `async` pipe / a binding with managed lifecycle. Never a bare `.subscribe(` without one of these.
 - **Listeners**: every `addEventListener` / `on(...)` has a matching removal (`removeEventListener` / `off(...)`) on teardown.

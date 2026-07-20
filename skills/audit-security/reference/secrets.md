@@ -4,11 +4,11 @@ Questions: SE-03 (Key/secret rotation).
 
 ## Table of contents
 
-- [SE-03 — Key/secret rotation](#se-03--keysecret-rotation--criticality-must)
+- [SE-03 - Key/secret rotation](#se-03--keysecret-rotation--criticality-must)
 
 ---
 
-### SE-03 — Key/secret rotation — Criticality: **must**
+### SE-03 - Key/secret rotation - Criticality: **must**
 
 **Analyze:** Secret rotation policy, automation, ephemeral secrets, TTL
 

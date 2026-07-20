@@ -1,4 +1,4 @@
-# Rule — `commits`
+# Rule - `commits`
 
 > Every commit message follows one conventional format, stays under 72 characters on the first line, and never mentions the tooling that wrote it.
 
@@ -26,7 +26,7 @@ A single, machine-parseable commit convention:
 
 Conventional commit messages are not cosmetic. A consistent `type(scope):` prefix lets tooling derive changelogs, compute semantic version bumps, and group history by area. The 72-character limit keeps `git log --oneline`, blame views, and hosting UIs readable without truncation. Linking `Closes #XX` wires the commit to its ticket so traceability is automatic.
 
-Keeping tooling attribution out of the message keeps history about **what changed and why**, not about how it was produced — the authorship that matters is the engineering intent.
+Keeping tooling attribution out of the message keeps history about **what changed and why**, not about how it was produced - the authorship that matters is the engineering intent.
 
 Asking before committing keeps a human in the loop for the one action that rewrites shared history.
 
@@ -51,7 +51,7 @@ docs(readme): document the install flow
 
 ### Splitting unrelated work
 
-If a diff touches an auth fix and a docs update, make two commits — even if that means running the pre-commit hooks twice. One concern per commit keeps `git revert` and `git bisect` surgical.
+If a diff touches an auth fix and a docs update, make two commits - even if that means running the pre-commit hooks twice. One concern per commit keeps `git revert` and `git bisect` surgical.
 
 ## Related
 

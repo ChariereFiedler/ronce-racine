@@ -1,0 +1,13 @@
+fixture: design-system
+prompt: >
+  We are adding a new page that will reuse BaseButton. Audit the existing
+  call sites and navigation first, then write the ticket with acceptance
+  criteria to TICKET.md. Do not implement the feature.
+gates:
+  - repo_clean: { except: "TICKET.md" }
+  - file_exists: "TICKET.md"
+judge:
+  criteria:
+    - "Ticket cites all three BaseButton call sites: Home, Settings, Dyn"
+    - "At least one acceptance criterion is a full user flow"
+  threshold: pass_all

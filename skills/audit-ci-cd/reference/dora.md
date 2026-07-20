@@ -4,13 +4,13 @@ Questions: ci-03 (Deployment frequency), ci-04 (Lead time for changes), ci-05 (C
 
 ## Table of contents
 
-- [ci-03 — Deployment frequency (DORA metric)](#ci-03--deployment-frequency-dora-metric--could)
-- [ci-04 — Lead time for changes (DORA metric)](#ci-04--lead-time-for-changes-dora-metric--could)
-- [ci-05 — Change failure rate (DORA metric)](#ci-05--change-failure-rate-dora-metric--could)
+- [ci-03 - Deployment frequency (DORA metric)](#ci-03--deployment-frequency-dora-metric--could)
+- [ci-04 - Lead time for changes (DORA metric)](#ci-04--lead-time-for-changes-dora-metric--could)
+- [ci-05 - Change failure rate (DORA metric)](#ci-05--change-failure-rate-dora-metric--could)
 
 ---
 
-### ci-03 — Deployment frequency (DORA metric) — `could`
+### ci-03 - Deployment frequency (DORA metric) - `could`
 
 **Analyze:** Deployment frequency via git log/tags, release history, CI/CD dashboards
 
@@ -39,7 +39,7 @@ Questions: ci-03 (Deployment frequency), ci-04 (Lead time for changes), ci-05 (C
 
 ---
 
-### ci-04 — Lead time for changes (DORA metric) — `could`
+### ci-04 - Lead time for changes (DORA metric) - `could`
 
 **Analyze:** Time between the first commit and production deployment, review duration, CI pipeline duration
 
@@ -67,7 +67,7 @@ Questions: ci-03 (Deployment frequency), ci-04 (Lead time for changes), ci-05 (C
 
 ---
 
-### ci-05 — Change failure rate (DORA metric) — `could`
+### ci-05 - Change failure rate (DORA metric) - `could`
 
 **Analyze:** History of post-deployment incidents, rollbacks, hotfixes, post-mortems
 

@@ -1,16 +1,16 @@
 ---
 name: audit-quality
 description: QA & DevOps + Data quality audit. Use when auditing test coverage, CI/CD quality, code quality, dependency security, observability, data validation, data lifecycle, or error handling. Triggers on "audit qualité", "audit quality", "audit code", "code audit", "audit données", "data audit", "audit QA", "QA audit", "audit devops", "devops audit".
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-07-20
   category: audit
 ---
 
 ## When ME and not audit-industrialisation
 
 - **ME** when: an audit targeting this domain only
-- **audit-industrialisation** instead if: a global multi-domain audit — it orchestrates every audit (including ME) and produces a consolidated report
+- **audit-industrialisation** instead if: a global multi-domain audit - it orchestrates every audit (including ME) and produces a consolidated report
 
 > For a full project audit, use `audit-industrialisation` rather than invoking each skill separately.
 
@@ -22,13 +22,13 @@ metadata:
 
 Audit a project's maturity across two sections (**28 questions**), scored 0-4 per question:
 
-- **QA & DevOps** (16 questions): test coverage, CI/CD, code quality, dependency security, observability, code review, DORA metrics — grid in [reference/qa-devops.md](reference/qa-devops.md)
-- **QU — Data quality** (12 questions): schema validation, null handling, business consistency, anomaly correction, traceability, data lifetime — grid in [reference/qu-qualite-donnees.md](reference/qu-qualite-donnees.md)
+- **QA & DevOps** (16 questions): test coverage, CI/CD, code quality, dependency security, observability, code review, DORA metrics - grid in [reference/qa-devops.md](reference/qa-devops.md)
+- **QU - Data quality** (12 questions): schema validation, null handling, business consistency, anomaly correction, traceability, data lifetime - grid in [reference/qu-qualite-donnees.md](reference/qu-qualite-donnees.md)
 
 ## Score calculation
 
-- Section score = average of scored questions (exclude N/A)
-- Global score = average of the two sections
+- Domain score = average of ALL scored questions across both sections (flat mean, exclude N/A - per `audit-report/reference/scoring-model.md`; do NOT average the two section means)
+- Section means may be shown for readability, but they do not enter the domain score
 - State "X questions scored out of Y total" per section
 - A question is N/A if the project profile makes it non-applicable
 
@@ -36,7 +36,7 @@ Audit a project's maturity across two sections (**28 questions**), scored 0-4 pe
 
 1. **Identify the project type**: backend, frontend SPA, fullstack, library, microservices. Mark questions N/A according to the context.
 2. **QA & DevOps section**: read [reference/qa-devops.md](reference/qa-devops.md). For each question QA-01 to QA-14, run the listed bash commands, assign a level 0-4 (or N/A) with a justification and a confidence.
-3. **QU — Data quality section**: read [reference/qu-qualite-donnees.md](reference/qu-qualite-donnees.md). For each question QU-01 to QU-09a, run the listed bash commands, assign a level 0-4 (or N/A) with a justification and a confidence.
+3. **QU - Data quality section**: read [reference/qu-qualite-donnees.md](reference/qu-qualite-donnees.md). For each question QU-01 to QU-09a, run the listed bash commands, assign a level 0-4 (or N/A) with a justification and a confidence.
 4. **Calculate the scores** according to the rules above.
 5. **Produce the report** in the output format below.
 
@@ -44,20 +44,20 @@ Audit a project's maturity across two sections (**28 questions**), scored 0-4 pe
 
 | Section | Grid | Questions |
 |---------|------|-----------|
-| QA & DevOps | [reference/qa-devops.md](reference/qa-devops.md) — tests, CI/CD, code quality, security, observability, DORA | 16 |
-| QU — Data quality | [reference/qu-qualite-donnees.md](reference/qu-qualite-donnees.md) — validation, consistency, anomalies, traceability, lifecycle | 12 |
+| QA & DevOps | [reference/qa-devops.md](reference/qa-devops.md) - tests, CI/CD, code quality, security, observability, DORA | 16 |
+| QU - Data quality | [reference/qu-qualite-donnees.md](reference/qu-qualite-donnees.md) - validation, consistency, anomalies, traceability, lifecycle | 12 |
 
 Each grid contains, per question: statement, criticality (must/should/could), items to analyze and check, bash commands, and the table of levels 0-4.
 
 ## Output format
 
 ```markdown
-## QA & DevOps + Data Quality — Global score: X.X/4
+## QA & DevOps + Data Quality - Global score: X.X/4
 
 ### Summary
 [2-3 sentences summarizing quality maturity across the two sections]
 
-### QA & DevOps section — Score: X.X/4 (Y questions scored out of 16)
+### QA & DevOps section - Score: X.X/4 (Y questions scored out of 16)
 
 | Code | Question | Criticality | Level | Confidence | Justification |
 |------|----------|-------------|-------|------------|---------------|
@@ -78,7 +78,7 @@ Each grid contains, per question: statement, criticality (must/should/could), it
 | QA-13 | Code review | must | X | high/medium/low | ... |
 | QA-14 | DORA metrics | should | X | high/medium/low | ... |
 
-### QU Data Quality section — Score: X.X/4 (Y questions scored out of 12)
+### QU Data Quality section - Score: X.X/4 (Y questions scored out of 12)
 
 | Code | Question | Criticality | Level | Confidence | Justification |
 |------|----------|-------------|-------|------------|---------------|
@@ -121,4 +121,6 @@ Each grid contains, per question: statement, criticality (must/should/could), it
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)
+- 1.0.1 (2026-07-20) - scoring aligned with scoring-model.md: flat mean only; criticality kept for remediation priority, weights removed from the score
+
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

@@ -4,12 +4,12 @@ Questions: SE-12 (Network security), SE-13 (Container security).
 
 ## Table of contents
 
-- [SE-12 — Network security and perimeter protection](#se-12--network-security-and-perimeter-protection--criticality-must)
-- [SE-13 — Security of containers and deployed images](#se-13--security-of-containers-and-deployed-images--criticality-must)
+- [SE-12 - Network security and perimeter protection](#se-12--network-security-and-perimeter-protection--criticality-must)
+- [SE-13 - Security of containers and deployed images](#se-13--security-of-containers-and-deployed-images--criticality-must)
 
 ---
 
-### SE-12 — Network security and perimeter protection — Criticality: **must**
+### SE-12 - Network security and perimeter protection - Criticality: **must**
 
 **Analyze:** WAF, DDoS protection, network segmentation, microsegmentation, IDS/IPS, Zero Trust
 
@@ -39,7 +39,7 @@ grep -riE "ids\|ips\|suricata\|zerotrust\|zero.trust\|beyondcorp" . --include="*
 
 ---
 
-### SE-13 — Security of containers and deployed images — Criticality: **must**
+### SE-13 - Security of containers and deployed images - Criticality: **must**
 
 **Analyze:** Base images, vulnerability scanning, image signing, execution policies, runtime protection
 

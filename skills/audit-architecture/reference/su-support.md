@@ -1,19 +1,19 @@
-# Section SU — Support & Operability (8 questions)
+# Section SU - Support & Operability (8 questions)
 
 ## Questions
 
-- SU-01 — Runbooks available (SHOULD)
-- SU-01a — Runbook maintenance (SHOULD)
-- SU-02 — Clear escalation (level 1, 2, 3) (SHOULD)
-- SU-03 — RACI defined (SHOULD)
-- SU-04 — Install & startup scripts (SHOULD)
-- SU-04a — Dev environment setup time (SHOULD)
-- SU-05 — Automated onboarding (sandbox) (COULD)
-- SU-05a — Measuring onboarding effectiveness (COULD)
+- SU-01 - Runbooks available (SHOULD)
+- SU-01a - Runbook maintenance (SHOULD)
+- SU-02 - Clear escalation (level 1, 2, 3) (SHOULD)
+- SU-03 - RACI defined (SHOULD)
+- SU-04 - Install & startup scripts (SHOULD)
+- SU-04a - Dev environment setup time (SHOULD)
+- SU-05 - Automated onboarding (sandbox) (COULD)
+- SU-05a - Measuring onboarding effectiveness (COULD)
 
 ---
 
-### SU-01 — Runbooks available · Criticality: **SHOULD**
+### SU-01 - Runbooks available · Criticality: **SHOULD**
 
 **Analyze:** `docs/runbooks/`, `docs/ops/` folders, operational wiki, runbook automation
 
@@ -36,7 +36,7 @@ grep -ri "runbook\|playbook\|operational.procedure" . --include="*.md" 2>/dev/nu
 
 ---
 
-### SU-01a — Runbook maintenance · Criticality: **SHOULD**
+### SU-01a - Runbook maintenance · Criticality: **SHOULD**
 
 **Condition:** Evaluate if SU-01 >= 2
 
@@ -53,7 +53,7 @@ grep -ri "runbook\|playbook\|operational.procedure" . --include="*.md" 2>/dev/nu
 
 ---
 
-### SU-02 — Clear escalation (level 1, 2, 3) · Criticality: **SHOULD**
+### SU-02 - Clear escalation (level 1, 2, 3) · Criticality: **SHOULD**
 
 **Analyze:** L1/L2/L3 tiering, SLA per level, smart routing, on-call rotation
 
@@ -76,7 +76,7 @@ grep -ri "escalat\|on.call\|pagerduty\|opsgenie\|L1\|L2\|L3" . --include="*.md" 
 
 ---
 
-### SU-03 — RACI defined · Criticality: **SHOULD**
+### SU-03 - RACI defined · Criticality: **SHOULD**
 
 **Analyze:** RACI matrix, single point of contact, cross-training, succession planning
 
@@ -98,7 +98,7 @@ grep -ri "raci\|responsible\|accountable\|consulted\|informed\|bus.factor\|point
 
 ---
 
-### SU-04 — Install & startup scripts · Criticality: **SHOULD**
+### SU-04 - Install & startup scripts · Criticality: **SHOULD**
 
 **Analyze:** IaC (Terraform, Ansible), dev containers, GitOps, one-click setup
 
@@ -122,7 +122,7 @@ grep -ri "make setup\|npm run dev\|bootstrap" Makefile README.md 2>/dev/null | h
 
 ---
 
-### SU-04a — Dev environment setup time · Criticality: **SHOULD**
+### SU-04a - Dev environment setup time · Criticality: **SHOULD**
 
 **Condition:** Evaluate if SU-04 >= 2
 
@@ -139,7 +139,7 @@ grep -ri "make setup\|npm run dev\|bootstrap" Makefile README.md 2>/dev/null | h
 
 ---
 
-### SU-05 — Automated onboarding (sandbox) · Criticality: **COULD**
+### SU-05 - Automated onboarding (sandbox) · Criticality: **COULD**
 
 **Analyze:** Structured journey, dedicated sandbox, mentoring program, time-to-productivity
 
@@ -162,7 +162,7 @@ grep -ri "onboarding\|getting.started\|sandbox\|new.developer" . --include="*.md
 
 ---
 
-### SU-05a — Measuring onboarding effectiveness · Criticality: **COULD**
+### SU-05a - Measuring onboarding effectiveness · Criticality: **COULD**
 
 **Condition:** Evaluate if SU-05 >= 2
 

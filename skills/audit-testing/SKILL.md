@@ -1,9 +1,9 @@
 ---
 name: audit-testing
 description: Testing & Validation audit. Use when auditing test strategy, coverage, test types, flaky tests, chaos testing, or test plans. Triggers on "audit tests", "audit testing", "audit couverture", "test coverage audit", "audit qualité tests", "test quality audit".
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-07-20
   category: audit
 ---
 
@@ -12,7 +12,7 @@ metadata:
 ## When ME and not audit-industrialisation
 
 - **ME** when: an audit targeting this domain only
-- **audit-industrialisation** instead if: a global multi-domain audit — it orchestrates every audit (including ME) and produces a consolidated report
+- **audit-industrialisation** instead if: a global multi-domain audit - it orchestrates every audit (including ME) and produces a consolidated report
 
 > For a full project audit, use `audit-industrialisation` rather than invoking each skill separately.
 
@@ -20,7 +20,7 @@ metadata:
 
 Audit the maturity of a project's testing practices: coverage, test pyramid, stability, contract testing, chaos engineering, golden dataset, batch replay and CI feedback loop. Produces a maturity score (0-4) per question.
 
-**13 questions** split into 5 sections. The detailed grids (statement, checks, commands, levels 0-4) live in `reference/` — see [Grids by section](#grids-by-section).
+**13 questions** split into 5 sections. The detailed grids (statement, checks, commands, levels 0-4) live in `reference/` - see [Grids by section](#grids-by-section).
 
 ## Criticality levels
 
@@ -34,11 +34,10 @@ Audit the maturity of a project's testing practices: coverage, test pyramid, sta
 - State "X questions scored out of Y total"
 - A question is N/A if the project profile makes it non-applicable (e.g. no third-party API → te-01/te-01a/te-05 N/A, no batch → te-06 N/A)
 - Conditional sub-questions (te-01a, te-02a, te-03a, te-09a) are N/A if their parent question does not reach the required level
-- Intra-domain weighting by criticality:
-  - **must** (weight 3): te-07, te-08, te-09
-  - **should** (weight 2): te-02, te-02a, te-03, te-03a, te-05, te-09a
-  - **could** (weight 1): te-01, te-01a, te-04, te-06
-- Weighted score = sum(level × weight) / sum(weight) of scored questions
+- Criticality (used to prioritize remediation, NOT in the score - see `audit-report/reference/scoring-model.md`):
+  - **must**: te-07, te-08, te-09
+  - **should**: te-02, te-02a, te-03, te-03a, te-05, te-09a
+  - **could**: te-01, te-01a, te-04, te-06
 
 ## Audit protocol
 
@@ -76,7 +75,7 @@ Each file contains the statement, the items to analyze/check, the bash commands 
 ## Output format
 
 ```markdown
-## Testing & Validation — Global score: X.X/4 (Y questions scored out of Z)
+## Testing & Validation - Global score: X.X/4 (Y questions scored out of Z)
 
 ### Summary
 [2-3 sentences summarizing testing maturity]
@@ -111,7 +110,7 @@ Each file contains the statement, the items to analyze/check, the bash commands 
 3. [COULD] ...
 
 ### Non-auditable items
-- [te-XX] Description — Reason (requires interview / dashboard access / log access / field observation / ...)
+- [te-XX] Description - Reason (requires interview / dashboard access / log access / field observation / ...)
 ```
 
 ## Exit condition
@@ -127,4 +126,6 @@ Each file contains the statement, the items to analyze/check, the bash commands 
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)
+- 1.0.1 (2026-07-20) - scoring aligned with scoring-model.md: flat mean only; criticality kept for remediation priority, weights removed from the score
+
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

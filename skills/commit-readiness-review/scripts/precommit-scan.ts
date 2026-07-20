@@ -7,7 +7,7 @@
  *   npx tsx precommit-scan.ts --all    # also scans the unstaged tree (git diff)
  *
  * Exit 1 if at least one staged secret or sensitive file; 0 otherwise
- * (debug patterns are reported but non-blocking — human decision).
+ * (debug patterns are reported but non-blocking - human decision).
  */
 import { execSync } from "node:child_process";
 
@@ -40,7 +40,7 @@ if (installed("gitleaks")) {
   try {
     execSync("gitleaks protect --staged --no-banner", { stdio: "ignore" });
   } catch {
-    console.log("✗ SECRET — gitleaks detected a staged secret. Detail: gitleaks protect --staged --verbose");
+    console.log("✗ SECRET - gitleaks detected a staged secret. Detail: gitleaks protect --staged --verbose");
     secretHits = 1;
   }
 } else {
@@ -48,7 +48,7 @@ if (installed("gitleaks")) {
     /AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|sk_live_[0-9a-zA-Z]+|glpat-[0-9a-zA-Z_-]{20}|ghp_[0-9a-zA-Z]{36}|(password|secret|api[_-]?key|token)\s*[:=]\s*\S/i;
   const hits = addedLines.filter((l) => secretRe.test(l));
   if (hits.length) {
-    console.log("✗ Potential SECRET (grep fallback — install gitleaks for reliability):");
+    console.log("✗ Potential SECRET (grep fallback - install gitleaks for reliability):");
     hits.forEach((l) => console.log("    " + l));
     secretHits = 1;
   }
@@ -70,7 +70,7 @@ const debugRe =
   /console\.(log|debug)|debugger;|dbg!\(|[^a-zA-Z]print\(|System\.out\.print|fmt\.Print|var_dump|binding\.pry/;
 const dbg = addedLines.filter((l) => debugRe.test(l));
 if (dbg.length) {
-  console.log("⚠ DEBUG — potential leftovers (check, remove if unwanted):");
+  console.log("⚠ DEBUG - potential leftovers (check, remove if unwanted):");
   dbg.forEach((l) => console.log("    " + l));
 }
 

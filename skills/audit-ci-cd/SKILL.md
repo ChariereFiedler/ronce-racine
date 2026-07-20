@@ -1,9 +1,9 @@
 ---
 name: audit-ci-cd
 description: Audit CI/CD & Release Management. Use when auditing pipelines, deployment strategies, DORA metrics, IaC, artifact management, or supply chain security. Triggers on "audit ci", "audit pipeline", "audit déploiement", "audit deployment", "audit release".
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-07-20
   category: audit
 ---
 
@@ -12,7 +12,7 @@ metadata:
 ## When ME and not audit-industrialisation
 
 - **ME** when: an audit scoped to this domain only
-- **audit-industrialisation** instead if: a global multi-domain audit — it orchestrates every audit (including ME) and produces a consolidated report
+- **audit-industrialisation** instead if: a global multi-domain audit - it orchestrates every audit (including ME) and produces a consolidated report
 
 > For a full project audit, use `audit-industrialisation` rather than invoking each skill separately.
 
@@ -20,7 +20,7 @@ metadata:
 
 Audit a project's CI/CD maturity by analyzing pipelines, deployment strategies, DORA metrics, environment management, Infrastructure as Code, artifact management, rollback procedures, and software supply chain security. Produces a maturity score (0-4) per question and prioritized recommendations.
 
-**10 questions** spread across 6 sections. The detailed grids (statement, analysis, checks, commands, levels 0-4) live in `reference/` — see [Grids by section](#grids-by-section).
+**10 questions** spread across 6 sections. The detailed grids (statement, analysis, checks, commands, levels 0-4) live in `reference/` - see [Grids by section](#grids-by-section).
 
 Criticality levels:
 - **must**: fundamental practice, absence = critical risk
@@ -32,11 +32,10 @@ Criticality levels:
 - Domain score = average of scored questions (exclude N/A)
 - State "X questions scored out of Y total"
 - A question is N/A if the project profile makes it non-applicable (e.g. a library with no deployment → ci-02/ci-06/ci-09 N/A)
-- Intra-domain weighting by criticality:
-  - **must** (weight 3): ci-01, ci-02, ci-06, ci-09
-  - **should** (weight 2): ci-07, ci-08, ci-10
-  - **could** (weight 1): ci-03, ci-04, ci-05
-- Weighted score = sum(level × weight) / sum(weight) of scored questions
+- Criticality (used to prioritize remediation, NOT in the score - see `audit-report/reference/scoring-model.md`):
+  - **must**: ci-01, ci-02, ci-06, ci-09
+  - **should**: ci-07, ci-08, ci-10
+  - **could**: ci-03, ci-04, ci-05
 
 ## Audit protocol
 
@@ -73,7 +72,7 @@ Each file contains the statement, the items to analyze/check, the bash commands,
 ## Output format
 
 ```markdown
-## CI/CD & Release Management — Overall score: X.X/4 (Y questions scored out of Z)
+## CI/CD & Release Management - Overall score: X.X/4 (Y questions scored out of Z)
 
 ### Summary
 [2-3 sentences summarizing CI/CD maturity]
@@ -105,7 +104,7 @@ Each file contains the statement, the items to analyze/check, the bash commands,
 3. [COULD] ...
 
 ### Non-auditable items
-- [ci-XX] Description — Reason (requires interview / CI dashboard access / production log access / ...)
+- [ci-XX] Description - Reason (requires interview / CI dashboard access / production log access / ...)
 ```
 
 ## Exit condition
@@ -120,4 +119,6 @@ Each file contains the statement, the items to analyze/check, the bash commands,
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)
+- 1.0.1 (2026-07-20) - scoring aligned with scoring-model.md: flat mean only; criticality kept for remediation priority, weights removed from the score
+
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

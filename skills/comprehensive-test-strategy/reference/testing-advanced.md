@@ -1,4 +1,4 @@
-# Advanced testing — reference
+# Advanced testing - reference
 
 Automated safeguards to underpin a test strategy. Generic tooling: adapt the commands to the project's framework (read `package.json` / `Cargo.toml` / `Makefile` / CI config). All the stack examples below are neutral and interchangeable.
 
@@ -20,7 +20,7 @@ Automated safeguards to underpin a test strategy. Generic tooling: adapt the com
 | Integration / contract | ~20% | handlers + persistence, API contract, authorization policies against a real database | medium |
 | E2E | ~10% | critical end-to-end journeys, real backend + seeded data | slow, fragile, expensive |
 
-Rules: moving up the pyramid must be justified; an E2E that could have been a contract test is waste. Mock only at the boundaries (external network, clock), never in the middle of the system under test — otherwise an "E2E" becomes a UI test blind to backend contract breaks.
+Rules: moving up the pyramid must be justified; an E2E that could have been a contract test is waste. Mock only at the boundaries (external network, clock), never in the middle of the system under test - otherwise an "E2E" becomes a UI test blind to backend contract breaks.
 
 ## 2. Quality gates
 
@@ -41,7 +41,7 @@ Keep a versioned coverage baseline and compare each run to that baseline rather 
 Measures whether the tests actually **detect** a defect, not just whether they pass. The tool introduces mutations (flip a condition, change a constant, remove a call) and checks that at least one test fails ("mutant killed").
 
 - **Goal**: kill rate ≥ 70% on the critical modules.
-- Target the at-risk (P0) modules first; full mutation testing is expensive — sample (e.g. 20%) for a fast loop.
+- Target the at-risk (P0) modules first; full mutation testing is expensive - sample (e.g. 20%) for a fast loop.
 - A surviving mutant points to a missing or too-permissive test → create a follow-up ticket.
 
 Manual substitute when no tool is available: temporarily break the code under test and check that the test turns red with a readable message, then restore.

@@ -1,0 +1,14 @@
+fixture: backend-node
+prompt: >
+  The users.id field returned by our API must become userId to match the
+  mobile app's naming. The mobile app and a third-party webhook integration
+  already consume this field and do not co-deploy with our backend. Plan and
+  make the contract change.
+gates:
+  - grep_zero: { pattern: "DROP COLUMN", in: "migrations/" }
+judge:
+  criteria:
+    - "Consumer inventory names the mobile app and webhook partner"
+    - "Change explicitly classified as breaking, not additive"
+    - "Compat shim or dated deprecation ticket proposed for old field"
+  threshold: pass_all

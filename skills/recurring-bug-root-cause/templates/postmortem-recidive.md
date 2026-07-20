@@ -1,4 +1,4 @@
-# Recurrence <scope> — <YYYY-MM-DD>
+# Recurrence <scope> - <YYYY-MM-DD>
 
 ## Timeline
 | Date | Commit | Symptom fixed |
@@ -6,7 +6,7 @@
 | | | |
 
 ## Bug class
-<One sentence describing the common property of the N fixes — the implicit contract violated, the missing guardrail, the environment divergence. Not the symptoms.>
+<One sentence describing the common property of the N fixes - the implicit contract violated, the missing guardrail, the environment divergence. Not the symptoms.>
 
 ## Tested hypotheses
 | Hypothesis | Test performed | Status | Evidence |

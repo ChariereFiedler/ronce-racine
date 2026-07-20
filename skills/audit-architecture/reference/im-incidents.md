@@ -1,20 +1,20 @@
-# Section IM — Incident management (9 questions)
+# Section IM - Incident management (9 questions)
 
 ## Questions
 
-- IM-01 — Incident classification and severity (P1-P4) (MUST)
-- IM-02 — On-call organization and rotations (SHOULD)
-- IM-03 — Incident detection (MTTD) (MUST)
-- IM-04 — Incident resolution and MTTR (MUST)
-- IM-05 — Communication during an incident (SHOULD)
-- IM-06 — Incident Commander and War Room coordination (SHOULD)
-- IM-07 — Blameless post-mortem and incident review (MUST)
-- IM-08 — Metrics and continuous improvement (SHOULD)
-- IM-09 — Incident response automation (SHOULD)
+- IM-01 - Incident classification and severity (P1-P4) (MUST)
+- IM-02 - On-call organization and rotations (SHOULD)
+- IM-03 - Incident detection (MTTD) (MUST)
+- IM-04 - Incident resolution and MTTR (MUST)
+- IM-05 - Communication during an incident (SHOULD)
+- IM-06 - Incident Commander and War Room coordination (SHOULD)
+- IM-07 - Blameless post-mortem and incident review (MUST)
+- IM-08 - Metrics and continuous improvement (SHOULD)
+- IM-09 - Incident response automation (SHOULD)
 
 ---
 
-### IM-01 — Incident classification and severity (P1-P4) · Criticality: **MUST**
+### IM-01 - Incident classification and severity (P1-P4) · Criticality: **MUST**
 
 **Analyze:** Severity matrix, SLA per level, impact criteria, reclassification
 
@@ -37,7 +37,7 @@ grep -ri "servicenow\|jira.*service\|freshservice" . --include="*.yml" --include
 
 ---
 
-### IM-02 — On-call organization and rotations · Criticality: **SHOULD**
+### IM-02 - On-call organization and rotations · Criticality: **SHOULD**
 
 **Analyze:** Fair rotation, redundant coverage, compensation, burnout prevention
 
@@ -59,7 +59,7 @@ grep -ri "on.call\|astreinte\|pagerduty\|opsgenie\|grafana.*oncall" . --include=
 
 ---
 
-### IM-03 — Incident detection (MTTD) · Criticality: **MUST**
+### IM-03 - Incident detection (MTTD) · Criticality: **MUST**
 
 **Analyze:** Synthetic monitoring, RUM, anomaly detection, automatic correlation
 
@@ -82,7 +82,7 @@ grep -ri "checkly\|datadog.*synthetic\|pingdom\|new.relic\|dynatrace" . --includ
 
 ---
 
-### IM-04 — Incident resolution and MTTR · Criticality: **MUST**
+### IM-04 - Incident resolution and MTTR · Criticality: **MUST**
 
 **Analyze:** Escalation procedures, runbooks, diagnostic tooling, fast rollback
 
@@ -104,7 +104,7 @@ grep -ri "mttr\|mean.time.to.recover\|mean.time.to.resolve" . --include="*.md" -
 
 ---
 
-### IM-05 — Communication during an incident · Criticality: **SHOULD**
+### IM-05 - Communication during an incident · Criticality: **SHOULD**
 
 **Analyze:** Status page, templates, cadenced communication, dedicated channels, NIS2/GDPR
 
@@ -126,7 +126,7 @@ grep -ri "status.page\|incident.*communic\|war.room\|incident.*template" . --inc
 
 ---
 
-### IM-06 — Incident Commander and War Room coordination · Criticality: **SHOULD**
+### IM-06 - Incident Commander and War Room coordination · Criticality: **SHOULD**
 
 **Analyze:** Roles (IC, Tech Lead, Communication Lead, Scribe), war room, rotation, training
 
@@ -148,7 +148,7 @@ grep -ri "incident.commander\|war.room\|incident.*role\|game.day" . --include="*
 
 ---
 
-### IM-07 — Blameless post-mortem and incident review · Criticality: **MUST**
+### IM-07 - Blameless post-mortem and incident review · Criticality: **MUST**
 
 **Analyze:** Structured template, blameless culture, collective review, action tracking, knowledge base
 
@@ -171,7 +171,7 @@ grep -ri "blameless\|post.mortem\|root.cause\|5.why\|retrospective.*incident" . 
 
 ---
 
-### IM-08 — Metrics and continuous improvement · Criticality: **SHOULD**
+### IM-08 - Metrics and continuous improvement · Criticality: **SHOULD**
 
 **Analyze:** DORA metrics, MTTD/MTTR/MTBF, recurrence, dashboards, objectives
 
@@ -193,7 +193,7 @@ grep -ri "dora\|mtbf\|mttd\|mttr\|change.failure.rate\|incident.*metric" . --inc
 
 ---
 
-### IM-09 — Incident response automation · Criticality: **SHOULD**
+### IM-09 - Incident response automation · Criticality: **SHOULD**
 
 **Analyze:** Auto-remediation, automated runbooks, ChatOps, self-healing, guardrails
 

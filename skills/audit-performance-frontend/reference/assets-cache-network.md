@@ -1,17 +1,17 @@
-# Grid — Assets, Cache & Network
+# Grid - Assets, Cache & Network
 
 Category 5 · 4 questions (PF-23 to PF-26).
 
 ## Table of contents
 
-- [PF-23 — Critical rendering path and network budget](#pf-23--critical-rendering-path-and-network-budget--criticality-must)
-- [PF-24 — Asset compression and encoding](#pf-24--asset-compression-and-encoding--criticality-should)
-- [PF-25 — Multi-layer cache strategy](#pf-25--multi-layer-cache-strategy--criticality-should)
-- [PF-26 — Optimized font loading](#pf-26--optimized-font-loading--criticality-should)
+- [PF-23 - Critical rendering path and network budget](#pf-23--critical-rendering-path-and-network-budget--criticality-must)
+- [PF-24 - Asset compression and encoding](#pf-24--asset-compression-and-encoding--criticality-should)
+- [PF-25 - Multi-layer cache strategy](#pf-25--multi-layer-cache-strategy--criticality-should)
+- [PF-26 - Optimized font loading](#pf-26--optimized-font-loading--criticality-should)
 
 ---
 
-### PF-23 — Critical rendering path and network budget · Criticality: **MUST**
+### PF-23 - Critical rendering path and network budget · Criticality: **MUST**
 
 **Analyze:** Critical-path size, number of RTTs, Early Hints, server push
 
@@ -42,7 +42,7 @@ grep -ri "103\|early.hints\|server.push\|link.*preload" . --include="*.ts" --inc
 
 ---
 
-### PF-24 — Asset compression and encoding · Criticality: **SHOULD**
+### PF-24 - Asset compression and encoding · Criticality: **SHOULD**
 
 **Analyze:** Brotli/gzip, image format, srcset, SVG sprites
 
@@ -73,7 +73,7 @@ grep -rn "srcset\|picture" . --include="*.html" --include="*.vue" --include="*.t
 
 ---
 
-### PF-25 — Multi-layer cache strategy · Criticality: **SHOULD**
+### PF-25 - Multi-layer cache strategy · Criticality: **SHOULD**
 
 **Analyze:** Cache-Control headers, contenthash, Service Worker, PageCache, stale-while-revalidate
 
@@ -104,7 +104,7 @@ grep -ri "contenthash\|chunkhash\|hash" vite.config.* webpack.config.* rollup.co
 
 ---
 
-### PF-26 — Optimized font loading · Criticality: **SHOULD**
+### PF-26 - Optimized font loading · Criticality: **SHOULD**
 
 **Analyze:** Subsetting, unicode-range, font-display: optional, preload, adjusted fallback
 

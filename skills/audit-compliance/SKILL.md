@@ -10,7 +10,7 @@ metadata:
 ## When ME and not audit-industrialisation
 
 - **ME** when: audit targeted at this domain only
-- **audit-industrialisation** instead if: global multi-domain audit — it orchestrates every audit (including ME) and produces a consolidated report
+- **audit-industrialisation** instead if: global multi-domain audit - it orchestrates every audit (including ME) and produces a consolidated report
 
 > For a full project audit, use `audit-industrialisation` rather than invoking each skill separately.
 
@@ -40,14 +40,14 @@ Audit a project's compliance maturity: GDPR adherence, data governance, consent 
 ## Audit protocol
 
 1. **Identify the project type**: backend, frontend SPA, fullstack, library, microservices. Mark questions N/A per the variants below.
-2. **Section CO — Compliance**:
+2. **Section CO - Compliance**:
    - Examine the data model: DB schema, types, identified PII data (CO-01, CO-02)
    - Check anonymization quality if applicable (CO-02a)
    - Look for the retention policy (CO-03)
    - Check the DPIA and risk tracking (CO-04, CO-04a)
    - Examine the purge APIs and propagation (CO-05, CO-06)
    - Check deletion logging and evidence access (CO-07, CO-07a)
-3. **Section DG — Data governance**:
+3. **Section DG - Data governance**:
    - Check ownership and the catalog (DG-01, DG-02)
    - Examine migrations (DG-03)
    - Look for data contracts (DG-04)
@@ -55,7 +55,7 @@ Audit a project's compliance maturity: GDPR adherence, data governance, consent 
    - Examine classification of sensitive data (DG-06)
    - Check retention/lifecycle policies (DG-07)
    - Examine data architecture (DG-08)
-4. **Section FI — FinOps**:
+4. **Section FI - FinOps**:
    - Check cost monitoring and granularity (FI-01, FI-01a)
    - Examine caching and invalidation (FI-02, FI-02a)
    - Look for detection of superfluous calls (FI-03)
@@ -71,18 +71,18 @@ Audit a project's compliance maturity: GDPR adherence, data governance, consent 
 ### Variants by project type
 
 **Frontend SPA/PWA local-first**
-- **CO-01**: Adapted — PII data is stored locally (IndexedDB, localStorage). No server transfer = reduced GDPR risk, but the PII is still present client-side.
-- **CO-02, CO-02a**: Adapted — consent mainly concerns third-party cookies/trackers.
-- **CO-03**: Adapted — retention concerns local storage.
-- **CO-04, CO-04a**: Adapted — simplified DPIA if there is no server data.
+- **CO-01**: Adapted - PII data is stored locally (IndexedDB, localStorage). No server transfer = reduced GDPR risk, but the PII is still present client-side.
+- **CO-02, CO-02a**: Adapted - consent mainly concerns third-party cookies/trackers.
+- **CO-03**: Adapted - retention concerns local storage.
+- **CO-04, CO-04a**: Adapted - simplified DPIA if there is no server data.
 - **CO-05 to CO-07a**: N/A if there is no backend (no server-side user data).
-- **DG-03**: Adapted — migrations concern IndexedDB schemas or local data formats.
+- **DG-03**: Adapted - migrations concern IndexedDB schemas or local data formats.
 - **DG-04 to DG-08**: N/A if there is no backend.
 - **FI-01 to FI-08**: N/A if static hosting (CDN, GitHub Pages, Netlify).
 
 **Library / SDK**
-- **CO-01 to CO-07a**: N/A — a library does not collect user data directly. Only check that it does not force PII collection in its API.
-- **DG-01 to DG-03**: Adapted — ownership concerns the API surface and the changelog. Migrations concern breaking changes to the public API.
+- **CO-01 to CO-07a**: N/A - a library does not collect user data directly. Only check that it does not force PII collection in its API.
+- **DG-01 to DG-03**: Adapted - ownership concerns the API surface and the changelog. Migrations concern breaking changes to the public API.
 - **DG-04 to DG-08**: N/A.
 - **FI-01 to FI-08**: N/A.
 
@@ -90,19 +90,19 @@ Audit a project's compliance maturity: GDPR adherence, data governance, consent 
 
 Each grid details, per question: statement, criticality, conditions, bash verification commands and the level tables 0-4.
 
-- [**Section CO — Compliance & Regulatory**](reference/conformite-rgpd.md) — GDPR, anonymization, retention, DPIA, right to erasure, deletion logging (10 questions: CO-01, CO-02, CO-02a, CO-03, CO-04, CO-04a, CO-05, CO-06, CO-07, CO-07a)
-- [**Section DG — Data Governance**](reference/gouvernance-donnees.md) — ownership, catalog, migrations, data contracts, quality, classification, lifecycle, Data Mesh (8 questions: DG-01 to DG-08)
-- [**Section FI — FinOps**](reference/finops.md) — cost monitoring, cache, batching, per-customer attribution, abuse detection, cloud waste, reservations (11 questions: FI-01, FI-01a, FI-02, FI-02a, FI-03, FI-04, FI-05, FI-06, FI-06a, FI-07, FI-08)
+- [**Section CO - Compliance & Regulatory**](reference/conformite-rgpd.md) - GDPR, anonymization, retention, DPIA, right to erasure, deletion logging (10 questions: CO-01, CO-02, CO-02a, CO-03, CO-04, CO-04a, CO-05, CO-06, CO-07, CO-07a)
+- [**Section DG - Data Governance**](reference/gouvernance-donnees.md) - ownership, catalog, migrations, data contracts, quality, classification, lifecycle, Data Mesh (8 questions: DG-01 to DG-08)
+- [**Section FI - FinOps**](reference/finops.md) - cost monitoring, cache, batching, per-customer attribution, abuse detection, cloud waste, reservations (11 questions: FI-01, FI-01a, FI-02, FI-02a, FI-03, FI-04, FI-05, FI-06, FI-06a, FI-07, FI-08)
 
 ## Output format
 
 ```markdown
-## Compliance, Data Governance & FinOps — Overall score: X.X/4
+## Compliance, Data Governance & FinOps - Overall score: X.X/4
 
 ### Summary
 [2-3 sentences summarizing compliance maturity]
 
-### Section CO — Compliance & Regulatory — Score: X.X/4 (Y questions scored out of 10)
+### Section CO - Compliance & Regulatory - Score: X.X/4 (Y questions scored out of 10)
 
 | Code | Question | Criticality | Level | Confidence | Justification |
 |------|----------|-----------|--------|-----------|---------------|
@@ -117,7 +117,7 @@ Each grid details, per question: statement, criticality, conditions, bash verifi
 | CO-07 | Deletion logging | MUST | X | high/medium/low | ... |
 | CO-07a | Deletion evidence accessibility | SHOULD | X or N/A | high/medium/low | ... |
 
-### Section DG — Data Governance — Score: X.X/4 (Y questions scored out of 8)
+### Section DG - Data Governance - Score: X.X/4 (Y questions scored out of 8)
 
 | Code | Question | Criticality | Level | Confidence | Justification |
 |------|----------|-----------|--------|-----------|---------------|
@@ -130,7 +130,7 @@ Each grid details, per question: statement, criticality, conditions, bash verifi
 | DG-07 | Retention and lifecycle | MUST | X | high/medium/low | ... |
 | DG-08 | Data architecture (Data Mesh) | SHOULD | X | high/medium/low | ... |
 
-### Section FI — FinOps — Score: X.X/4 (Y questions scored out of 11)
+### Section FI - FinOps - Score: X.X/4 (Y questions scored out of 11)
 
 | Code | Question | Criticality | Level | Confidence | Justification |
 |------|----------|-----------|--------|-----------|---------------|
@@ -173,4 +173,4 @@ Each grid details, per question: statement, criticality, conditions, bash verifi
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

@@ -7,9 +7,9 @@ metadata:
   category: process
 ---
 
-# QA Session Intake — from a recorded QA session to tickets
+# QA Session Intake - from a recorded QA session to tickets
 
-> If the current repo has dedicated intake tooling (e.g. acme-app → `qa-intake` + `tool/qa-session/`), it wins — run its script instead of triaging by hand.
+> If the current repo has dedicated intake tooling (e.g. acme-app → `qa-intake` + `tool/qa-session/`), it wins - run its script instead of triaging by hand.
 
 ## This skill vs. others
 
@@ -24,7 +24,7 @@ metadata:
 ## Context to gather (before acting)
 
 - Inventory the bundle: timestamped timeline, screenshots (with timestamps), network-error log
-- Tracker + the repo's format/label/severity conventions (the project's bug skill if it exists) — do not invent
+- Tracker + the repo's format/label/severity conventions (the project's bug skill if it exists) - do not invent
 - Existing open tickets, for de-duplication
 - Version/build under test and the functional areas the session covered
 
@@ -33,7 +33,7 @@ metadata:
 1. **Correlate before creating**: read the timeline in chronological order; group network errors by `(endpoint, status, message)`; attach each cluster to its time window and the tester's remarks; only look at screenshots that coincide with an event.
 2. **Signal hierarchy**:
    - **Tester's verbal remark** → always a ticket (most reliable signal), merge if same screen + same interaction
-   - **Repeated network cluster with no remark** → a triage ticket if the impact is estimable (missing data, silent failure) — do not ignore it because "the tester didn't notice": a silently failing endpoint can hide data loss
+   - **Repeated network cluster with no remark** → a triage ticket if the impact is estimable (missing data, silent failure) - do not ignore it because "the tester didn't notice": a silently failing endpoint can hide data loss
    - **Isolated network error with no visible impact** → attach to an existing ticket or mark as ignored with a reason
 3. **Content of each ticket**: title from the user's point of view · steps reconstructed from the timeline (timestamps) · expected vs actual · closest screenshot attached · network requests from the ±5 s window if relevant · estimated severity.
 
@@ -41,12 +41,12 @@ metadata:
 
 Deliver alongside the tickets:
 - **Session summary**: areas tested, breakdown by severity, areas not covered
-- **Annotated trace**: each network error marked → `ticket #N` | `ignored: duplicate` | `ignored: no impact` — verifiable by anyone
+- **Annotated trace**: each network error marked → `ticket #N` | `ignored: duplicate` | `ignored: no impact` - verifiable by anyone
 - Unused screenshots listed with a reason
 
 ## Guardrails
 
-- Do not create a ticket without reconstructed reproduction steps — a ticket "401 error somewhere" is unclosable
+- Do not create a ticket without reconstructed reproduction steps - a ticket "401 error somewhere" is unclosable
 - De-duplication: search open tickets before creating
 - Format/labels: follow the repo tracker's conventions (the project's bug skill if it exists)
 
@@ -58,12 +58,12 @@ Deliver alongside the tickets:
 | "Everything in one session mega-ticket" | Untriageable and unclosable. One problem = one ticket. |
 | "The tester said nothing, I ignore the network error" | A silently failing endpoint can hide data loss. Triage if the impact is estimable. |
 | "401 error somewhere, I create the ticket" | Without steps reconstructed from the timeline, the ticket is unclosable. |
-| "I create quickly, I check duplicates later" | Search open tickets first — the duplicate pollutes the tracker. |
+| "I create quickly, I check duplicates later" | Search open tickets first - the duplicate pollutes the tracker. |
 
 ## Exit condition
 
 - [ ] One ticket per distinct problem, each with reconstructed steps, expected vs actual, closest screenshot, severity
-- [ ] Annotated trace: each network error marked `ticket #N` | `ignored: <reason>` — verifiable
+- [ ] Annotated trace: each network error marked `ticket #N` | `ignored: <reason>` - verifiable
 - [ ] Session summary delivered (areas tested, severity breakdown, areas not covered)
 - [ ] Unused screenshots listed with a reason
 - [ ] De-duplication done against open tickets
@@ -75,4 +75,4 @@ Deliver alongside the tickets:
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

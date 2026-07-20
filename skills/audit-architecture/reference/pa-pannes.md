@@ -1,26 +1,26 @@
-# Section PA — Fault and interruption tolerance (15 questions)
+# Section PA - Fault and interruption tolerance (15 questions)
 
 ## Questions
 
-- PA-01 — API error handling (API unreachable) (MUST)
-- PA-02 — Documentation of expected behaviors (SHOULD)
-- PA-03 — Configurable retry policy (MUST)
-- PA-04 — Circuit breaker to avoid saturation (MUST)
-- PA-05 — Centralized processing pause (SHOULD)
-- PA-06 — Safe shutdown mode (MUST)
-- PA-07 — Controlled recovery after restart (MUST)
-- PA-08 — Connector/API isolation mechanism (SHOULD)
-- PA-09 — Connector notification strategy (SHOULD)
-- PA-12 — Degraded mode (cache, replication, fallback) (MUST)
-- PA-13 — Watch on external API changelog/versioning (SHOULD)
-- PA-18 — DB migration tests (MUST)
-- PA-19 — DB backup plan (MUST)
-- PA-20 — DB rollback playbook (SHOULD)
-- PA-21 — DB rollback tests (SHOULD)
+- PA-01 - API error handling (API unreachable) (MUST)
+- PA-02 - Documentation of expected behaviors (SHOULD)
+- PA-03 - Configurable retry policy (MUST)
+- PA-04 - Circuit breaker to avoid saturation (MUST)
+- PA-05 - Centralized processing pause (SHOULD)
+- PA-06 - Safe shutdown mode (MUST)
+- PA-07 - Controlled recovery after restart (MUST)
+- PA-08 - Connector/API isolation mechanism (SHOULD)
+- PA-09 - Connector notification strategy (SHOULD)
+- PA-12 - Degraded mode (cache, replication, fallback) (MUST)
+- PA-13 - Watch on external API changelog/versioning (SHOULD)
+- PA-18 - DB migration tests (MUST)
+- PA-19 - DB backup plan (MUST)
+- PA-20 - DB rollback playbook (SHOULD)
+- PA-21 - DB rollback tests (SHOULD)
 
 ---
 
-### PA-01 — API error handling (API unreachable) · Criticality: **MUST**
+### PA-01 - API error handling (API unreachable) · Criticality: **MUST**
 
 **Analyze:** Retry, circuit breaker, fallback, dead letter queue, error handling
 
@@ -43,7 +43,7 @@ grep -ri "resilience4j\|polly\|opossum\|hystrix" . 2>/dev/null | head -5
 
 ---
 
-### PA-02 — Documentation of expected behaviors · Criticality: **SHOULD**
+### PA-02 - Documentation of expected behaviors · Criticality: **SHOULD**
 
 **Analyze:** ADR, runbooks, living documentation (Swagger, AsyncAPI), chaos engineering reports
 
@@ -66,7 +66,7 @@ grep -ri "error.handling\|failure.mode\|degraded" . --include="*.md" 2>/dev/null
 
 ---
 
-### PA-03 — Configurable retry policy · Criticality: **MUST**
+### PA-03 - Configurable retry policy · Criticality: **MUST**
 
 **Analyze:** Exponential backoff, jitter, retry budget, bulkhead isolation
 
@@ -88,7 +88,7 @@ grep -ri "exponential\|backoff\|jitter\|retry.budget\|max.retries\|retryPolicy" 
 
 ---
 
-### PA-04 — Circuit breaker to avoid saturation · Criticality: **MUST**
+### PA-04 - Circuit breaker to avoid saturation · Criticality: **MUST**
 
 **Analyze:** Circuit states (closed/open/half-open), thresholds, fallback, metrics
 
@@ -110,7 +110,7 @@ grep -ri "circuit.breaker\|circuitbreaker\|half.open\|resilience4j\|opossum" . -
 
 ---
 
-### PA-05 — Centralized processing pause · Criticality: **SHOULD**
+### PA-05 - Centralized processing pause · Criticality: **SHOULD**
 
 **Analyze:** Feature flags for pause, admin API, graceful shutdown hooks, traffic draining
 
@@ -133,7 +133,7 @@ grep -ri "preStop\|terminationGracePeriod" . --include="*.yml" --include="*.yaml
 
 ---
 
-### PA-06 — Safe shutdown mode · Criticality: **MUST**
+### PA-06 - Safe shutdown mode · Criticality: **MUST**
 
 **Analyze:** Signal handling (SIGTERM), drain period, health check update, checkpoint
 
@@ -156,7 +156,7 @@ grep -ri "terminationGracePeriodSeconds\|preStop" . --include="*.yml" --include=
 
 ---
 
-### PA-07 — Controlled recovery after restart · Criticality: **MUST**
+### PA-07 - Controlled recovery after restart · Criticality: **MUST**
 
 **Analyze:** Readiness probes, dependency checks, startup ordering, canary startup
 
@@ -179,7 +179,7 @@ grep -ri "wait.for.it\|dockerize\|init.container" . --include="*.yml" --include=
 
 ---
 
-### PA-08 — Connector/API isolation mechanism · Criticality: **SHOULD**
+### PA-08 - Connector/API isolation mechanism · Criticality: **SHOULD**
 
 **Analyze:** Per-connector feature flags, per-API circuit breaker, tenant isolation, bulkhead
 
@@ -201,7 +201,7 @@ grep -ri "bulkhead\|isolat\|feature.flag.*api\|circuit.*per.*service" . --includ
 
 ---
 
-### PA-09 — Connector notification strategy · Criticality: **SHOULD**
+### PA-09 - Connector notification strategy · Criticality: **SHOULD**
 
 **Analyze:** Multi-channel, smart routing, graded severity, enriched context
 
@@ -223,7 +223,7 @@ grep -ri "pagerduty\|opsgenie\|alert\|notification\|escalat" . --include="*.yml"
 
 ---
 
-### PA-12 — Degraded mode (cache, replication, fallback) · Criticality: **MUST**
+### PA-12 - Degraded mode (cache, replication, fallback) · Criticality: **MUST**
 
 **Analyze:** Stale cache, static fallback, feature degradation, read replicas
 
@@ -245,7 +245,7 @@ grep -ri "stale.while.revalidate\|fallback\|degraded\|read.only\|cache.*fallback
 
 ---
 
-### PA-13 — Watch on external API changelog/versioning · Criticality: **SHOULD**
+### PA-13 - Watch on external API changelog/versioning · Criticality: **SHOULD**
 
 **Analyze:** Dependabot, Renovate, deprecation calendar, contract testing of external APIs
 
@@ -268,7 +268,7 @@ grep -ri "pact\|contract.test\|api.*version.*pin" . --include="*.ts" --include="
 
 ---
 
-### PA-18 — DB migration tests · Criticality: **MUST**
+### PA-18 - DB migration tests · Criticality: **MUST**
 
 **Analyze:** Expand-contract pattern, shadow writes, data validation, dry-run migrations
 
@@ -292,7 +292,7 @@ grep -ri "expand.contract\|zero.downtime.*migration" . --include="*.md" 2>/dev/n
 
 ---
 
-### PA-19 — DB backup plan · Criticality: **MUST**
+### PA-19 - DB backup plan · Criticality: **MUST**
 
 **Analyze:** 3-2-1 rule, PITR, incremental backups, immutable backups
 
@@ -315,7 +315,7 @@ grep -ri "rpo\|rto\|point.in.time\|pitr" . --include="*.md" --include="*.yml" 2>
 
 ---
 
-### PA-20 — DB rollback playbook · Criticality: **SHOULD**
+### PA-20 - DB rollback playbook · Criticality: **SHOULD**
 
 **Analyze:** Runbook automation, decision trees, communication templates, post-rollback validation
 
@@ -338,7 +338,7 @@ grep -ri "rollback.*db\|database.*rollback\|migration.*rollback" . --include="*.
 
 ---
 
-### PA-21 — DB rollback tests · Criticality: **SHOULD**
+### PA-21 - DB rollback tests · Criticality: **SHOULD**
 
 **Analyze:** Game days, chaos engineering, RTO measurement, DR drills
 

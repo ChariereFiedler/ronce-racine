@@ -1,0 +1,14 @@
+fixture: design-system
+prompt: >
+  Implement a new Profile page at src/pages/Profile.vue that lists profiles
+  fetched from an API, reusing BaseButton for actions. Follow the project's
+  layer conventions (types, store, composable, page, components) and cover
+  loading/error/empty/success states with data-testid="profile-<state>".
+gates:
+  - file_exists: "src/pages/Profile.vue"
+  - grep_count: { pattern: "data-testid=\"profile-", in: "src/", count: "4" }
+judge:
+  criteria:
+    - "Layers separated: types, store, composable, page, components"
+    - "BaseButton is reused instead of a new button implementation"
+  threshold: pass_all

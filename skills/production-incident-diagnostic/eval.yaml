@@ -1,0 +1,15 @@
+fixture: fullstack-ci
+prompt: >
+  Production is returning 502 on every request since the last deploy of this
+  app, and no live logs, metrics or shell access are reachable right now.
+  Using only the repo contents, reason through a layer-by-layer triage of the
+  likely faulty layer and write it to INCIDENT_REPORT.md, stating clearly
+  which evidence would still be needed live before confirming the root cause.
+gates:
+  - file_exists: "INCIDENT_REPORT.md"
+  - repo_clean: { except: "INCIDENT_REPORT.md" }
+judge:
+  criteria:
+    - "Report walks layers instead of guessing a single cause"
+    - "Report states what live evidence is still needed"
+  threshold: pass_all

@@ -14,7 +14,7 @@ metadata:
 ## When ME and not audit-industrialisation
 
 - **ME** when: audit targeted at this domain only
-- **audit-industrialisation** instead when: a global multi-domain audit — it orchestrates every audit (ME included) and produces a consolidated report
+- **audit-industrialisation** instead when: a global multi-domain audit - it orchestrates every audit (ME included) and produces a consolidated report
 
 > For a full project audit, use `audit-industrialisation` rather than invoking each skill separately.
 
@@ -34,7 +34,7 @@ Audit a project's architectural maturity: documented decisions, API stability, c
 | SU | Support & Operability | 8 |
 | IM | Incident management | 9 |
 
-The detailed grids (statements, criticality, conditions, verification commands, levels 0-4) live in `reference/` — one file per section.
+The detailed grids (statements, criticality, conditions, verification commands, levels 0-4) live in `reference/` - one file per section.
 
 ## Score calculation
 
@@ -58,7 +58,7 @@ The detailed grids (statements, criticality, conditions, verification commands, 
 
 ### Variants by project type
 
-**Frontend SPA/PWA** — adapt:
+**Frontend SPA/PWA** - adapt:
 - **SC-01 to SC-07**: PWA offline, service worker, bundle size, CDN, lazy loading. No HPA/K8s.
 - **PA-01**: error boundaries (React/Vue), offline fallback, service worker cache, retry on API calls.
 - **PA-06**: service worker lifecycle, graceful update.
@@ -68,9 +68,9 @@ The detailed grids (statements, criticality, conditions, verification commands, 
 - **DI-01 to DI-09**: CDN availability, service worker health, connectivity detection.
 - **IM-01 to IM-09**: error tracking (Sentry), performance monitoring (Web Vitals).
 
-**Library / SDK** — usually N/A: SC-01 to SC-07, PA-05 to PA-09, PA-12, PA-18 to PA-21, RE-05 to RE-08a, DI-01 to DI-09, SU-01 to SU-03, IM-01 to IM-09. Focus on **AR-01** (ADR), **AR-02** (tech debt), **AR-07** (backward compatibility), **AR-08** (deprecation), **AR-09** (semver), **PA-01/PA-03** (retry guidance in the docs).
+**Library / SDK** - usually N/A: SC-01 to SC-07, PA-05 to PA-09, PA-12, PA-18 to PA-21, RE-05 to RE-08a, DI-01 to DI-09, SU-01 to SU-03, IM-01 to IM-09. Focus on **AR-01** (ADR), **AR-02** (tech debt), **AR-07** (backward compatibility), **AR-08** (deprecation), **AR-09** (semver), **PA-01/PA-03** (retry guidance in the docs).
 
-**Backend / API** — every question applies with the standard grid.
+**Backend / API** - every question applies with the standard grid.
 
 ## Grids by section
 
@@ -94,4 +94,4 @@ The detailed grids (statements, criticality, conditions, verification commands, 
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

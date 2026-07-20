@@ -1,25 +1,25 @@
-# Audit grid — QU Data Quality section
+# Audit grid - QU Data Quality section
 
 12 questions. Schema validation, null handling, business consistency, anomaly correction, traceability, data lifetime.
 
 ## Table of contents
 
-- [QU-01 — Input schema validation (JSON Schema, OpenAPI)](#qu-01--input-schema-validation-json-schema-openapi--criticality-must)
-- [QU-01a — Validation error handling](#qu-01a--validation-error-handling--criticality-should)
-- [QU-02 — Null/incomplete value handling](#qu-02--nullincomplete-value-handling--criticality-should)
-- [QU-03 — Business consistency verification](#qu-03--business-consistency-verification--criticality-must)
-- [QU-03a — Data anomaly detection](#qu-03a--data-anomaly-detection--criticality-could)
-- [QU-04 — Manual anomaly correction possible](#qu-04--manual-anomaly-correction-possible--criticality-should)
-- [QU-05 — Automatic anomaly correction suggestions](#qu-05--automatic-anomaly-correction-suggestions--criticality-could)
-- [QU-06 — Unique correlation ID (traceId)](#qu-06--unique-correlation-id-traceid--criticality-should)
-- [QU-07 — Technical logs / business events separation](#qu-07--technical-logs--business-events-separation--criticality-should)
-- [QU-08 — Data lifetime policy](#qu-08--data-lifetime-policy--criticality-must)
-- [QU-09 — Automatic purges of end-of-life data](#qu-09--automatic-purges-of-end-of-life-data--criticality-should)
-- [QU-09a — Purge verification](#qu-09a--purge-verification--criticality-could)
+- [QU-01 - Input schema validation (JSON Schema, OpenAPI)](#qu-01--input-schema-validation-json-schema-openapi--criticality-must)
+- [QU-01a - Validation error handling](#qu-01a--validation-error-handling--criticality-should)
+- [QU-02 - Null/incomplete value handling](#qu-02--nullincomplete-value-handling--criticality-should)
+- [QU-03 - Business consistency verification](#qu-03--business-consistency-verification--criticality-must)
+- [QU-03a - Data anomaly detection](#qu-03a--data-anomaly-detection--criticality-could)
+- [QU-04 - Manual anomaly correction possible](#qu-04--manual-anomaly-correction-possible--criticality-should)
+- [QU-05 - Automatic anomaly correction suggestions](#qu-05--automatic-anomaly-correction-suggestions--criticality-could)
+- [QU-06 - Unique correlation ID (traceId)](#qu-06--unique-correlation-id-traceid--criticality-should)
+- [QU-07 - Technical logs / business events separation](#qu-07--technical-logs--business-events-separation--criticality-should)
+- [QU-08 - Data lifetime policy](#qu-08--data-lifetime-policy--criticality-must)
+- [QU-09 - Automatic purges of end-of-life data](#qu-09--automatic-purges-of-end-of-life-data--criticality-should)
+- [QU-09a - Purge verification](#qu-09a--purge-verification--criticality-could)
 
 ---
 
-### QU-01 — Input schema validation (JSON Schema, OpenAPI) — Criticality: **must**
+### QU-01 - Input schema validation (JSON Schema, OpenAPI) - Criticality: **must**
 
 **Analyze:** Validation schemas (Zod, Joi, JSON Schema, class-validator, OpenAPI), validation middleware
 
@@ -52,7 +52,7 @@ find . -name "*Request.php" -path "*/Http/Requests/*" 2>/dev/null | head -10
 
 ---
 
-### QU-01a — Validation error handling — Criticality: **should**
+### QU-01a - Validation error handling - Criticality: **should**
 
 **Analyze:** Validation-error format, RFC 7807/9457, error messages, i18n
 
@@ -84,7 +84,7 @@ grep -ri "validation\.\|trans(" --include="*.php" 2>/dev/null | head -5
 
 ---
 
-### QU-02 — Null/incomplete value handling — Criticality: **should**
+### QU-02 - Null/incomplete value handling - Criticality: **should**
 
 **Analyze:** Null/undefined strategy, strictNullChecks, Optional types, fail-fast
 
@@ -118,7 +118,7 @@ grep -r "nullable\|Optional\|Maybe" --include="*.ts" --include="*.php" | grep -v
 
 ---
 
-### QU-03 — Business consistency verification — Criticality: **must**
+### QU-03 - Business consistency verification - Criticality: **must**
 
 **Analyze:** Business rules (DDD invariants, business rules), semantic validation, cross-field validation
 
@@ -150,7 +150,7 @@ grep -ri "refine\|superRefine\|after\|before\|cross.valid" --include="*.ts" --in
 
 ---
 
-### QU-03a — Data anomaly detection — Criticality: **could**
+### QU-03a - Data anomaly detection - Criticality: **could**
 
 **Analyze:** Outlier detection, data-quality monitoring, data observability
 
@@ -181,7 +181,7 @@ grep -ri "schedule\|cron\|data.check" .github/ app/Console/Kernel.php 2>/dev/nul
 
 ---
 
-### QU-04 — Manual anomaly correction possible — Criticality: **should**
+### QU-04 - Manual anomaly correction possible - Criticality: **should**
 
 **Analyze:** Admin interface, audit trail, approval workflow
 
@@ -212,7 +212,7 @@ find . -name "*Audit*" -o -name "*Activity*" 2>/dev/null | grep -v vendor | head
 
 ---
 
-### QU-05 — Automatic anomaly correction suggestions — Criticality: **could**
+### QU-05 - Automatic anomaly correction suggestions - Criticality: **could**
 
 **Analyze:** Correction suggestions, fuzzy matching, ML suggestions, bulk operations
 
@@ -241,7 +241,7 @@ grep -ri "fuzzywuzzy\|string.similarity" package.json 2>/dev/null
 
 ---
 
-### QU-06 — Unique correlation ID (traceId) — Criticality: **should**
+### QU-06 - Unique correlation ID (traceId) - Criticality: **should**
 
 **Analyze:** traceId/correlationId, OpenTelemetry, W3C Trace Context, distributed tracing
 
@@ -273,7 +273,7 @@ grep -ri "middleware.*trace\|trace.*middleware" --include="*.ts" --include="*.ph
 
 ---
 
-### QU-07 — Technical logs / business events separation — Criticality: **should**
+### QU-07 - Technical logs / business events separation - Criticality: **should**
 
 **Analyze:** Event sourcing, event bus, store separation, event schema
 
@@ -306,7 +306,7 @@ grep -ri "business.log\|audit.log\|activity.log" --include="*.ts" --include="*.p
 
 ---
 
-### QU-08 — Data lifetime policy — Criticality: **must**
+### QU-08 - Data lifetime policy - Criticality: **must**
 
 **Analyze:** Retention policy, data classification, TTL, tiered storage
 
@@ -338,7 +338,7 @@ grep -ri "partition\|archiv" --include="*.sql" --include="*.php" 2>/dev/null | h
 
 ---
 
-### QU-09 — Automatic purges of end-of-life data — Criticality: **should**
+### QU-09 - Automatic purges of end-of-life data - Criticality: **should**
 
 **Analyze:** Purge jobs, soft delete, cascading delete, dry-run
 
@@ -371,7 +371,7 @@ cat app/Console/Kernel.php 2>/dev/null | head -30
 
 ---
 
-### QU-09a — Purge verification — Criticality: **could**
+### QU-09a - Purge verification - Criticality: **could**
 
 **Analyze:** Post-purge audit, volume monitoring, deletion certificates, verification across all systems
 

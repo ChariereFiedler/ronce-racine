@@ -7,35 +7,35 @@ metadata:
   category: bug
 ---
 
-# Structured bug triage — reproduce, understand, decide
+# Structured bug triage - reproduce, understand, decide
 
-> If the current repo has a specific triage/ticketing skill (e.g. acme-app → `add-bug`, beta-app → `jira-bug`), it wins — it knows the project's tracker, paths and commands.
+> If the current repo has a specific triage/ticketing skill (e.g. acme-app → `add-bug`, beta-app → `jira-bug`), it wins - it knows the project's tracker, paths and commands.
 
 ## This skill vs. others
 
 - **This skill** when: a bug arrives with no confirmed repro or known cause, and the "fix now / ticket" decision is not yet made. Covers the full cycle: repro → root-cause → decision → confirmation test.
-- **`bug-ticket-root-cause`** if: the decision is already "we're not fixing now, we document". No reproduction/decision phase — just write the ticket.
+- **`bug-ticket-root-cause`** if: the decision is already "we're not fixing now, we document". No reproduction/decision phase - just write the ticket.
 - **`recurring-bug-root-cause`** if: the scope has already had **2+ similar recent fixes** → it is a class, not an isolated case; that skill requires a tooled guardrail.
 - **`superpowers:systematic-debugging`** if: the repro and cause are already established and you are fixing.
 
 ## Principle
 
-Triage decides **before** acting: you neither fix nor open a ticket until the bug is reproduced and the cause is located. The "fix now vs ticket" decision is made on facts (mechanism + `file:line`), not on a sense of urgency. In every case the output includes a **confirmation test** that fails before and passes after — otherwise nothing proves it is resolved.
+Triage decides **before** acting: you neither fix nor open a ticket until the bug is reproduced and the cause is located. The "fix now vs ticket" decision is made on facts (mechanism + `file:line`), not on a sense of urgency. In every case the output includes a **confirmation test** that fails before and passes after - otherwise nothing proves it is resolved.
 
 ## Context to gather (before acting)
 
-- Project test/lint/build commands (`package.json` / `Cargo.toml` / `Makefile` / CI config) — to reproduce and to target the confirmation test
-- Tracker + repo label/format conventions (project skill if one exists) — do not invent an identifier format
+- Project test/lint/build commands (`package.json` / `Cargo.toml` / `Makefile` / CI config) - to reproduce and to target the confirmation test
+- Tracker + repo label/format conventions (project skill if one exists) - do not invent an identifier format
 - Access to production code? If not, mark the cause `to investigate` without disguising it
 - Bug already open? search for a duplicate in existing tickets before creating one
 
 ## Protocol
 
 ```
-- [ ] 1. Reproduce — minimal, deterministic repro (or assumed intermittent status)
-- [ ] 2. Root-cause — mechanism + file:line + introducing commit + hypothesis status
-- [ ] 3. Decide — fix now OR ticket, on explicit criteria
-- [ ] 4. Confirmation test — red before, green after
+- [ ] 1. Reproduce - minimal, deterministic repro (or assumed intermittent status)
+- [ ] 2. Root-cause - mechanism + file:line + introducing commit + hypothesis status
+- [ ] 3. Decide - fix now OR ticket, on explicit criteria
+- [ ] 4. Confirmation test - red before, green after
 ```
 
 ### 1. Reproduce
@@ -47,7 +47,7 @@ Establish a minimal, deterministic reproduction: initial state, action, observed
 - Confront the facts: an existing test that should have failed (why didn't it?), a query, a log
 - Deliverable: **mechanism** (≠ symptom) + **cited code `file:line`** + introducing commit + status (`confirmed` / `strong` / `to validate` / `to investigate`)
 
-### 3. Decide — fix now OR ticket
+### 3. Decide - fix now OR ticket
 Rule on criteria, not on feeling:
 
 | Decision | When |
@@ -67,7 +67,7 @@ If the scope has already had 2+ recent fixes → apply `recurring-bug-root-cause
 
 ## Templates
 
-- `templates/bug-triage.md` — triage sheet: reproduction, root cause, argued decision, confirmation test (also serves as the ticket body if the decision = ticket, tracker-agnostic)
+- `templates/bug-triage.md` - triage sheet: reproduction, root cause, argued decision, confirmation test (also serves as the ticket body if the decision = ticket, tracker-agnostic)
 
 ## Traps & rationalizations
 
@@ -85,12 +85,12 @@ If the scope has already had 2+ recent fixes → apply `recurring-bug-root-cause
 - [ ] Root cause = mechanism + `file:line` (or `to investigate` for lack of code access)
 - [ ] Fix/ticket decision made on explicit criteria
 - [ ] Confirmation test red-before / green-after (outputs pasted if fix; table filled if ticket)
-- [ ] Recurrence checked — `recurring-bug-root-cause` applied if 2+ recent fixes on the scope
+- [ ] Recurrence checked - `recurring-bug-root-cause` applied if 2+ recent fixes on the scope
 
 ## Tooling
 
-- `templates/bug-triage.md` — triage sheet / tracker-agnostic ticket body
+- `templates/bug-triage.md` - triage sheet / tracker-agnostic ticket body
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial release: project-agnostic generalization of the add-bug workflow into full triage (repro → root-cause → decision → confirmation)
+- 1.0.0 (2026-06-19) - initial release: project-agnostic generalization of the add-bug workflow into full triage (repro → root-cause → decision → confirmation)

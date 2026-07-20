@@ -7,9 +7,9 @@ metadata:
   category: frontend
 ---
 
-# Frontend feature implementation — strict layer separation
+# Frontend feature implementation - strict layer separation
 
-> If the current repo has a specific implementation skill (e.g. acme-app → `feature-implementation-vue-nuxt`), it wins — it knows the stack, the paths, the fetch helpers and the project commands.
+> If the current repo has a specific implementation skill (e.g. acme-app → `feature-implementation-vue-nuxt`), it wins - it knows the stack, the paths, the fetch helpers and the project commands.
 
 ## This skill vs. others
 
@@ -22,11 +22,11 @@ metadata:
 
 A frontend feature is built in **strictly separated layers**, in order, from model to presentation:
 
-1. **types/models** — DTOs mirroring the API contract
-2. **store/state** — shared state + actions (mutations), never scattered fetches
-3. **composable/hook** — reusable logic derived from state
-4. **page** — routing + selecting the state to display
-5. **components** — pure presentation, driven by props
+1. **types/models** - DTOs mirroring the API contract
+2. **store/state** - shared state + actions (mutations), never scattered fetches
+3. **composable/hook** - reusable logic derived from state
+4. **page** - routing + selecting the state to display
+5. **components** - pure presentation, driven by props
 
 Two non-negotiable cross-cutting disciplines: **`data-testid` on every locator** (nothing is testable without a stable anchor) and **cleanup of every subscription** (a `subscribe`/`watch`/listener without teardown leaks). Logic **never** descends into the component.
 
@@ -56,7 +56,7 @@ Types mirror the API contract (statuses as literal unions, ISO dates as `string`
 
 ### 2. store/state
 
-Minimal state: data + `loading` + `error`. **Every mutation goes through an action**, never from the presentation layer. No derived data stored — derive it as `computed`. Go through the project fetch helper (auth, 401), not the raw HTTP call.
+Minimal state: data + `loading` + `error`. **Every mutation goes through an action**, never from the presentation layer. No derived data stored - derive it as `computed`. Go through the project fetch helper (auth, 401), not the raw HTTP call.
 
 ### 3. composable/hook
 
@@ -64,7 +64,7 @@ Encapsulates reusable logic (selecting the current item, `isEmpty`, filters) as 
 
 ### 4. page
 
-Wires the route, triggers loading, and renders **all four states** — each with a distinct `data-testid`:
+Wires the route, triggers loading, and renders **all four states** - each with a distinct `data-testid`:
 
 ```
 loading  → data-testid="<domain>-loading"
@@ -81,7 +81,7 @@ Pure presentation: typed props in, events out. No direct store access. Reuse an 
 
 ### 6. data-testid
 
-On **every locator**: page container, each state, each interactive element (button, input, link), each list item (`data-testid="<domain>-item-${id}"`). A locator by CSS class or by text is fragile — it breaks on the slightest restyle or label change.
+On **every locator**: page container, each state, each interactive element (button, input, link), each list item (`data-testid="<domain>-item-${id}"`). A locator by CSS class or by text is fragile - it breaks on the slightest restyle or label change.
 
 ### 7. subscription cleanup
 
@@ -122,12 +122,12 @@ npm run lint
 - [ ] `data-testid` on every locator (interactive + list items)
 - [ ] Every subscription/watch/listener has a teardown; grep of subscriptions without cleanup = 0
 - [ ] No orphaned component; zero logic in templates
-- [ ] Tests + typecheck + lint run, output pasted — never "it should pass"
+- [ ] Tests + typecheck + lint run, output pasted - never "it should pass"
 
 ## Tooling
 
-- Reuse the current repo's scripts and commands (lint, typecheck, type generation). No generic tool provided here: detecting uncleaned subscriptions is framework-dependent — write it in the project skill.
+- Reuse the current repo's scripts and commands (lint, typecheck, type generation). No generic tool provided here: detecting uncleaned subscriptions is framework-dependent - write it in the project skill.
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial version, generalized from acme-app's Vue/Nuxt/Pinia workflow (stack coupling removed)
+- 1.0.0 (2026-06-19) - initial version, generalized from acme-app's Vue/Nuxt/Pinia workflow (stack coupling removed)

@@ -1,24 +1,24 @@
-# Section RE — Recovery after a problem (13 questions)
+# Section RE - Recovery after a problem (13 questions)
 
 ## Questions
 
-- RE-01 — Qualifying idempotent / non-idempotent endpoints (MUST)
-- RE-01a — Idempotency key mechanism (MUST)
-- RE-01b — Replay tests and validation (SHOULD)
-- RE-02 — Data rollback / recovery strategy (MUST)
-- RE-02a — Rollback granularity (SHOULD)
-- RE-03 — Recovery plan documentation (SHOULD)
-- RE-05 — Define RTO (Recovery Time Objective) (MUST)
-- RE-05a — Measured RTO vs target RTO (SHOULD)
-- RE-05b — RPO (Recovery Point Objective) (MUST)
-- RE-06 — Regular controlled restart tests (SHOULD)
-- RE-06a — Scope of recovery tests (SHOULD)
-- RE-08 — Full recovery validation (MUST)
-- RE-08a — Data reconciliation tools (SHOULD)
+- RE-01 - Qualifying idempotent / non-idempotent endpoints (MUST)
+- RE-01a - Idempotency key mechanism (MUST)
+- RE-01b - Replay tests and validation (SHOULD)
+- RE-02 - Data rollback / recovery strategy (MUST)
+- RE-02a - Rollback granularity (SHOULD)
+- RE-03 - Recovery plan documentation (SHOULD)
+- RE-05 - Define RTO (Recovery Time Objective) (MUST)
+- RE-05a - Measured RTO vs target RTO (SHOULD)
+- RE-05b - RPO (Recovery Point Objective) (MUST)
+- RE-06 - Regular controlled restart tests (SHOULD)
+- RE-06a - Scope of recovery tests (SHOULD)
+- RE-08 - Full recovery validation (MUST)
+- RE-08a - Data reconciliation tools (SHOULD)
 
 ---
 
-### RE-01 — Qualifying idempotent / non-idempotent endpoints · Criticality: **MUST**
+### RE-01 - Qualifying idempotent / non-idempotent endpoints · Criticality: **MUST**
 
 **Analyze:** Idempotency keys, conditional requests (ETags), exactly-once semantics, outbox pattern
 
@@ -41,7 +41,7 @@ grep -ri "outbox\|transactional.outbox" . --include="*.ts" --include="*.php" --i
 
 ---
 
-### RE-01a — Idempotency key mechanism · Criticality: **MUST**
+### RE-01a - Idempotency key mechanism · Criticality: **MUST**
 
 **Condition:** Evaluate if RE-01 >= 2
 
@@ -65,7 +65,7 @@ grep -ri "idempotency.key\|idempotent.*header\|replay.*detect" . --include="*.ts
 
 ---
 
-### RE-01b — Replay tests and validation · Criticality: **SHOULD**
+### RE-01b - Replay tests and validation · Criticality: **SHOULD**
 
 **Condition:** Evaluate if RE-01 >= 3
 
@@ -89,7 +89,7 @@ grep -ri "replay.*test\|idempoten.*test\|duplicate.*test" . --include="*.test.*"
 
 ---
 
-### RE-02 — Data rollback / recovery strategy · Criticality: **MUST**
+### RE-02 - Data rollback / recovery strategy · Criticality: **MUST**
 
 **Analyze:** Checkpoints, automatable rollback, transactional outbox, saga pattern
 
@@ -111,7 +111,7 @@ grep -ri "rollback\|checkpoint\|saga\|compensat\|outbox" . --include="*.ts" --in
 
 ---
 
-### RE-02a — Rollback granularity · Criticality: **SHOULD**
+### RE-02a - Rollback granularity · Criticality: **SHOULD**
 
 **Condition:** Evaluate if RE-02 >= 2
 
@@ -135,7 +135,7 @@ grep -ri "point.in.time\|granular.*rollback\|partial.*rollback" . --include="*.m
 
 ---
 
-### RE-03 — Recovery plan documentation · Criticality: **SHOULD**
+### RE-03 - Recovery plan documentation · Criticality: **SHOULD**
 
 **Analyze:** Runbooks, support escalation, versioned documentation, training
 
@@ -158,7 +158,7 @@ grep -ri "disaster.recovery\|plan.de.reprise\|DRP\|BCP" . --include="*.md" 2>/de
 
 ---
 
-### RE-05 — Define RTO (Recovery Time Objective) · Criticality: **MUST**
+### RE-05 - Define RTO (Recovery Time Objective) · Criticality: **MUST**
 
 **Analyze:** RTO by service criticality, contractual SLA, regular measurement
 
@@ -180,7 +180,7 @@ grep -ri "rto\|recovery.time\|time.to.recover" . --include="*.md" --include="*.y
 
 ---
 
-### RE-05a — Measured RTO vs target RTO · Criticality: **SHOULD**
+### RE-05a - Measured RTO vs target RTO · Criticality: **SHOULD**
 
 **Condition:** Evaluate if RE-05 >= 2
 
@@ -197,7 +197,7 @@ grep -ri "rto\|recovery.time\|time.to.recover" . --include="*.md" --include="*.y
 
 ---
 
-### RE-05b — RPO (Recovery Point Objective) · Criticality: **MUST**
+### RE-05b - RPO (Recovery Point Objective) · Criticality: **MUST**
 
 **Condition:** Evaluate if RE-05 >= 3
 
@@ -221,7 +221,7 @@ grep -ri "rpo\|recovery.point\|data.loss\|replication.*synchron" . --include="*.
 
 ---
 
-### RE-06 — Regular controlled restart tests · Criticality: **SHOULD**
+### RE-06 - Regular controlled restart tests · Criticality: **SHOULD**
 
 **Analyze:** DR drills, game days, chaos engineering, measured RTO
 
@@ -243,7 +243,7 @@ grep -ri "dr.drill\|game.day\|restart.test\|recovery.test" . --include="*.md" --
 
 ---
 
-### RE-06a — Scope of recovery tests · Criticality: **SHOULD**
+### RE-06a - Scope of recovery tests · Criticality: **SHOULD**
 
 **Condition:** Evaluate if RE-06 >= 2
 
@@ -260,7 +260,7 @@ grep -ri "dr.drill\|game.day\|restart.test\|recovery.test" . --include="*.md" --
 
 ---
 
-### RE-08 — Full recovery validation · Criticality: **MUST**
+### RE-08 - Full recovery validation · Criticality: **MUST**
 
 **Analyze:** Validation scripts, before/after comparison, audit trail, reconciliation
 
@@ -282,7 +282,7 @@ grep -ri "reconcili\|validation.*recovery\|data.integrity\|checksum" . --include
 
 ---
 
-### RE-08a — Data reconciliation tools · Criticality: **SHOULD**
+### RE-08a - Data reconciliation tools · Criticality: **SHOULD**
 
 **Condition:** Evaluate if RE-08 >= 2
 

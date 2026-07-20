@@ -1,0 +1,15 @@
+fixture: shipped-feature
+prompt: >
+  The discount feature shipped with only a happy-path unit test. Define
+  the full test strategy for this module: coverage matrix, risk
+  classification, and an ordered plan. No tracker is configured here,
+  write the matrix to STRATEGY.md and any follow-up tickets under tickets/.
+gates:
+  - file_exists: "STRATEGY.md"
+  - repo_clean: { except: "docs/, .claude/, STRATEGY.md, tickets/" }
+judge:
+  criteria:
+    - "Matrix classifies price validation and discount code as P0 or P1"
+    - "Gap analysis marks negative price and empty code as Absent"
+    - "Plan creates follow-up tickets instead of writing tests directly"
+  threshold: pass_all

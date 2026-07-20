@@ -7,15 +7,15 @@ metadata:
   category: process
 ---
 
-# Daily Workflow Optimization — cut workflow friction, not fix code
+# Daily Workflow Optimization - cut workflow friction, not fix code
 
-> If the current repo has a tooled improvement command (e.g. acme-app → `daily-improve`), it wins — it knows its metrics, scripts and paths.
+> If the current repo has a tooled improvement command (e.g. acme-app → `daily-improve`), it wins - it knows its metrics, scripts and paths.
 
 ## This skill vs. others
 
-- **This skill** when: optimizing the dev/agent WORKFLOW — recurring toil, retry storms, cold reads, repeated manual steps, stale memories/context. Target = tooling, scripts, memories, process. Never production code.
+- **This skill** when: optimizing the dev/agent WORKFLOW - recurring toil, retry storms, cold reads, repeated manual steps, stale memories/context. Target = tooling, scripts, memories, process. Never production code.
 - **detection-sweep** instead if: detecting CODE problems in the project and ticketing them.
-- **recurring-bug-root-cause** instead if: the same bug keeps coming back — that is a root cause in the code, not workflow friction.
+- **recurring-bug-root-cause** instead if: the same bug keeps coming back - that is a root cause in the code, not workflow friction.
 
 ## Principle
 
@@ -30,7 +30,7 @@ No dedicated metric is required; infer friction from generic signals already ava
 - **Recurring tickets**: same-class tickets reopened, identical review feedback from one PR to the next.
 - **Memories / context docs**: expired notes or notes with no TTL, reference files re-read every session for lack of consolidation.
 
-If the repo exposes a measurement tool (metrics script, report), use it — it wins over manual inference.
+If the repo exposes a measurement tool (metrics script, report), use it - it wins over manual inference.
 
 ## Protocol
 
@@ -77,4 +77,4 @@ If the repo exposes a measurement tool (metrics script, report), use it — it w
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial version, generalized from acme-app's daily-improve workflow (metrics/scripts coupling removed)
+- 1.0.0 (2026-06-19) - initial version, generalized from acme-app's daily-improve workflow (metrics/scripts coupling removed)

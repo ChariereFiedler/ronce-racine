@@ -1,9 +1,9 @@
 ---
 name: refactoring-shared-component-api
 description: Use when changing the public API (props, emits, slots, events, exported signatures) of a UI component or module consumed in 2+ places - renaming a prop, removing a parameter, changing a contract - "change this shared component's API", "change l'API de ce composant partagé", "rename this prop", "renomme cette prop". Also use when a typecheck passes but the change touches a shared contract.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-07-20
   category: frontend
 ---
 
@@ -19,19 +19,19 @@ metadata:
 
 ## Principle
 
-A shared-API refactor is **not done when the typecheck passes**: it is done when **every grepped call site** is migrated or justified. Many frameworks (Vue fallthrough attrs, dynamic JS, untyped templates) silently accept an unknown prop/argument — no compile, typecheck, or runtime signal.
+A shared-API refactor is **not done when the typecheck passes**: it is done when **every grepped call site** is migrated or justified. Many frameworks (Vue fallthrough attrs, dynamic JS, untyped templates) silently accept an unknown prop/argument - no compile, typecheck, or runtime signal.
 
 ## Context to gather (before acting)
 
 - Does the compiler check templates strictly (`strictTemplates`, typed JSX)? If not, the silent-contract check in step 3 is **manual and mandatory**
 - Typecheck + test commands: read `package.json` / `Cargo.toml` / CI
-- Locate existing compatibility wrappers around the component — these are the most often forgotten consumers
+- Locate existing compatibility wrappers around the component - these are the most often forgotten consumers
 
 ## Checklist (mandatory order, no step is optional)
 
-### 1. Exhaustive sweep BEFORE touching the component — `scripts/sweep-call-sites.ts`
-- Grep every call site — all casings (`<MyBadge`, `<my-badge`), dynamic usages (`:is=`, factories), object spreads (`v-bind="obj"`, `{...props}`)
-- **Compatibility wrappers are first-class call sites** — the wrapper whose only job is to preserve the old interface is the most often forgotten consumer
+### 1. Exhaustive sweep BEFORE touching the component - `scripts/sweep-call-sites.ts`
+- Grep every call site - all casings (`<MyBadge`, `<my-badge`), dynamic usages (`:is=`, factories), object spreads (`v-bind="obj"`, `{...props}`)
+- **Compatibility wrappers are first-class call sites** - the wrapper whose only job is to preserve the old interface is the most often forgotten consumer
 - Include: stories/fixtures/mocks, docstrings that reference the old API
 - List every call site; that is the migration checklist
 
@@ -44,14 +44,14 @@ A shared-API refactor is **not done when the typecheck passes**: it is done when
 - If the compiler checks templates strictly (e.g. `strictTemplates`), the typecheck is enough; otherwise this check is **manual and mandatory**
 
 ### 4. Integration-point tests
-- Every wrapper/adapter touched gets its **own mount test** (the event bubbles up, the prop drives the render) — these bugs are invisible until a human exercises the feature
+- Every wrapper/adapter touched gets its **own mount test** (the event bubbles up, the prop drives the render) - these bugs are invisible until a human exercises the feature
 
 ### 5. Validation
 - Unit tests + typecheck; verify the existing tests actually exercise the prop name (a test on a CSS class passes even if the rename is incomplete)
 
 ## Templates
 
-- `templates/migration-checklist.md` — migration checklist to paste into the MR (call sites + status)
+- `templates/migration-checklist.md` - migration checklist to paste into the MR (call sites + status)
 
 ## Traps & rationalizations
 
@@ -68,13 +68,17 @@ A shared-API refactor is **not done when the typecheck passes**: it is done when
 - [ ] Each call site migrated or justified (not affected); grep of the old name = **0 occurrences** among consumers
 - [ ] Silent-contract check done (every prop passed is declared in the component's interface)
 - [ ] Mount test on each wrapper/adapter touched
-- [ ] Tests + typecheck run, output pasted — never "it should pass"
+- [ ] Tests + typecheck run, output pasted - never "it should pass"
 - [ ] Deliverable: list of call sites + status (migrated / removed / not affected, justified)
 
 ## Tooling
 
-- `scripts/sweep-call-sites.ts <ComponentName> [rootDir]` — automatic sweep (casings, dynamic usages, spreads, **suspicious wrappers highlighted**, stories/mocks), output = markdown checklist
+- Test procedure: `scripts/sweep-call-sites.test.ts` - deterministic behavioral test of the script (positive + negative fixture). Run `npx tsx scripts/sweep-call-sites.test.ts` from the canonical repo after any change to the script (also picked up by `npm test`). Not distributed to target repos.
+
+- `scripts/sweep-call-sites.ts <ComponentName> [rootDir]` - automatic sweep (casings, dynamic usages, spreads, **suspicious wrappers highlighted**, stories/mocks), output = markdown checklist
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)
+- 1.0.1 (2026-07-20) - co-located test procedure for sweep-call-sites.ts (scripts/sweep-call-sites.test.ts)
+
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

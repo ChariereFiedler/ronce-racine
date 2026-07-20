@@ -1,8 +1,8 @@
-# API migration — <Component>: `<old>` → `<new>`
+# API migration - <Component>: `<old>` → `<new>`
 
 ## Sweep (paste the output of sweep-call-sites.ts here)
 
-- [ ] <file> — migrated / removed / not affected (justification)
+- [ ] <file> - migrated / removed / not affected (justification)
 
 ## Checks
 

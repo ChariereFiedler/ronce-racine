@@ -1,4 +1,4 @@
-# Rule — `clean-architecture-deps`
+# Rule - `clean-architecture-deps`
 
 > The business core knows nothing about I/O, frameworks, or databases. Dependencies always point inward, toward the domain.
 
@@ -14,7 +14,7 @@
 
 The **dependency rule** of layered / hexagonal / clean architectures: source-code dependencies only ever point toward the business core. Concretely:
 
-- The domain (entities, value objects, use cases) imports nothing technical — no HTTP client, no ORM, no framework type.
+- The domain (entities, value objects, use cases) imports nothing technical - no HTTP client, no ORM, no framework type.
 - Controllers, handlers, and routes stay thin: parse input, call a use case, serialize output. No business rule lives there.
 - Interfaces (ports) are declared where they are **used** (application layer); their concrete implementations (adapters) live in infrastructure and depend inward.
 - Invariants are validated at construction of the entity or value object, not scattered across callers.
@@ -24,7 +24,7 @@ The **dependency rule** of layered / hexagonal / clean architectures: source-cod
 
 When the domain depends on infrastructure, every technical decision leaks into the business logic: you cannot swap a database, test a use case without a live connection, or reason about a rule without loading a framework. Inverting the dependencies keeps the core **pure and testable**, isolates churn (frameworks change far more often than business rules), and makes the boundaries explicit so the codebase does not collapse into a big ball of mud.
 
-Validating invariants at the data's construction point means an invalid entity simply cannot exist — every downstream layer can trust it, instead of re-checking or discovering corruption late.
+Validating invariants at the data's construction point means an invalid entity simply cannot exist - every downstream layer can trust it, instead of re-checking or discovering corruption late.
 
 ## How to apply it
 
@@ -43,12 +43,12 @@ export class PostgresUserRepository implements UserRepository { /* ... */ }
 ### Keep the handler thin
 
 ```ts
-// Bad — business logic in the route
+// Bad - business logic in the route
 app.post('/orders', (req, res) => {
   if (req.body.total > creditLimit) { /* rule leaked into the controller */ }
 });
 
-// Good — parse, delegate, serialize
+// Good - parse, delegate, serialize
 app.post('/orders', async (req, res) => {
   const result = await placeOrder.execute(toCommand(req.body));
   res.json(toDto(result));

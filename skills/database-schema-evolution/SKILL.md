@@ -7,9 +7,9 @@ metadata:
   category: process
 ---
 
-# Database Schema Evolution — evolve a schema with no breakage or downtime
+# Database Schema Evolution - evolve a schema with no breakage or downtime
 
-> If the current repo has a project-specific migration skill (e.g. acme-app → `bulk-db-migration`), it wins — it knows the SQL engine, the migration tool, the commands and the project's CI gates.
+> If the current repo has a project-specific migration skill (e.g. acme-app → `bulk-db-migration`), it wins - it knows the SQL engine, the migration tool, the commands and the project's CI gates.
 
 ## This skill vs. others
 
@@ -19,13 +19,13 @@ metadata:
 
 ## Principle
 
-- **Exhaustive scan before any edit** — a forgotten schema usage breaks compilation, a query or the runtime down the line
-- **Two-step expand-contract** — never a destructive change in a single migration; add the new, switch over, drop the old later
-- **An applied migration is immutable** — fix it with a new migration, never by editing the existing one
+- **Exhaustive scan before any edit** - a forgotten schema usage breaks compilation, a query or the runtime down the line
+- **Two-step expand-contract** - never a destructive change in a single migration; add the new, switch over, drop the old later
+- **An applied migration is immutable** - fix it with a new migration, never by editing the existing one
 
 ## Context to gather (before acting)
 
-- SQL engine and migration tool: read the config (`package.json` / `Cargo.toml` / `Makefile` / `migrations/` folder) — know how a migration is created and applied
+- SQL engine and migration tool: read the config (`package.json` / `Cargo.toml` / `Makefile` / `migrations/` folder) - know how a migration is created and applied
 - Read a neighboring migration and copy its conventions (naming, idempotence, format) before inventing
 - Scope of usages: migrations/seeds, queries, types/DTOs mapped onto the schema, code generating or consuming those types, specs/contracts
 - Is there data in production? (determines whether backfill and the two-step are mandatory)
@@ -52,7 +52,7 @@ metadata:
 | types / DTOs | N | schema mapping |
 | client / specs | N | consumed types |
 
-### 2. Expand — additive migration
+### 2. Expand - additive migration
 
 Create a **new** migration (never edit an applied one). It only adds:
 - a new **nullable** column or a new table, never a blocking constraint up front;
@@ -67,7 +67,7 @@ Copy the old data into the new schema (in the migration if the volume is low, ot
 
 Update all usages from the impact plan to read/write the new schema. On a large scope, parallelize by area (see `superpowers:dispatching-parallel-agents`).
 
-### 5. Contract — deferred removal
+### 5. Contract - deferred removal
 
 A **separate** migration, after the code switch is deployed and stable: add the constraints (`NOT NULL`), drop the old column/table. Never in the same migration as the expand: a code rollback must stay possible as long as the old schema exists.
 
@@ -104,4 +104,4 @@ A missing box = do not apply in production.
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial version; provider-agnostic generalization of `bulk-db-migration` (acme-app) into a zero-downtime expand-contract protocol
+- 1.0.0 (2026-06-19) - initial version; provider-agnostic generalization of `bulk-db-migration` (acme-app) into a zero-downtime expand-contract protocol

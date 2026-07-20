@@ -1,0 +1,12 @@
+fixture: audit-target
+prompt: >
+  Run an application security audit of this project.
+  Write the report to AUDIT-SECURITY.md.
+gates:
+  - file_exists: "AUDIT-SECURITY.md"
+  - repo_clean: { except: "AUDIT-SECURITY.md" }
+judge:
+  criteria:
+    - "Flags the hardcoded apiKey secret in src/server.js"
+    - "Flags the container running as root, no USER directive"
+  threshold: pass_all

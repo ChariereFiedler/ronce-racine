@@ -1,9 +1,9 @@
-# Component contract — `<ComponentName>`
+# Component contract - `<ComponentName>`
 
 ## Decision
 - No existing DS component covers: <why>
 - No external primitive covers: <why>
-- Type: atom | molecule — location/naming: <…>
+- Type: atom | molecule - location/naming: <…>
 
 ## API
 | Element | Name | Type | Required | Default | Note |
@@ -15,7 +15,7 @@
 | prop | disabled | boolean | no | false | |
 | prop | required | boolean | no | false | |
 | prop | size | enum | no | | |
-| prop | variant | enum | yes | — | no arbitrary default |
+| prop | variant | enum | yes | - | no arbitrary default |
 | slot | | | | | |
 | event | | | | | |
 

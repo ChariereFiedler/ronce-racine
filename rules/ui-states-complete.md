@@ -9,13 +9,13 @@ metadata:
   last-reviewed: 2026-06-19
 ---
 
-# UI states — all handled
+# UI states - all handled
 
 Any view fed by an async operation handles all four states, each distinguishable (ideally a distinct `data-testid`):
 
-- **loading**: visual feedback while waiting — never a frozen screen with no indication.
-- **error**: actionable message + a retry action when possible — never a silent failure nor an infinite spinner.
-- **empty**: explicit empty state (0 results) distinct from loading — not an ambiguous blank page.
+- **loading**: visual feedback while waiting - never a frozen screen with no indication.
+- **error**: actionable message + a retry action when possible - never a silent failure nor an infinite spinner.
+- **empty**: explicit empty state (0 results) distinct from loading - not an ambiguous blank page.
 - **success**: the nominal content.
 
 - No view stuck on a perpetual spinner if the promise fails: the error must end the loading.

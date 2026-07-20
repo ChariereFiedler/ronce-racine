@@ -7,7 +7,7 @@
  * - Only rewrites a single, non-compound `npm install` / `npm ci` / `npm i`
  *   with NO positional package (flags allowed). `npm install <pkg>` is a
  *   deliberate dependency add → left untouched.
- * - Skips compound/piped commands (`&&`, `||`, `;`, `|`, backticks, `$(`) —
+ * - Skips compound/piped commands (`&&`, `||`, `;`, `|`, backticks, `$(`):
  *   rewriting them is unsafe.
  * - Adds only the `--silent` flag: it does NOT wrap the command in a pipe, so
  *   the real exit code is preserved (a failed `npm ci` still fails).
@@ -41,7 +41,7 @@ function shouldRewrite(cmd: string): boolean {
   const trimmed = cmd.trim()
   // Explicit bypass: a `# no-silent` comment anywhere in the command
   if (trimmed.includes('# no-silent')) return false
-  // Skip compound/piped/substituted commands — rewriting them is unsafe
+  // Skip compound/piped/substituted commands - rewriting them is unsafe
   if (/[;&|`]|\$\(/.test(trimmed)) return false
   // Match ONLY a bare `npm install`/`npm ci`/`npm i` with no positional
   // package (flags allowed). `npm install lodash` is a deliberate add → skip.

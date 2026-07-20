@@ -1,13 +1,13 @@
 # `writing-robust-tests`
 
-> A green test you have never seen red proves nothing. The deliverable isn't "tests written" — it's tests whose failure has been demonstrated.
+> A green test you have never seen red proves nothing. The deliverable isn't "tests written" - it's tests whose failure has been demonstrated.
 
 | | |
 |---|---|
 | **Type** | Skill (on-demand workflow) |
 | **Category** | `test` |
 | **Artifact** | [`SKILL.md`](SKILL.md) |
-| **Tooling** | None yet (`testing-advanced` reference planned) |
+| **Tooling** | [`testing-advanced`](../comprehensive-test-strategy/reference/testing-advanced.md) reference (shared with `comprehensive-test-strategy`) |
 
 ## What it is
 
@@ -17,8 +17,8 @@
 
 Two failure modes make test suites worthless:
 
-1. **The Liar** — a test that stays green even when the code under test is broken. It asserts nothing meaningful (an over-permissive mock, a CSS-class check, an empty fixture) and gives false confidence.
-2. **The fragile E2E** — locators tied to wording, hard `sleep`s, assertions coupled to implementation timing, or a fully-mocked "E2E" that is really a UI test and can never catch a backend contract break.
+1. **The Liar** - a test that stays green even when the code under test is broken. It asserts nothing meaningful (an over-permissive mock, a CSS-class check, an empty fixture) and gives false confidence.
+2. **The fragile E2E** - locators tied to wording, hard `sleep`s, assertions coupled to implementation timing, or a fully-mocked "E2E" that is really a UI test and can never catch a backend contract break.
 
 The skill kills the Liar with a mandatory mutation step (break the code, watch the test go red, restore) and kills fragility with strict E2E rules: `data-testid` for every locator, page objects, zero hard waits, and a deliberate choice of test level.
 
@@ -32,7 +32,7 @@ Use `superpowers:test-driven-development` instead when the code does not exist y
 
 ## How it works
 
-The method pairs ISTQB test design with a hard evidence rule. You first adapt to the project (framework, neighboring-test conventions, reference fixtures — never invented data), then design deliberately: level first (unit ~70% / integration-contract ~20% / E2E ~10%), black-box techniques, error guessing, and the FIRST properties. E2E work obeys non-negotiable rules — `data-testid` for every locator, page objects, zero hard waits, no timing coupling — and mocking stays at the boundaries only so a fully-mocked "E2E" is called what it is. Finally, every test must be seen failing: run green, break the code under test until it goes red with a readable message, restore. A test still green with broken code is a Liar and gets rewritten.
+The method pairs ISTQB test design with a hard evidence rule. You first adapt to the project (framework, neighboring-test conventions, reference fixtures - never invented data), then design deliberately: level first (unit ~70% / integration-contract ~20% / E2E ~10%), black-box techniques, error guessing, and the FIRST properties. E2E work obeys non-negotiable rules - `data-testid` for every locator, page objects, zero hard waits, no timing coupling - and mocking stays at the boundaries only so a fully-mocked "E2E" is called what it is. Finally, every test must be seen failing: run green, break the code under test until it goes red with a readable message, restore. A test still green with broken code is a Liar and gets rewritten.
 
 Full step-by-step protocol → [`SKILL.md`](SKILL.md).
 
@@ -48,6 +48,6 @@ Full step-by-step protocol → [`SKILL.md`](SKILL.md).
 
 ## Related artifacts
 
-- the Superpowers `test-driven-development` skill — when the code does not exist yet.
-- [`refactoring-shared-component-api`](../refactoring-shared-component-api/) — pairs here for wrapper/adapter mount tests.
-- [`validating-features-end-to-end`](../validating-features-end-to-end/) — to turn a validated feature into an E2E spec.
+- the Superpowers `test-driven-development` skill - when the code does not exist yet.
+- [`refactoring-shared-component-api`](../refactoring-shared-component-api/) - pairs here for wrapper/adapter mount tests.
+- [`validating-features-end-to-end`](../validating-features-end-to-end/) - to turn a validated feature into an E2E spec.

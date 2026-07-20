@@ -1,0 +1,18 @@
+fixture: flawed-app
+prompt: >
+  A QA session was recorded on this app. 00:02 the tester says the app logs
+  raw values to the console and a GitHub-looking token showed up, feels like a
+  leak. 00:05 the network log shows the same request repeated with no error
+  the tester noticed. 00:08 the tester says the e2e suite has a skipped test
+  and a hardcoded three-second wait that makes checkout flaky. Process this
+  session into tickets in TICKETS.md with an annotated trace. Do not modify
+  the application code.
+gates:
+  - file_exists: "TICKETS.md"
+  - repo_clean: { except: "TICKETS.md" }
+judge:
+  criteria:
+    - "One ticket per distinct problem, not per event"
+    - "Each ticket has reconstructed repro steps and severity"
+    - "An annotated trace marks every event ticket or ignored"
+  threshold: pass_all

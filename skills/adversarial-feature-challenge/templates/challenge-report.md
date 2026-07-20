@@ -1,4 +1,4 @@
-# Adversarial challenge — <feature> — <YYYY-MM-DD>
+# Adversarial challenge - <feature> - <YYYY-MM-DD>
 
 ## Layers
 
@@ -39,4 +39,4 @@
 | | | | | |
 
 ## Verdict
-<blocking / improvement required / green-light> — if 0 flaws: the challenge was insufficient, start over with another persona.
+<blocking / improvement required / green-light> - if 0 flaws: the challenge was insufficient, start over with another persona.

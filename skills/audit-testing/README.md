@@ -11,7 +11,7 @@
 
 ## What it is
 
-`audit-testing` is a structured maturity assessment for a project's **test strategy and validation practices**. It walks 13 questions grouped into five sections — contract testing, golden dataset, E2E & flaky tests, resilience & chaos, and unit/integration/CI tests — and scores each one from 0 (absent) to 4 (state of the art). The output is a scored report with strengths, weaknesses, prioritized recommendations, and an explicit list of what could not be verified statically.
+`audit-testing` is a structured maturity assessment for a project's **test strategy and validation practices**. It walks 13 questions grouped into five sections - contract testing, golden dataset, E2E & flaky tests, resilience & chaos, and unit/integration/CI tests - and scores each one from 0 (absent) to 4 (state of the art). The output is a scored report with strengths, weaknesses, prioritized recommendations, and an explicit list of what could not be verified statically.
 
 It is one of eight domain audits orchestrated by [`audit-industrialisation`](../audit-industrialisation/). Invoked on its own, it covers testing only.
 
@@ -29,7 +29,7 @@ Invoke it when someone asks for a testing-focused audit:
 - "test coverage audit", "test quality audit"
 - a request to assess test strategy, the test pyramid, flaky-test handling, chaos testing, or a test plan before a release
 
-For a full multi-domain project audit, use [`audit-industrialisation`](../audit-industrialisation/) instead — it runs this skill along with the seven others and consolidates the results.
+For a full multi-domain project audit, use [`audit-industrialisation`](../audit-industrialisation/) instead - it runs this skill along with the seven others and consolidates the results.
 
 ## How it works
 
@@ -38,12 +38,12 @@ For a full multi-domain project audit, use [`audit-industrialisation`](../audit-
 - **Domain score** = average of scored questions, excluding N/A.
 - A question is **N/A** when the project profile makes it irrelevant (no third-party API → te-01/te-01a/te-05 N/A; no batch processing → te-06 N/A).
 - **Conditional sub-questions** (te-01a, te-02a, te-03a, te-09a) are only scored if their parent reaches level ≥ 2.
-- Weighting by criticality — **must** (weight 3): te-07, te-08, te-09; **should** (weight 2): te-02, te-02a, te-03, te-03a, te-05, te-09a; **could** (weight 1): te-01, te-01a, te-04, te-06.
+- Weighting by criticality - **must** (weight 3): te-07, te-08, te-09; **should** (weight 2): te-02, te-02a, te-03, te-03a, te-05, te-09a; **could** (weight 1): te-01, te-01a, te-04, te-06.
 - Weighted score = `sum(level × weight) / sum(weight)` over the scored questions.
 
 ### Audit protocol
 
-The skill detects the test frameworks and counts test files by type, reads the coverage configs and CI stages, then runs each question's verification commands — scoring the conditional sub-questions only when their parent reaches level ≥ 2 — and inspects the test pyramid and resilience patterns before assigning levels, marking N/A, listing non-auditable items and producing the report.
+The skill detects the test frameworks and counts test files by type, reads the coverage configs and CI stages, then runs each question's verification commands - scoring the conditional sub-questions only when their parent reaches level ≥ 2 - and inspects the test pyramid and resilience patterns before assigning levels, marking N/A, listing non-auditable items and producing the report.
 
 Full step-by-step protocol → [`SKILL.md`](SKILL.md).
 
@@ -70,13 +70,13 @@ Each score carries a confidence: **high** (verified by an executed command or a 
 1. te-07: `find` counts 420 `*.spec.ts` files, `vitest.config.ts` sets a 80% branch threshold → **level 3, high confidence**.
 2. te-08: Testcontainers spins up a real Postgres in the integration suite → **level 3, high confidence**.
 3. te-03: a Playwright config exists but CI marks the E2E job `allow_failure: true` and three specs are `test.skip` → **level 2, high confidence**; te-03a triggers (parent ≥ 2) and, with no quarantine process, scores **level 1**.
-4. te-05: the payment provider is never simulated — no Toxiproxy, no WireMock, no circuit breaker in the source → **level 0, medium confidence**, flagged as a top recommendation.
+4. te-05: the payment provider is never simulated - no Toxiproxy, no WireMock, no circuit breaker in the source → **level 0, medium confidence**, flagged as a top recommendation.
 5. te-06 is marked **N/A** (no batch processing in `acme-app`).
 
 The domain score is the weighted average of the scored questions, and te-05 lands in the `[MUST]`/`[SHOULD]` recommendations because an unsimulated payment dependency is a real resilience gap.
 
 ## Related artifacts
 
-- [`audit-industrialisation`](../audit-industrialisation/) — orchestrates this audit and seven others into one consolidated report.
-- [`audit-quality`](../audit-quality/) — QA & DevOps plus data quality; overlaps on coverage and CI but from a broader delivery angle.
-- [`audit-report`](../audit-report/) — the consolidated report template and scoring rules.
+- [`audit-industrialisation`](../audit-industrialisation/) - orchestrates this audit and seven others into one consolidated report.
+- [`audit-quality`](../audit-quality/) - QA & DevOps plus data quality; overlaps on coverage and CI but from a broader delivery angle.
+- [`audit-report`](../audit-report/) - the consolidated report template and scoring rules.

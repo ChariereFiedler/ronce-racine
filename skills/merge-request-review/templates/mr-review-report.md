@@ -1,8 +1,8 @@
-# Review — <MR/PR #id or branch>
+# Review - <MR/PR #id or branch>
 
 **Target**: `<target-branch>` ← **Source**: `<source-branch>`
-**Ticket**: <id / link> — <what the change should do>
-**Pipeline / CI**: <green / red / running — jobs looked at>
+**Ticket**: <id / link> - <what the change should do>
+**Pipeline / CI**: <green / red / running - jobs looked at>
 
 ## Verdict
 
@@ -10,11 +10,11 @@
 
 ## Blocking points
 
-- [ ] <file:line — problem — expected fix>
+- [ ] <file:line - problem - expected fix>
 
 ## Minor points (non-blocking)
 
-- <file:line — suggestion>
+- <file:line - suggestion>
 
 ## Checklist
 

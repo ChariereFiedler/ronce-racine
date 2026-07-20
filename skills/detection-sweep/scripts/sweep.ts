@@ -1,7 +1,7 @@
 #!/usr/bin/env -S npx tsx
 /**
  * Generic, read-only detection sweep: flags common problems to triage.
- * Paired with the detection-sweep skill. Writes/modifies nothing — produces a report.
+ * Paired with the detection-sweep skill. Writes/modifies nothing - produces a report.
  *
  *   npx tsx sweep.ts [path]       # default: current directory
  *

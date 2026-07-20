@@ -10,7 +10,7 @@ metadata:
 ## When ME and not audit-industrialisation
 
 - **ME** when: audit targeted at this domain only
-- **audit-industrialisation** instead if: global multi-domain audit — it orchestrates every audit (including ME) and produces a consolidated report
+- **audit-industrialisation** instead if: global multi-domain audit - it orchestrates every audit (including ME) and produces a consolidated report
 
 > For a full project audit, use `audit-industrialisation` rather than invoking each skill separately.
 
@@ -57,25 +57,25 @@ Audit a project's observability maturity: structured logs, logging guidelines, c
 
 Each grid contains the statement, criticality, the elements to analyze/check, the bash commands and the level tables 0-4 (with a client-side variant where relevant).
 
-- [reference/logging.md](reference/logging.md) — Logs, guidelines, contextual baggage · **3 questions** (ob-01 to ob-03)
-- [reference/metriques.md](reference/metriques.md) — RED/USE, latency, pool saturation, transient errors · **4 questions** (ob-04, ob-07, ob-08, ob-09)
-- [reference/traces-dashboards.md](reference/traces-dashboards.md) — Real-time dashboards, distributed traces · **2 questions** (ob-05, ob-06)
-- [reference/alerting.md](reference/alerting.md) — Catalog, notifications, correlation, runbooks, thresholds, post-mortems · **6 questions** (al-01 to al-06)
+- [reference/logging.md](reference/logging.md) - Logs, guidelines, contextual baggage · **3 questions** (ob-01 to ob-03)
+- [reference/metriques.md](reference/metriques.md) - RED/USE, latency, pool saturation, transient errors · **4 questions** (ob-04, ob-07, ob-08, ob-09)
+- [reference/traces-dashboards.md](reference/traces-dashboards.md) - Real-time dashboards, distributed traces · **2 questions** (ob-05, ob-06)
+- [reference/alerting.md](reference/alerting.md) - Catalog, notifications, correlation, runbooks, thresholds, post-mortems · **6 questions** (al-01 to al-06)
 
 ### Variants by project type
 
 | Project type | Variant to use | Often-N/A questions |
 |----------------|--------------------|-----------------------|
-| **Backend / API** | Standard grid (server) | — |
+| **Backend / API** | Standard grid (server) | - |
 | **Frontend SPA/PWA** | Client-side grid for all questions | ob-03, ob-08 may stay N/A |
-| **Fullstack (monorepo)** | Standard for the backend, client-side for the frontend. Two scores possible. | — |
+| **Fullstack (monorepo)** | Standard for the backend, client-side for the frontend. Two scores possible. | - |
 | **Library / SDK** | ob-01 (logs) and ob-02 (guidelines) relevant, the rest often N/A | ob-04 to ob-09, al-01 to al-06 often N/A |
 | **CLI / Script** | Simplified standard | ob-03, ob-05, ob-06, ob-08, al-02 to al-06 often N/A |
 
 ### Output format
 
 ```markdown
-## Observability & Alerting — Overall score: X.X/4 (Y questions scored out of 15)
+## Observability & Alerting - Overall score: X.X/4 (Y questions scored out of 15)
 
 ### Summary
 [2-3 sentences summarizing observability maturity]
@@ -131,4 +131,4 @@ The audit is complete when:
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

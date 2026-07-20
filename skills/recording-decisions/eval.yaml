@@ -1,0 +1,11 @@
+fixture: minimal-go
+prompt: >
+  We just decided to pin Go to 1.22 because production runs Debian stable.
+  Record this decision so the team finds it later.
+gates:
+  - repo_clean: { except: "docs/, .claude/, go.mod" }
+judge:
+  criteria:
+    - "A decision record exists capturing both the choice and the why"
+    - "Any go.mod change is only a comment pointing at the decision record"
+  threshold: pass_all

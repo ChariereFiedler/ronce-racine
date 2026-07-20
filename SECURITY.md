@@ -24,7 +24,7 @@ The **detection scripts** in `scripts/` and in some skills' `scripts/` are **rea
 
 ## Before you enable a hook
 
-1. Read the hook's source — they are short, single-purpose `.ts` files in `hooks/`.
+1. Read the hook's source - they are short, single-purpose `.ts` files in `hooks/`.
 2. Wire only the hooks you understand into `settings.json` (the installer prints a per-hook snippet).
 3. Keep any file a hook writes (session memos) out of version control.
 

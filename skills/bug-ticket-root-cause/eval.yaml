@@ -1,0 +1,15 @@
+fixture: buggy-app
+prompt: >
+  Users report the cart item counter shows one less than the actual number
+  of items in the cart. Document this as a bug ticket - no tracker is
+  configured here, write the ticket content to BUG-TICKET.md. Do not fix
+  the bug now, just produce the ticket.
+gates:
+  - file_exists: "BUG-TICKET.md"
+  - repo_clean: { except: "docs/, .claude/, BUG-TICKET.md" }
+judge:
+  criteria:
+    - "Root cause cites cart.ts with a specific line number"
+    - "Confirmation-tests table is filled with real test targets"
+    - "Ticket includes a Recurrence section citing prior fix(cart) commits"
+  threshold: pass_all

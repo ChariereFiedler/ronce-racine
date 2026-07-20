@@ -1,0 +1,14 @@
+fixture: fullstack-ci
+prompt: >
+  Review this project's tooling, CI config and repo state for recurring
+  workflow friction and write prioritized improvement actions to
+  WORKFLOW_NOTES.md. Act on tooling and process only, never on application
+  code.
+gates:
+  - file_exists: "WORKFLOW_NOTES.md"
+  - repo_clean: { except: "WORKFLOW_NOTES.md" }
+judge:
+  criteria:
+    - "Each action ties to an observed friction signal, not intuition"
+    - "Actions are prioritized by friction times frequency"
+  threshold: pass_all

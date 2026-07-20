@@ -1,17 +1,17 @@
-# Grid — HTML & Critical Path
+# Grid - HTML & Critical Path
 
 Category 1 · 4 questions (PF-01 to PF-04).
 
 ## Table of contents
 
-- [PF-01 — DOM structure and WebKit parsing](#pf-01--dom-structure-and-webkit-parsing--criticality-must)
-- [PF-02 — Eliminating render-blocking](#pf-02--eliminating-render-blocking--criticality-must)
-- [PF-03 — DOM batching and layout thrashing](#pf-03--dom-batching-and-layout-thrashing--criticality-must)
-- [PF-04 — Loading attributes and network priority](#pf-04--loading-attributes-and-network-priority--criticality-should)
+- [PF-01 - DOM structure and WebKit parsing](#pf-01--dom-structure-and-webkit-parsing--criticality-must)
+- [PF-02 - Eliminating render-blocking](#pf-02--eliminating-render-blocking--criticality-must)
+- [PF-03 - DOM batching and layout thrashing](#pf-03--dom-batching-and-layout-thrashing--criticality-must)
+- [PF-04 - Loading attributes and network priority](#pf-04--loading-attributes-and-network-priority--criticality-should)
 
 ---
 
-### PF-01 — DOM structure and WebKit parsing · Criticality: **MUST**
+### PF-01 - DOM structure and WebKit parsing · Criticality: **MUST**
 
 **Analyze:** DOM depth, node count, use of `document.write()`, `<head>` ordering
 
@@ -43,7 +43,7 @@ grep -ri "dom.*depth\|dom.*size\|dom.*node" . --include="*.ts" --include="*.js" 
 
 ---
 
-### PF-02 — Eliminating render-blocking · Criticality: **MUST**
+### PF-02 - Eliminating render-blocking · Criticality: **MUST**
 
 **Analyze:** Blocking scripts and CSS, inlined critical CSS, critical-path size
 
@@ -74,7 +74,7 @@ grep -ri "critical.*css\|critters\|penthouse" package.json 2>/dev/null
 
 ---
 
-### PF-03 — DOM batching and layout thrashing · Criticality: **MUST**
+### PF-03 - DOM batching and layout thrashing · Criticality: **MUST**
 
 **Analyze:** Interleaved DOM read/write patterns, forced synchronous layouts
 
@@ -103,7 +103,7 @@ grep -ri "layout.thrashing\|forced.reflow" . --include="*.js" --include="*.ts" -
 
 ---
 
-### PF-04 — Loading attributes and network priority · Criticality: **SHOULD**
+### PF-04 - Loading attributes and network priority · Criticality: **SHOULD**
 
 **Analyze:** `fetchpriority`, `loading`, `decoding` attributes, resource hints
 

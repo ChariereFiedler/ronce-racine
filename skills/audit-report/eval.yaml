@@ -1,0 +1,13 @@
+fixture: audit-target
+prompt: >
+  Consolidate these already-produced domain audit scores into the
+  audit report template: security 1.0/4 (weight 0.20), ci-cd 0.5/4
+  (weight 0.12), testing 1.5/4 (weight 0.12), quality 2.0/4 (weight 0.12).
+  Write the consolidated report to AUDIT-CONSOLIDATED.md.
+gates:
+  - file_exists: "AUDIT-CONSOLIDATED.md"
+  - repo_clean: { except: "AUDIT-CONSOLIDATED.md" }
+judge:
+  criteria:
+    - "Applies the weighted average to compute the global score"
+  threshold: pass_all

@@ -1,0 +1,15 @@
+fixture: fullstack-ci
+prompt: >
+  There is no live CI runner or deploy target reachable here. Analyze this
+  project's pipeline configuration and stack, diagnose what would make the
+  pipeline fail or leave post-deploy unvalidated, and write the diagnosis plus
+  the concrete action plan (fixes, rerun policy, smoke test and header checks)
+  to PIPELINE_PLAN.md.
+gates:
+  - file_exists: "PIPELINE_PLAN.md"
+  - repo_clean: { except: "PIPELINE_PLAN.md" }
+judge:
+  criteria:
+    - "Plan separates real fixes from legitimate infra-flake reruns"
+    - "Plan lists concrete post-deploy smoke test and header checks"
+  threshold: pass_all

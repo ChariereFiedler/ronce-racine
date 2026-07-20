@@ -4,11 +4,11 @@ Questions: ci-01 (CI pipeline architecture).
 
 ## Table of contents
 
-- [ci-01 — CI pipeline architecture (build, lint, test, scan, artifacts)](#ci-01--ci-pipeline-architecture-build-lint-test-scan-artifacts--must)
+- [ci-01 - CI pipeline architecture (build, lint, test, scan, artifacts)](#ci-01--ci-pipeline-architecture-build-lint-test-scan-artifacts--must)
 
 ---
 
-### ci-01 — CI pipeline architecture (build, lint, test, scan, artifacts) — `must`
+### ci-01 - CI pipeline architecture (build, lint, test, scan, artifacts) - `must`
 
 **Analyze:** `.github/workflows/*.yml`, `.gitlab-ci.yml`, `Jenkinsfile`, `bitbucket-pipelines.yml`, `.circleci/config.yml` files
 

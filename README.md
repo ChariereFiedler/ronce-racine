@@ -1,12 +1,12 @@
 # Ronce Racine
 
-Canonical source of **generic [Claude Code](https://claude.com/claude-code) config** (project-agnostic), installable in any repository — a layer of *always-on* disciplines and *on-demand* workflows that spreads into every project:
+Canonical source of **generic [Claude Code](https://claude.com/claude-code) config** (project-agnostic), installable in any repository. It provides a layer of *always-on* disciplines and *on-demand* workflows that spreads into every project:
 
-- **`rules/`** — *always-on* rules, injected by file type (`paths:`)
-- **`skills/`** — *on-demand* workflows, invoked as needed (versioned, validated by a harness)
-- **`hooks/`** — reusable Claude Code hooks to wire into `settings.json`
-- **`agents/`** — generic subagent definitions to copy into `<repo>/.claude/agents/`
-- **`scripts/`** — executable detection scripts (TypeScript via `tsx`, read-only)
+- **`rules/`**: *always-on* rules, injected by file type (`paths:`)
+- **`skills/`**: *on-demand* workflows, invoked as needed (versioned, validated by a harness)
+- **`hooks/`**: reusable Claude Code hooks to wire into `settings.json`
+- **`agents/`**: generic subagent definitions to copy into `<repo>/.claude/agents/`
+- **`scripts/`**: executable detection scripts (TypeScript via `tsx`, read-only)
 
 An artifact lives here **only if it is truly generic**: no coupling to a project (no specific crate, script, path, or identifier name, no imposed tracker). Project-specific variants stay on the project side (`<repo>/.claude/rules/<project>/`, `<repo>/.claude/skills/`). The doc's examples use fictional project names (`acme-app`, `beta-app`).
 
@@ -15,18 +15,18 @@ An artifact lives here **only if it is truly generic**: no coupling to a project
 
 ## Why Ronce Racine, not copy-paste?
 
-Copy-pasted `.claude/` config **rots**: every repo drifts, and nobody remembers which rule came from where. Ronce Racine keeps **one canonical source** installed into many repos, with a **lockfile + anti-drift CI gate** so they never silently diverge — plus a smart installer that proposes only what fits each project's stack. That is what plain copy-paste and hand-rolled per-repo config don't give you: **fleet-wide consistency you can enforce in CI**, while any repo can still `detach` an artifact to customize it.
+Copy-pasted `.claude/` config **rots**: every repo drifts, and nobody remembers which rule came from where. Ronce Racine keeps **one canonical source** installed into many repos, with a **lockfile + anti-drift CI gate** so they never silently diverge, plus a smart installer that proposes only what fits each project's stack. That is what plain copy-paste and hand-rolled per-repo config don't give you: **fleet-wide consistency you can enforce in CI**, while any repo can still `detach` an artifact to customize it.
 
 ## Requirements
 
-- **Node ≥ 18** with `tsx` (invoked as `npx tsx …`) — for the installer, and in the target repo for any installed **hooks** (they run via `npx tsx`).
+- **Node ≥ 18** with `tsx` (invoked as `npx tsx …`). Required both for the installer and, in the target repo, for any installed **hooks** (they run via `npx tsx`).
 - **rules / skills / agents are plain Markdown** and need no toolchain. Hooks are optional: skip them on a repo where you don't want a Node dependency.
 
 ## The name
 
-*Ronce Racine* — literally "bramble root" in English. A bramble roots deeply and spreads everywhere, unkillable: the exact image of a layer of *always-on* disciplines that takes root in every project and refuses to die, with just enough thorns to remind you it says "discipline". The two words are singular, joined in the style of the ecosystem the project comes from.
+*Ronce Racine* means "bramble root" in English. A bramble roots deeply and spreads everywhere, unkillable: the exact image of a layer of *always-on* disciplines that takes root in every project and refuses to die, with just enough thorns to remind you it says "discipline". The two words are singular, joined in the style of the ecosystem the project comes from.
 
-> *In English:* **Ronce Racine** is French for "bramble root" — a plant that roots deep and spreads everywhere, unkillable. A fitting name for a layer of engineering discipline meant to take hold in every repository.
+> *In English:* **Ronce Racine** is French for "bramble root", a plant that roots deep and spreads everywhere, unkillable. A fitting name for a layer of engineering discipline meant to take hold in every repository.
 
 ## Two distribution layers
 
@@ -72,7 +72,7 @@ Each rule also carries `version` + `metadata.last-reviewed` (parity with the ski
 
 Generalized (project-agnostic) versions of the heavy workflows. The project variants (coupled to a tracker, a stack, scripts) stay in the relevant repo. Each skill carries a semver `version` + `metadata` in its frontmatter and follows the standard contract (see [`docs/writing-a-skill.md`](docs/writing-a-skill.md)).
 
-**Daily drivers** — the discipline skills you reach for during normal development:
+**Daily drivers**: the discipline skills you reach for during normal development:
 
 | Family | Skills |
 |---------|--------|
@@ -83,13 +83,13 @@ Generalized (project-agnostic) versions of the heavy workflows. The project vari
 | Ops & review | `merge-request-review` · `ci-pipeline-orchestration` · `production-incident-diagnostic` |
 | Process | `recording-decisions` · `qa-session-intake` · `daily-workflow-optimization` |
 
-**Advanced: industrialization audit (opt-in)** — a heavyweight maturity-assessment suite for periodic reviews, not day-to-day use. Install it only if you run engineering audits:
+**Advanced: industrialization audit (opt-in)**: a heavyweight maturity-assessment suite for periodic reviews, not day-to-day use. Install it only if you run engineering audits:
 
 | Orchestrator | Domain audits |
 |---------|--------|
 | `audit-industrialisation` (runs the domains + consolidates) → `audit-report` | `audit-architecture` · `audit-ci-cd` · `audit-compliance` · `audit-observability` · `audit-performance-frontend` · `audit-quality` · `audit-security` · `audit-testing` |
 
-> Deliberately excluded: `git-workflow`, `jira-bug` (coupled to a specific project — dedicated branch hierarchy and Jira tracker).
+> Deliberately excluded: `git-workflow`, `jira-bug` (coupled to a specific project: dedicated branch hierarchy and Jira tracker).
 
 Some skills embed detection `scripts/` (read-only) and `reference/` files loaded on demand (progressive disclosure of the audit grids). Validation: `npm test` (the `skills.ts` harness).
 
@@ -117,7 +117,7 @@ npx tsx install.ts plan /path/to/your-repo
 npx tsx install.ts install /path/to/your-repo
 ```
 
-What `plan` looks like on a full-stack repo (real output, read-only — nothing is written):
+What `plan` looks like on a full-stack repo (real output, read-only, nothing is written):
 
 ```console
 $ npx tsx install.ts plan ./my-app
@@ -127,42 +127,42 @@ dependencies), backend (Node backend dependencies), tests (E2E deps), code (sour
 
 ✓ Recommended (installed by default):
   Rules (9) :
-    • minimal-code — YAGNI + readability, any code project
-    • commits — commit message format
-    • secure-logging — GDPR: never log sensitive data
-    • pre-commit-secret-detection — no committed secrets
-    • test-discipline — tests detected
-    • subscription-cleanup — frontend: subscription teardown
-    • clean-architecture-deps — backend: dependency direction
+    • minimal-code - YAGNI + readability, any code project
+    • commits - commit message format
+    • secure-logging - GDPR: never log sensitive data
+    • pre-commit-secret-detection - no committed secrets
+    • test-discipline - tests detected
+    • subscription-cleanup - frontend: subscription teardown
+    • clean-architecture-deps - backend: dependency direction
     … 2 more
   Skills (21) :
-    • commit-readiness-review — self-review before commit
-    • detection-sweep — project detection sweep
-    • recurring-bug-root-cause — recurring bug → root cause
-    • ci-pipeline-orchestration — CI detected: check/diagnose/retry
+    • commit-readiness-review - self-review before commit
+    • detection-sweep - project detection sweep
+    • recurring-bug-root-cause - recurring bug → root cause
+    • ci-pipeline-orchestration - CI detected: check/diagnose/retry
     … 17 more
   Scripts (1) :
-    • subscription-leak-scan.ts — detects subscriptions/listeners/timers without teardown
+    • subscription-leak-scan.ts - detects subscriptions/listeners/timers without teardown
   Hooks (3) :
-    • skill-reminder.ts — suggests the relevant skills for the prompt
-    • bash-npm-silent.ts — silences npm install/ci (less noise)
-    • truncate-output.ts — caps verbose output (cargo/git/docker…)
+    • skill-reminder.ts - suggests the relevant skills for the prompt
+    • bash-npm-silent.ts - silences npm install/ci (less noise)
+    • truncate-output.ts - caps verbose output (cargo/git/docker…)
   Agents (2) :
-    • code-reviewer — diff review agent
-    • qa-tester — E2E testing agent
+    • code-reviewer - diff review agent
+    • qa-tester - E2E testing agent
 ```
 
-Each artifact is proposed because a signal justified it — a Go repo with no frontend gets
+Each artifact is proposed because a signal justified it: a Go repo with no frontend gets
 neither `subscription-cleanup` nor the frontend skills. Try it on throwaway repos with
 [`playground/setup.ts`](playground/README.md).
 
-The installer runs code on your machine and wires hooks into your `settings.json` — read [`SECURITY.md`](SECURITY.md) first to know exactly what runs and when.
+The installer runs code on your machine and wires hooks into your `settings.json`. Read [`SECURITY.md`](SECURITY.md) first to know exactly what runs and when.
 
 ## Adopting in a repo
 
 ### Smart installer (recommended)
 
-`install.ts` scans the target project (stack, tests, SQL, migrations, CI, infra, git) and **proposes** the relevant rules/skills/hooks/agents — then installs on confirmation. Full procedure → [`docs/adopting-a-repo.md`](docs/adopting-a-repo.md).
+`install.ts` scans the target project (stack, tests, SQL, migrations, CI, infra, git) and **proposes** the relevant rules/skills/hooks/agents, then installs on confirmation. Full procedure → [`docs/adopting-a-repo.md`](docs/adopting-a-repo.md).
 
 ```bash
 npx tsx /path/to/ronce-racine/install.ts plan    <repo>          # proposes (read-only)
@@ -213,13 +213,13 @@ Generic Claude Code hooks (detail → [`hooks/README.md`](hooks/README.md)). The
 | `session-writer` + `session-inject` + `session-precompact` | `Stop` / `SessionStart(compact)` / `PreCompact` | Session-memo trio: persists the context at session end, re-injects it after compaction |
 | `worktree-env-setup.ts` | `SessionStart` | Symlinks the main repo's `.env` into the current worktree (idempotent, fail-open) |
 
-All scripts/hooks are TypeScript (run via `tsx`), no `.sh`. These hooks run **automatically** on Claude Code lifecycle events once wired — see [`SECURITY.md`](SECURITY.md) for exactly what each one does and the two to scrutinize (`worktree-env-setup.ts` symlinks your `.env`; the session-memo hooks write to disk).
+All scripts/hooks are TypeScript (run via `tsx`), no `.sh`. These hooks run **automatically** on Claude Code lifecycle events once wired. See [`SECURITY.md`](SECURITY.md) for exactly what each one does and the two to scrutinize (`worktree-env-setup.ts` symlinks your `.env`; the session-memo hooks write to disk).
 
 ## Agents (`agents/`)
 
 Generic subagent definitions (project-agnostic), to copy into `<repo>/.claude/agents/`:
 
-- `code-reviewer` — architecture/reliability/correctness review of a diff, read-only, actionable verdict.
-- `qa-tester` — running/writing E2E tests (stable locators, zero hard waits).
+- `code-reviewer`: architecture/reliability/correctness review of a diff, read-only, actionable verdict.
+- `qa-tester`: running/writing E2E tests (stable locators, zero hard waits).
 
 A project agent (coupled to the stack, the credentials, the tracker) takes precedence over its generic version.

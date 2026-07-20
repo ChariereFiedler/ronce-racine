@@ -4,12 +4,12 @@ Questions: te-02 (Golden dataset), te-02a (Golden dataset maintenance).
 
 ## Table of contents
 
-- [te-02 — Golden dataset (reference dataset)](#te-02--golden-dataset-reference-dataset--should)
-- [te-02a — Golden dataset maintenance](#te-02a--golden-dataset-maintenance--should)
+- [te-02 - Golden dataset (reference dataset)](#te-02--golden-dataset-reference-dataset--should)
+- [te-02a - Golden dataset maintenance](#te-02a--golden-dataset-maintenance--should)
 
 ---
 
-### te-02 — Golden dataset (reference dataset) — `should`
+### te-02 - Golden dataset (reference dataset) - `should`
 
 **Analyze:** Fixtures, seeds, factories, test-data files, seeding scripts
 
@@ -37,7 +37,7 @@ Questions: te-02 (Golden dataset), te-02a (Golden dataset maintenance).
 
 ---
 
-### te-02a — Golden dataset maintenance — `should`
+### te-02a - Golden dataset maintenance - `should`
 
 **Condition:** Applies if te-02 ≥ 2 (golden dataset in place).
 

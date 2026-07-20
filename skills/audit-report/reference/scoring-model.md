@@ -1,4 +1,4 @@
-# Scoring model — single source of truth
+# Scoring model - single source of truth
 
 This file is the **canonical** definition of the domain-weight table and the maturity
 classification used by the consolidated audit report. It is owned by the `audit-report`

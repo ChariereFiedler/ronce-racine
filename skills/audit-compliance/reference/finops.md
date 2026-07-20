@@ -1,22 +1,22 @@
-# Section FI — FinOps: Cost Management (11 questions)
+# Section FI - FinOps: Cost Management (11 questions)
 
 ## Table of contents
 
-- [FI-01 — Third-party API call cost monitoring](#fi-01--third-party-api-call-cost-monitoring--criticality--should)
-- [FI-01a — Cost-tracking granularity](#fi-01a--cost-tracking-granularity--criticality--should)
-- [FI-02 — Caching](#fi-02--caching--criticality--should)
-- [FI-02a — Cache invalidation strategy](#fi-02a--cache-invalidation-strategy--criticality--should)
-- [FI-03 — Superfluous-call detection + batching opportunities](#fi-03--superfluous-call-detection--batching-opportunities--criticality--should)
-- [FI-04 — Per-customer cost attribution (tagging)](#fi-04--per-customer-cost-attribution-tagging--criticality--should)
-- [FI-05 — Per-customer consumption reporting](#fi-05--per-customer-consumption-reporting--criticality--could)
-- [FI-06 — Abuse / abnormal-usage detection](#fi-06--abuse--abnormal-usage-detection--criticality--should)
-- [FI-06a — Actions on detected abuse](#fi-06a--actions-on-detected-abuse--criticality--should)
-- [FI-07 — Cloud-waste detection and elimination](#fi-07--cloud-waste-detection-and-elimination--criticality--should)
-- [FI-08 — Cloud commitment and reservation strategy](#fi-08--cloud-commitment-and-reservation-strategy--criticality--could)
+- [FI-01 - Third-party API call cost monitoring](#fi-01--third-party-api-call-cost-monitoring--criticality--should)
+- [FI-01a - Cost-tracking granularity](#fi-01a--cost-tracking-granularity--criticality--should)
+- [FI-02 - Caching](#fi-02--caching--criticality--should)
+- [FI-02a - Cache invalidation strategy](#fi-02a--cache-invalidation-strategy--criticality--should)
+- [FI-03 - Superfluous-call detection + batching opportunities](#fi-03--superfluous-call-detection--batching-opportunities--criticality--should)
+- [FI-04 - Per-customer cost attribution (tagging)](#fi-04--per-customer-cost-attribution-tagging--criticality--should)
+- [FI-05 - Per-customer consumption reporting](#fi-05--per-customer-consumption-reporting--criticality--could)
+- [FI-06 - Abuse / abnormal-usage detection](#fi-06--abuse--abnormal-usage-detection--criticality--should)
+- [FI-06a - Actions on detected abuse](#fi-06a--actions-on-detected-abuse--criticality--should)
+- [FI-07 - Cloud-waste detection and elimination](#fi-07--cloud-waste-detection-and-elimination--criticality--should)
+- [FI-08 - Cloud commitment and reservation strategy](#fi-08--cloud-commitment-and-reservation-strategy--criticality--could)
 
 ---
 
-### FI-01 — Third-party API call cost monitoring — Criticality: **SHOULD**
+### FI-01 - Third-party API call cost monitoring - Criticality: **SHOULD**
 
 **Analyze:** Resource tags, configured budgets, cost alerts, API-call monitoring
 
@@ -43,7 +43,7 @@ grep -ri "api.*cost\|api.*pricing\|usage.*track\|metering" . --include="*.ts" --
 
 ---
 
-### FI-01a — Cost-tracking granularity — Criticality: **SHOULD**
+### FI-01a - Cost-tracking granularity - Criticality: **SHOULD**
 
 **Condition:** Evaluate if FI-01 >= 2
 
@@ -71,7 +71,7 @@ grep -ri "cost.*center\|cost.*allocation\|unit.*economic\|cost.*per\|tag.*team\|
 
 ---
 
-### FI-02 — Caching — Criticality: **SHOULD**
+### FI-02 - Caching - Criticality: **SHOULD**
 
 **Analyze:** Cache strategy, Redis/Memcached configs, CDN, application cache
 
@@ -98,7 +98,7 @@ grep -ri "spot\|preemptible\|reserved\|savings" . --include="*.tf" --include="*.
 
 ---
 
-### FI-02a — Cache invalidation strategy — Criticality: **SHOULD**
+### FI-02a - Cache invalidation strategy - Criticality: **SHOULD**
 
 **Condition:** Evaluate if FI-02 >= 2
 
@@ -125,7 +125,7 @@ grep -ri "invalidat\|cache.*bust\|cache.*clear\|write.through\|cache.aside\|stal
 
 ---
 
-### FI-03 — Superfluous-call detection + batching opportunities — Criticality: **SHOULD**
+### FI-03 - Superfluous-call detection + batching opportunities - Criticality: **SHOULD**
 
 **Analyze:** API-call patterns, N+1 queries, excessive retries, batching opportunities
 
@@ -152,7 +152,7 @@ grep -ri "retry.*count\|retry.*max\|retry.*storm" . --include="*.ts" --include="
 
 ---
 
-### FI-04 — Per-customer cost attribution (tagging) — Criticality: **SHOULD**
+### FI-04 - Per-customer cost attribution (tagging) - Criticality: **SHOULD**
 
 **Analyze:** Per-tenant consumption tracking in multi-tenant, cost allocation
 
@@ -180,7 +180,7 @@ grep -ri "cost.*allocat\|chargeback\|showback\|profitability" . --include="*.md"
 
 ---
 
-### FI-05 — Per-customer consumption reporting — Criticality: **COULD**
+### FI-05 - Per-customer consumption reporting - Criticality: **COULD**
 
 **Analyze:** Customer consumption reports, dashboards, projections
 
@@ -207,7 +207,7 @@ grep -ri "usage.*report\|consumption.*report\|billing.*dashboard\|client.*report
 
 ---
 
-### FI-06 — Abuse / abnormal-usage detection — Criticality: **SHOULD**
+### FI-06 - Abuse / abnormal-usage detection - Criticality: **SHOULD**
 
 **Analyze:** Rate limiting, quotas, usage-anomaly detection, noisy neighbor
 
@@ -235,7 +235,7 @@ grep -ri "anomaly.*detect\|usage.*pattern\|spike.*detect" . --include="*.ts" --i
 
 ---
 
-### FI-06a — Actions on detected abuse — Criticality: **SHOULD**
+### FI-06a - Actions on detected abuse - Criticality: **SHOULD**
 
 **Condition:** Evaluate if FI-06 >= 2
 
@@ -264,7 +264,7 @@ grep -ri "abuse.*response\|throttle.*response\|escalat.*abuse\|upgrade.*plan" . 
 
 ---
 
-### FI-07 — Cloud-waste detection and elimination — Criticality: **SHOULD**
+### FI-07 - Cloud-waste detection and elimination - Criticality: **SHOULD**
 
 **Analyze:** Unused resources, orphaned volumes, forgotten environments
 
@@ -292,7 +292,7 @@ grep -ri "schedule.*stop\|auto.*shutdown\|cleanup.*env" . --include="*.tf" --inc
 
 ---
 
-### FI-08 — Cloud commitment and reservation strategy — Criticality: **COULD**
+### FI-08 - Cloud commitment and reservation strategy - Criticality: **COULD**
 
 **Analyze:** Reserved Instances, Savings Plans, Spot instances, commitment strategy
 

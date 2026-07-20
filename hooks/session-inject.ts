@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * SessionStart hook — re-injects the session memo as additionalContext
+ * SessionStart hook - re-injects the session memo as additionalContext
  * after a context compaction.
  *
  * The memo is read from `~/.claude/projects/<repo-slug>/sessions/<branch>.md`
@@ -10,7 +10,7 @@
  * Event      : SessionStart
  * Matcher    : compact   (only activates after a compaction)
  * Input      : stdin JSON { session_id?: string, ... }
- * Output     : stdout JSON { hookSpecificOutput: { hookEventName, additionalContext } }  — or nothing if absent
+ * Output     : stdout JSON { hookSpecificOutput: { hookEventName, additionalContext } }  - or nothing if absent
  *
  * @version 1.0.0
  * @last-reviewed 2026-06-25
@@ -47,7 +47,7 @@ function main(): void {
         ].join('\n'),
       },
     }))
-  } catch { /* non-fatal — a hook must never break the session */ }
+  } catch { /* non-fatal - a hook must never break the session */ }
 
   process.exit(0)
 }

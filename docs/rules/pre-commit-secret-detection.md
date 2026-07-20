@@ -1,4 +1,4 @@
-# Rule — `pre-commit-secret-detection`
+# Rule - `pre-commit-secret-detection`
 
 > No secret ever reaches a commit. Scan the staged diff every time; treat any pushed secret as compromised.
 
@@ -12,17 +12,17 @@
 
 ## What it enforces
 
-A hard gate: **no credential of any kind is ever committed** — API keys, tokens, passwords, private keys, connection strings. The rule is always active because a leak can happen in any file type, at any commit.
+A hard gate: **no credential of any kind is ever committed** - API keys, tokens, passwords, private keys, connection strings. The rule is always active because a leak can happen in any file type, at any commit.
 
 ## Why it matters
 
-A secret is not "removed" by a later commit. Once it exists in git history — and especially once it is pushed — it must be considered **compromised**: anyone with repo access (now or via a future clone/fork/backup) can recover it. That is why the response to a pushed secret is **rotation on the provider side + history purge**, never a plain `git revert` (which leaves the value in history).
+A secret is not "removed" by a later commit. Once it exists in git history - and especially once it is pushed - it must be considered **compromised**: anyone with repo access (now or via a future clone/fork/backup) can recover it. That is why the response to a pushed secret is **rotation on the provider side + history purge**, never a plain `git revert` (which leaves the value in history).
 
 The rule is layered so it fails safe:
 
-- **Local, tool present** — `gitleaks protect --staged` blocks the commit before the secret lands.
-- **Local, no tool** — a grep fallback on common patterns warns; it does not block, so it never wedges a commit, but it flags the obvious cases.
-- **CI** — `gitleaks detect` over the full repo and history is the backstop that catches anything local checks missed. This CI must never be disabled.
+- **Local, tool present** - `gitleaks protect --staged` blocks the commit before the secret lands.
+- **Local, no tool** - a grep fallback on common patterns warns; it does not block, so it never wedges a commit, but it flags the obvious cases.
+- **CI** - `gitleaks detect` over the full repo and history is the backstop that catches anything local checks missed. This CI must never be disabled.
 
 ## How to apply it
 

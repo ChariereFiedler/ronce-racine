@@ -1,4 +1,4 @@
-# Git worktrees — multi-agent isolation patterns
+# Git worktrees - multi-agent isolation patterns
 
 Generic reference for making several agents (or features) work in parallel without collision, via `git worktree`. Complements `superpowers:using-git-worktrees` (the basic when/how) with scaling patterns and pitfalls.
 
@@ -46,7 +46,7 @@ Adapt `{id}` to the project's tracker (ticket number, issue…).
 
 ## Caps (budgets)
 
-Beyond a certain number of worktrees / branches in flight, the cognitive cost and conflicts explode. Set an explicit cap (e.g. ~6 worktrees, ~5 branches in review at once) and enforce it — via a hook (see `hooks/`) or a manual check at the start of a session. A cap reached = finish/merge before opening a new front.
+Beyond a certain number of worktrees / branches in flight, the cognitive cost and conflicts explode. Set an explicit cap (e.g. ~6 worktrees, ~5 branches in review at once) and enforce it - via a hook (see `hooks/`) or a manual check at the start of a session. A cap reached = finish/merge before opening a new front.
 
 ## Session checklists
 

@@ -7,7 +7,7 @@
 | **Type** | Skill (on-demand workflow) |
 | **Category** | `process` |
 | **Artifact** | [`SKILL.md`](SKILL.md) |
-| **Tooling** | The CI provider's own CLI/API (`gh run`, `glab ci`, REST) — detected per project |
+| **Tooling** | The CI provider's own CLI/API (`gh run`, `glab ci`, REST) - detected per project |
 
 ## What it is
 
@@ -35,7 +35,7 @@ Route elsewhere when: the errors are still local and **unpushed** (→ [`commit-
 
 ## How it works
 
-The skill owns everything after `git push` until the change is proven live: read the pipeline status for the target commit, diagnose each red job to a *cause* rather than a symptom, then either fix-and-repush or rerun only a confirmed infra flake — never a reproducible red test. A green pipeline is not the finish line: it closes with a smoke test and an HTTP-header check on the deployed app, and escalates any failure seen 2+ times to a ticket instead of rerunning again. Manual deploy jobs always need explicit user confirmation, and `--no-verify` is never used to get past a hook.
+The skill owns everything after `git push` until the change is proven live: read the pipeline status for the target commit, diagnose each red job to a *cause* rather than a symptom, then either fix-and-repush or rerun only a confirmed infra flake - never a reproducible red test. A green pipeline is not the finish line: it closes with a smoke test and an HTTP-header check on the deployed app, and escalates any failure seen 2+ times to a ticket instead of rerunning again. Manual deploy jobs always need explicit user confirmation, and `--no-verify` is never used to get past a hook.
 
 Full step-by-step protocol (including the symptom→cause table and the exact headers to check) → [`SKILL.md`](SKILL.md).
 
@@ -43,13 +43,13 @@ Full step-by-step protocol (including the symptom→cause table and the exact he
 
 > You push a fix to `acme-app`. The pipeline goes red on the `test` job.
 
-1. **Status**: list runs for the pushed SHA — `build` passed, `test` failed, `deploy` is manual.
+1. **Status**: list runs for the pushed SHA - `build` passed, `test` failed, `deploy` is manual.
 2. **Diagnose**: read the tail of the `test` logs. The failure reproduces locally → it is a regression, not a flake.
 3. **Act**: fix the code on the branch, repush. The pipeline re-triggers and goes green.
-4. **Post-deploy**: the `deploy` job is manual — ask the user before triggering it. After deploy, `curl -I https://acme-app.example/health` returns 200 with HSTS and `nosniff` present. Smoke test passes.
+4. **Post-deploy**: the `deploy` job is manual - ask the user before triggering it. After deploy, `curl -I https://acme-app.example/health` returns 200 with HSTS and `nosniff` present. Smoke test passes.
 5. **Report** with the template, pasting the real header output.
 
 ## Related artifacts
 
-- [`commit-readiness-review`](../commit-readiness-review/) — local checks before the push that feeds the pipeline.
-- [`production-incident-diagnostic`](../production-incident-diagnostic/) — prod broken outside a deploy is an incident, not this.
+- [`commit-readiness-review`](../commit-readiness-review/) - local checks before the push that feeds the pipeline.
+- [`production-incident-diagnostic`](../production-incident-diagnostic/) - prod broken outside a deploy is an incident, not this.

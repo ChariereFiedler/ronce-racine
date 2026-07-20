@@ -23,7 +23,7 @@ interface HookInput {
 const VERBOSE_PATTERNS: RegExp[] = [
   /^\s*cargo\s+(build|test|clippy|check|fmt|doc|run)/,
   // `npm install`/`npm ci` are handled by the bash-npm-silent hook (avoid a
-  // two-hook conflict on the same command — PreToolUse updatedInput is last-wins).
+  // two-hook conflict on the same command - PreToolUse updatedInput is last-wins).
   /^\s*npm\s+run\s+(build|test|typecheck|lint)\b/,
   /^\s*npx\s+(vitest|tsc|nuxi|tsx)\b/,
   /^\s*git\s+(log|diff)\b/,

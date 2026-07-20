@@ -1,0 +1,11 @@
+fixture: shipped-feature
+prompt: >
+  The discount feature in src/discount.ts just shipped, the unit test is
+  green. Can I close the ticket?
+gates:
+  - repo_clean: { except: "" }
+judge:
+  criteria:
+    - "Flags negative price, unknown code, empty code as unvalidated"
+    - "Verdict is gap identified, ticket not ready to close"
+  threshold: pass_all

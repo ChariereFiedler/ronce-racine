@@ -1,9 +1,9 @@
 ---
 name: audit-industrialisation
 description: Full software-industrialisation audit. Orchestrates the 8 domain audits and produces a consolidated report. Use when running a full audit of a project's software engineering maturity. Triggers on "audit industrialisation", "industrialisation audit", "audit complet", "full audit", "audit projet", "project audit", "audit maturité", "maturity audit", "audit global", "global audit".
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-07-20
   category: audit
 ---
 
@@ -15,13 +15,13 @@ Full audit of a software project's industrialisation maturity. Orchestrates the 
 
 ## This skill vs. a domain audit
 
-- **This skill** when: a global, multi-domain audit — it profiles the project, orchestrates the 8 domain audits in parallel and consolidates the report
+- **This skill** when: a global, multi-domain audit - it profiles the project, orchestrates the 8 domain audits in parallel and consolidates the report
 - **A single `audit-<domain>`** instead if: the scope targets one domain (e.g. just `audit-security`)
-- **`audit-report`**: invoked (or embedded) in Phase 3 for the template + scoring rules of the consolidated report
+- **`audit-report`**: NOT invoked - Phase 3 reuses its template and its `audit-report/reference/scoring-model.md` directly (see Phase 3)
 
 ## Where the questions come from
 
-The 214 questions are **defined in the audit skills themselves**: each `audit-<domain>` and its `reference/<section>.md` files carry the wording, the criticality and the 0-4 levels, with stable lowercase IDs (`ci-01`, `te-09a`, `pa-21`…). This orchestrator **defines no questions** — it profiles the project, launches the audits and consolidates. The IDs are identical across the orchestrator, the skills and the report.
+The 214 questions are **defined in the audit skills themselves**: each `audit-<domain>` and its `reference/<section>.md` files carry the wording, the criticality and the 0-4 levels, with stable IDs (`ci-01`, `te-09a`, `PF-21`… - casing varies by domain grid; compare IDs case-insensitively). This orchestrator **defines no questions** - it profiles the project, launches the audits and consolidates. The IDs are identical across the orchestrator, the skills and the report.
 
 ### Coverage per skill
 
@@ -38,9 +38,9 @@ The 214 questions are **defined in the audit skills themselves**: each `audit-<d
 
 **Total: 214 questions across 18 sections, 8 domains.**
 
-> A project that manages its audits in a dedicated tool (external knowledge base, audit app) adds the export to that tool in its **own project skill** — it is not the job of the generic orchestrator, which produces a Markdown report.
+> A project that manages its audits in a dedicated tool (external knowledge base, audit app) adds the export to that tool in its **own project skill** - it is not the job of the generic orchestrator, which produces a Markdown report.
 
-## Phase 1 — Reconnaissance and project profile
+## Phase 1 - Reconnaissance and project profile
 
 Before launching the audits, **build a structured project profile** that will be passed to every subagent. This prevents each agent from rediscovering the context.
 
@@ -70,7 +70,7 @@ Generate this text block and include it in EVERY subagent prompt:
 - **Language(s)**: [TypeScript, Python, Go, etc.]
 - **Framework**: [Nuxt, Next.js, NestJS, Django, Spring, etc.]
 - **Architecture**: [monolith | monorepo | microservices | client-side only]
-- **Backend**: [yes/no — if no, adapt the server-side questions]
+- **Backend**: [yes/no - if no, adapt the server-side questions]
 - **Database**: [PostgreSQL, MongoDB, IndexedDB, none, etc.]
 - **CI/CD**: [GitHub Actions | GitLab CI | Jenkins | none]
 - **Deployment**: [Docker, K8s, serverless, static hosting, etc.]
@@ -91,7 +91,7 @@ Depending on the profile, mark the N/A domains:
 
 **"adapted"** = the domain applies but some questions become N/A. The subagent must read the "Variants" section of the matching skill.
 
-## Phase 2 — Running the domain audits
+## Phase 2 - Running the domain audits
 
 Launch the **8 subagents in parallel** (Agent tool). Each subagent receives:
 1. The **project profile** (block above)
@@ -103,7 +103,7 @@ Launch the **8 subagents in parallel** (Agent tool). Each subagent receives:
 ```
 You are auditing the [DOMAIN] domain on the following project.
 
-[PROJECT PROFILE — paste the block]
+[PROJECT PROFILE - paste the block]
 
 ## Instructions
 1. Read the audit skill `audit-[domain]` (invoke it, or read its `SKILL.md`)
@@ -116,12 +116,12 @@ You are auditing the [DOMAIN] domain on the following project.
 
 ## MANDATORY output format
 
-### [Domain] — Score: X.X/4 (Y questions scored out of Z)
+### [Domain] - Score: X.X/4 (Y questions scored out of Z)
 
 | Code | Question | Criticality | Level | Confidence | Justification |
 |------|----------|-----------|--------|-----------|---------------|
 | XX-01 | ... | must | X | high | ... |
-| XX-02 | ... | should | N/A | — | ... |
+| XX-02 | ... | should | N/A | - | ... |
 
 ### Strengths
 - ...
@@ -138,7 +138,7 @@ You are auditing the [DOMAIN] domain on the following project.
 [Questions requiring an interview, field observation, or access to external systems]
 ```
 
-## Phase 3 — Report consolidation
+## Phase 3 - Report consolidation
 
 **Do not invoke audit-report.** Consolidate directly following the rules below.
 
@@ -147,7 +147,7 @@ You are auditing the [DOMAIN] domain on the following project.
 The domain weights, the domain/global score formula and the maturity classification are the
 **single source of truth** owned by the `audit-report` skill (its `scoring-model.md`, under
 that skill's `reference/` folder). Read that file and apply the exact weights and
-thresholds — they are **not** duplicated here.
+thresholds - they are **not** duplicated here.
 
 Reminders: domain score = mean of the scored questions (N/A excluded); global score =
 weighted average of the audited domains (fully-N/A domains excluded); maturity levels run
@@ -180,7 +180,7 @@ Compute the projected score if quick wins + short term are implemented.
 ```markdown
 # Software industrialisation audit report
 
-**Project:** [name] | **Date:** [YYYY-MM-DD] | **Global score: X.X/4 — [Level]**
+**Project:** [name] | **Date:** [YYYY-MM-DD] | **Global score: X.X/4 - [Level]**
 
 ## Project profile
 [Profile block]
@@ -217,9 +217,9 @@ Compute the projected score if quick wins + short term are implemented.
 
 Save to `docs/audit/YYYY-MM-DD-audit-industrialisation.md`.
 
-## Phase 4 — Evidence & traceability
+## Phase 4 - Evidence & traceability
 
-**The auditor does not give an opinion — it proves.** Every assigned level rests on factual evidence, captured during Phase 2 and cited in the report:
+**The auditor does not give an opinion - it proves.** Every assigned level rests on factual evidence, captured during Phase 2 and cited in the report:
 
 - **`code_analysis`**: excerpt of the relevant source file
 - **`technical_test`**: output of an executed command (grep, `npm audit`, `ls`…)
@@ -233,12 +233,12 @@ Rules:
 
 ## Adaptation
 
-If `$ARGUMENTS` contains domain names (`ci`, `testing`, `security`, `observability`, `architecture`, `quality`, `compliance`), only launch the requested domains. The report adapts to the scope.
+If `$ARGUMENTS` contains domain names (`ci`, `testing`, `security`, `observability`, `architecture`, `quality`, `compliance`, `performance-frontend`), only launch the requested domains. The report adapts to the scope.
 
 ## Exit condition
 
 - [ ] Project profile built and passed to each subagent (Phase 1)
-- [ ] Relevance matrix applied — N/A domains marked, not audited blind
+- [ ] Relevance matrix applied - N/A domains marked, not audited blind
 - [ ] 8 domain audits run (or requested subset), each question scored 0-4 or N/A **with factual evidence**
 - [ ] Weighted global score computed (N/A excluded), maturity classification assigned
 - [ ] Prioritised action plan (MUST/SHOULD/COULD) + impact projection
@@ -246,4 +246,6 @@ If `$ARGUMENTS` contains domain names (`ci`, `testing`, `security`, `observabili
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)
+- 1.0.1 (2026-07-20) - audit-report invocation wording fixed (never invoked, template reused); performance-frontend added to $ARGUMENTS domains
+
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

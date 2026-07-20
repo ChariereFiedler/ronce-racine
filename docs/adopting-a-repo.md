@@ -1,11 +1,11 @@
 # Adopting Ronce Racine in a repo
 
-## Option A — Smart installer (recommended)
+## Option A - Smart installer (recommended)
 
 `install.ts` detects the project's stack (frontend/backend/tests/SQL/migrations/CI/infra/git) and proposes the relevant artifacts, with a reason for each.
 
 ```bash
-# 1. Proposal (read-only) — nothing is written
+# 1. Proposal (read-only) - nothing is written
 npx tsx /path/to/ronce-racine/install.ts plan .
 
 # 2. Install the recommended ones (add --all to include optionals: audits, etc.)
@@ -13,10 +13,10 @@ npx tsx /path/to/ronce-racine/install.ts install . --all
 ```
 
 The installer copies into `.claude/`:
-- `rules/shared/` + the `.adopted` manifest (rules) — drift is watchable via `install.ts check .`
+- `rules/shared/` + the `.adopted` manifest (rules) - drift is watchable via `install.ts check .`
 - `skills/<name>/` (relevant skills), `hooks/`, `agents/`
 
-It merges the hook wirings into `.claude/settings.json` (writes a `settings.json.bak` backup, deep-merges by event + matcher, idempotent, preserves unrelated settings). Check the diff (`git diff`, `git status`), then commit — `.claude/` travels via git → teammates + CI agents.
+It merges the hook wirings into `.claude/settings.json` (writes a `settings.json.bak` backup, deep-merges by event + matcher, idempotent, preserves unrelated settings). Check the diff (`git diff`, `git status`), then commit - `.claude/` travels via git → teammates + CI agents.
 
 Update later: rerun `install.ts install .` (idempotent). For rules only, use `install.ts install . --rules-only` (same lockfile-based drift as everything else).
 
@@ -63,13 +63,13 @@ git add .claude/rules/shared
 git commit -m "chore(rules): adopt the generic canonical rules (ronce-racine)"
 ```
 
-> Deprecated: `rules.ts sync .` still works but prints a deprecation notice — prefer `install.ts install . --rules-only`.
+> Deprecated: `rules.ts sync .` still works but prints a deprecation notice - prefer `install.ts install . --rules-only`.
 
 ## 3. Anti-drift CI gate (recommended)
 
 Add the job from [`templates/anti-drift.gitlab-ci.yml`](../templates/anti-drift.gitlab-ci.yml) to the repo's `.gitlab-ci.yml`. It fails if an adopted rule has diverged from the canonical version.
 
-Prerequisite: the runner must be able to clone `ronce-racine` (the job clones it). If you prefer no network dependency in CI, the committed files already freeze the content — the gate only adds drift **detection**.
+Prerequisite: the runner must be able to clone `ronce-racine` (the job clones it). If you prefer no network dependency in CI, the committed files already freeze the content - the gate only adds drift **detection**.
 
 ## 4. Update later
 

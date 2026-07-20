@@ -4,12 +4,12 @@ Questions: te-01 (Contract testing with third-party APIs), te-01a (Coverage of t
 
 ## Table of contents
 
-- [te-01 — Contract testing with third-party APIs](#te-01--contract-testing-with-third-party-apis--could)
-- [te-01a — Coverage of tested contracts](#te-01a--coverage-of-tested-contracts--could)
+- [te-01 - Contract testing with third-party APIs](#te-01--contract-testing-with-third-party-apis--could)
+- [te-01a - Coverage of tested contracts](#te-01a--coverage-of-tested-contracts--could)
 
 ---
 
-### te-01 — Contract testing with third-party APIs — `could`
+### te-01 - Contract testing with third-party APIs - `could`
 
 **Analyze:** Pact tests, contract tests, external API mocks, `.pact/` files, contract-testing configs, OpenAPI schema validation
 
@@ -37,7 +37,7 @@ Questions: te-01 (Contract testing with third-party APIs), te-01a (Coverage of t
 
 ---
 
-### te-01a — Coverage of tested contracts — `could`
+### te-01a - Coverage of tested contracts - `could`
 
 **Condition:** Applies if te-01 ≥ 2 (contract testing in place).
 

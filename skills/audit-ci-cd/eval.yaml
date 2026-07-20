@@ -1,0 +1,12 @@
+fixture: audit-target
+prompt: >
+  Run a CI/CD & release management audit of this project.
+  Write the report to AUDIT-CI.md.
+gates:
+  - file_exists: "AUDIT-CI.md"
+  - repo_clean: { except: "AUDIT-CI.md" }
+judge:
+  criteria:
+    - "Flags the absence of a CI pipeline"
+    - "Reports a maturity score per question, 0-4"
+  threshold: pass_all

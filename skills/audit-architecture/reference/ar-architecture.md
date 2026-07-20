@@ -1,22 +1,22 @@
-# Section AR — Architecture, Specification & Deployment (11 questions)
+# Section AR - Architecture, Specification & Deployment (11 questions)
 
 ## Questions
 
-- AR-01 — Architecture decision documentation (SHOULD)
-- AR-01a — Architecture decision process (SHOULD)
-- AR-02 — Technical debt traceability (SHOULD)
-- AR-03 — Multi-level architecture documentation (SHOULD)
-- AR-04 — Blue/Green or Canary (SHOULD)
-- AR-04a — Canary promotion criteria (COULD)
-- AR-05 — Feature toggles / Feature flags (SHOULD)
-- AR-06 — Automated rollback on failure (MUST)
-- AR-07 — Backward compatibility (SHOULD)
-- AR-08 — Documented progressive deprecation (SHOULD)
-- AR-09 — Semantic versioning (SHOULD)
+- AR-01 - Architecture decision documentation (SHOULD)
+- AR-01a - Architecture decision process (SHOULD)
+- AR-02 - Technical debt traceability (SHOULD)
+- AR-03 - Multi-level architecture documentation (SHOULD)
+- AR-04 - Blue/Green or Canary (SHOULD)
+- AR-04a - Canary promotion criteria (COULD)
+- AR-05 - Feature toggles / Feature flags (SHOULD)
+- AR-06 - Automated rollback on failure (MUST)
+- AR-07 - Backward compatibility (SHOULD)
+- AR-08 - Documented progressive deprecation (SHOULD)
+- AR-09 - Semantic versioning (SHOULD)
 
 ---
 
-### AR-01 — Architecture decision documentation · Criticality: **SHOULD**
+### AR-01 - Architecture decision documentation · Criticality: **SHOULD**
 
 **Analyze:** `docs/adr/`, `doc/architecture/` folders, `*.adr.md` files, architecture README
 
@@ -40,7 +40,7 @@ grep -ri "architecture decision\|ADR" . --include="*.md" 2>/dev/null | head -5
 
 ---
 
-### AR-01a — Architecture decision process · Criticality: **SHOULD**
+### AR-01a - Architecture decision process · Criticality: **SHOULD**
 
 **Condition:** Evaluate if AR-01 >= 2
 
@@ -65,7 +65,7 @@ find . -name "*.rfc.*" -o -name "*proposal*" 2>/dev/null | head -5
 
 ---
 
-### AR-02 — Technical debt traceability · Criticality: **SHOULD**
+### AR-02 - Technical debt traceability · Criticality: **SHOULD**
 
 **Analyze:** TODO/FIXME in the code, debt backlog, SonarQube, debt metrics
 
@@ -88,7 +88,7 @@ grep -ri "sonarqube\|codeclimate\|technical.debt" . --include="*.yml" --include=
 
 ---
 
-### AR-03 — Multi-level architecture documentation · Criticality: **SHOULD**
+### AR-03 - Multi-level architecture documentation · Criticality: **SHOULD**
 
 **Analyze:** C4 diagrams, Structurizr, Mermaid, architecture documentation
 
@@ -111,7 +111,7 @@ grep -ri "c4 model\|context diagram\|container diagram" . --include="*.md" 2>/de
 
 ---
 
-### AR-04 — Blue/Green or Canary · Criticality: **SHOULD**
+### AR-04 - Blue/Green or Canary · Criticality: **SHOULD**
 
 **Analyze:** Deployment strategy, Kubernetes configs, Argo Rollouts, feature flags
 
@@ -134,7 +134,7 @@ grep -ri "argo.rollout\|flagger\|feature.flag" . 2>/dev/null | head -5
 
 ---
 
-### AR-04a — Canary promotion criteria · Criticality: **COULD**
+### AR-04a - Canary promotion criteria · Criticality: **COULD**
 
 **Condition:** Evaluate if AR-04 >= 2
 
@@ -158,7 +158,7 @@ grep -ri "analysis.template\|promotion\|canary.metric" . --include="*.yml" --inc
 
 ---
 
-### AR-05 — Feature toggles / Feature flags · Criticality: **SHOULD**
+### AR-05 - Feature toggles / Feature flags · Criticality: **SHOULD**
 
 **Analyze:** LaunchDarkly, Unleash, config flags, kill switches
 
@@ -181,7 +181,7 @@ grep -ri "isEnabled\|isFeatureOn\|flag_enabled" . --include="*.ts" --include="*.
 
 ---
 
-### AR-06 — Automated rollback on failure · Criticality: **MUST**
+### AR-06 - Automated rollback on failure · Criticality: **MUST**
 
 **Analyze:** Rollback mechanisms, health-based rollback, blue/green, database rollback
 
@@ -204,7 +204,7 @@ grep -ri "expand.contract\|migration.*rollback" . --include="*.md" 2>/dev/null |
 
 ---
 
-### AR-07 — Backward compatibility · Criticality: **SHOULD**
+### AR-07 - Backward compatibility · Criticality: **SHOULD**
 
 **Analyze:** Contract testing, schema evolution, API versioning, expand-contract
 
@@ -228,7 +228,7 @@ grep -ri "v1\|v2\|api.version\|deprecat" . --include="*.ts" --include="*.php" --
 
 ---
 
-### AR-08 — Documented progressive deprecation · Criticality: **SHOULD**
+### AR-08 - Documented progressive deprecation · Criticality: **SHOULD**
 
 **Analyze:** Sunset headers, deprecation policy, usage analytics, migration guides
 
@@ -250,7 +250,7 @@ grep -ri "deprecated\|sunset\|end.of.life\|migration.guide" . --include="*.ts" -
 
 ---
 
-### AR-09 — Semantic versioning · Criticality: **SHOULD**
+### AR-09 - Semantic versioning · Criticality: **SHOULD**
 
 **Analyze:** SemVer, conventional commits, changelog, release automation
 

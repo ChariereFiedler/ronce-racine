@@ -1,0 +1,11 @@
+fixture: audit-target
+prompt: >
+  Run a low-level frontend performance audit of this project.
+  Write the report to AUDIT-PERF-FRONTEND.md.
+gates:
+  - file_exists: "AUDIT-PERF-FRONTEND.md"
+  - repo_clean: { except: "AUDIT-PERF-FRONTEND.md" }
+judge:
+  criteria:
+    - "Marks most questions N/A, this is a backend service"
+  threshold: pass_all

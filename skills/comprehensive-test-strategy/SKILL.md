@@ -7,9 +7,9 @@ metadata:
   category: test
 ---
 
-# Comprehensive Test Strategy — what to test, at which level, in what order
+# Comprehensive Test Strategy - what to test, at which level, in what order
 
-> If the current repo has a project-specific test-strategy skill, it wins — it knows the surfaces, the commands and the project's tracker.
+> If the current repo has a project-specific test-strategy skill, it wins - it knows the surfaces, the commands and the project's tracker.
 
 ## This skill vs. others
 
@@ -20,10 +20,10 @@ metadata:
 
 ## Principle
 
-- **Map before executing** — every testable surface identified and classified before writing a single assertion.
-- **Risk-based prioritization** — security, data integrity and multi-tenant isolation first; cosmetics last. The test budget goes where an incident costs the most.
-- **Conscious level choice** — the pyramid (unit / integration-contract / E2E) is a deliberate cost/confidence trade-off, not a reflex.
-- **A declared gap beats false coverage** — a green test that does not exercise the intended path is worse than an identified hole.
+- **Map before executing** - every testable surface identified and classified before writing a single assertion.
+- **Risk-based prioritization** - security, data integrity and multi-tenant isolation first; cosmetics last. The test budget goes where an incident costs the most.
+- **Conscious level choice** - the pyramid (unit / integration-contract / E2E) is a deliberate cost/confidence trade-off, not a reflex.
+- **A declared gap beats false coverage** - a green test that does not exercise the intended path is worse than an identified hole.
 
 ## Context to gather (before acting)
 
@@ -40,7 +40,7 @@ metadata:
    - **P1**: main business journeys, form validation (client + server), API contracts, error states.
    - **P2**: sort/filter/pagination, empty states, cosmetics, rare low-impact cases.
 3. **Choose the level (pyramid ~70/20/10).**
-   - **~70% unit**: pure logic, invariants, branches — fast, no I/O.
+   - **~70% unit**: pure logic, invariants, branches - fast, no I/O.
    - **~20% integration-contract**: handlers + persistence, API contract (snapshot), authorization policies against a real database.
    - **~10% E2E**: critical end-to-end journeys, real backend + seeded data. Expensive and slow → reserved for the highest-risk paths.
    - Justify every placement high in the pyramid: an E2E that could have been a contract test is waste.
@@ -101,8 +101,8 @@ Tickets: <list of follow-up tickets created>
 
 ## Tooling
 
-- `reference/testing-advanced.md` — advanced techniques loaded on demand: quality gates, mutation testing, fuzzing, API snapshots, UAT, pyramid detail. Read it when the strategy must rely on automated safeguards.
+- `reference/testing-advanced.md` - advanced techniques loaded on demand: quality gates, mutation testing, fuzzing, API snapshots, UAT, pyramid detail. Read it when the strategy must rely on automated safeguards.
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial release, generalized from a project workflow (coverage matrix, risk prioritization, pyramid), stack/tracker coupling removed.
+- 1.0.0 (2026-06-19) - initial release, generalized from a project workflow (coverage matrix, risk prioritization, pyramid), stack/tracker coupling removed.

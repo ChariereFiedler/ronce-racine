@@ -1,6 +1,6 @@
-# Rule — `secure-logging`
+# Rule - `secure-logging`
 
-> Logs are forever and widely read. Personal data and secrets never belong in them — log an identifier, not the thing itself.
+> Logs are forever and widely read. Personal data and secrets never belong in them - log an identifier, not the thing itself.
 
 | | |
 |---|---|
@@ -18,7 +18,7 @@
 
 ## Why it matters
 
-Logs flow to places production data never should: aggregation platforms, third-party observability vendors, developer laptops, long-lived archives, and support tooling. Anything written to a log is effectively distributed and retained beyond the app's own access controls. Logging an email or IP therefore turns an ordinary log line into a GDPR-relevant personal-data processing — and logging a token or secret hands an attacker with log access a live credential.
+Logs flow to places production data never should: aggregation platforms, third-party observability vendors, developer laptops, long-lived archives, and support tooling. Anything written to a log is effectively distributed and retained beyond the app's own access controls. Logging an email or IP therefore turns an ordinary log line into a GDPR-relevant personal-data processing - and logging a token or secret hands an attacker with log access a live credential.
 
 Referencing a stable `user_id` instead of the email gives you the same debuggability (you can still correlate, trace, and support) with none of the exposure. Classifying every new field at design time makes the "can this be logged?" question answerable by construction rather than discovered during an incident.
 
@@ -27,10 +27,10 @@ Referencing a stable `user_id` instead of the email gives you the same debuggabi
 ### Log the identifier, not the data
 
 ```ts
-// Bad — leaks PII / a live secret into the log sink
+// Bad - leaks PII / a live secret into the log sink
 logger.info(`login for ${email} with token ${accessToken}`);
 
-// Good — correlate by non-personal id
+// Good - correlate by non-personal id
 logger.info('login', { user_id: user.id });
 ```
 
@@ -50,4 +50,4 @@ When adding a column, tag it Public / Internal / Confidential in the schema or d
 ## Related
 
 - [`audit-security`](../../skills/audit-security/) and [`audit-compliance`](../../skills/audit-compliance/) review logging exposure and data governance.
-- Companion rule: [`error-handling-discipline`](error-handling-discipline.md) — enrich error context with ids, never with the sensitive payload.
+- Companion rule: [`error-handling-discipline`](error-handling-discipline.md) - enrich error context with ids, never with the sensitive payload.

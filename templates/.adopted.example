@@ -1,8 +1,8 @@
-# Règles génériques gérées par le canonique claude-rules.
-# Une par ligne. Les règles NON listées sont laissées intactes (version locale enrichie).
-# Synchroniser : npx tsx /chemin/vers/claude-rules/rules.ts sync .
+# Generic rules managed by the Ronce Racine canonical source.
+# One per line. Rules NOT listed are left untouched (locally customized versions).
+# Sync: npx tsx /path/to/ronce-racine/install.ts install . --rules-only
 minimal-code.md
 commits.md
 test-discipline.md
-# secure-logging.md          # ← décommenter pour adopter la version générique
-# detection-gap-protocol.md  # ← idem
+# secure-logging.md          # ← uncomment to adopt the generic version
+# detection-gap-protocol.md  # ← same

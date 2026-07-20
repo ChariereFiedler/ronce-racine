@@ -4,13 +4,13 @@ Questions: te-04 (Chaos testing), te-05 (Third-party API outage simulation), te-
 
 ## Table of contents
 
-- [te-04 — Chaos testing](#te-04--chaos-testing--could)
-- [te-05 — Third-party API outage simulation](#te-05--third-party-api-outage-simulation--should)
-- [te-06 — Historical batch replay](#te-06--historical-batch-replay--could)
+- [te-04 - Chaos testing](#te-04--chaos-testing--could)
+- [te-05 - Third-party API outage simulation](#te-05--third-party-api-outage-simulation--should)
+- [te-06 - Historical batch replay](#te-06--historical-batch-replay--could)
 
 ---
 
-### te-04 — Chaos testing — `could`
+### te-04 - Chaos testing - `could`
 
 **Analyze:** Chaos Monkey, Litmus, Gremlin configs, failure-simulation scripts, game days
 
@@ -38,7 +38,7 @@ Questions: te-04 (Chaos testing), te-05 (Third-party API outage simulation), te-
 
 ---
 
-### te-05 — Third-party API outage simulation — `should`
+### te-05 - Third-party API outage simulation - `should`
 
 **Analyze:** API resilience tests, fault proxies (Toxiproxy, WireMock), circuit breakers, fallbacks, timeout tests
 
@@ -66,7 +66,7 @@ Questions: te-04 (Chaos testing), te-05 (Third-party API outage simulation), te-
 
 ---
 
-### te-06 — Historical batch replay — `could`
+### te-06 - Historical batch replay - `could`
 
 **Analyze:** Ability to replay past processing, shadow traffic, result comparison, data pipelines
 

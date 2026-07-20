@@ -7,13 +7,13 @@ metadata:
   category: process
 ---
 
-# Merge Request Review — reviewing a change before integration
+# Merge Request Review - reviewing a change before integration
 
-> If the current repo has a specific review skill (e.g. acme-app → `mr-review`), it wins — it knows the forge, the tracker, the API commands and the project's optional auto-merge.
+> If the current repo has a specific review skill (e.g. acme-app → `mr-review`), it wins - it knows the forge, the tracker, the API commands and the project's optional auto-merge.
 
 ## This skill vs. others
 
-- **This skill** when: reviewing the diff of an MR/PR or a branch **that is someone else's or not yet integrated** before merge — "review this PR", "validate this diff", "OK to merge?"
+- **This skill** when: reviewing the diff of an MR/PR or a branch **that is someone else's or not yet integrated** before merge - "review this PR", "validate this diff", "OK to merge?"
 - **`commit-readiness-review`** instead if: it is **my own** changes to commit (before commit, not before merging a third-party branch)
 - **`superpowers:requesting-code-review`** instead if: I want **my own** finished work reviewed, not to review someone else's
 - **`validating-features-end-to-end`** instead if: the question is "does it work" (functional proof), not "is it mergeable"
@@ -21,7 +21,7 @@ metadata:
 ## Principle
 
 - **Approving = having read the diff line by line.** A "green pipeline" proves the existing tests pass, not that the code is correct, safe or complete.
-- The review produces an **explicit verdict**: approve / request changes — never a vague "looks good".
+- The review produces an **explicit verdict**: approve / request changes - never a vague "looks good".
 
 ## Context to gather (before acting)
 
@@ -38,7 +38,7 @@ Read the whole diff first, then work through the checklist:
 - [ ] Pipeline / CI green (and looked at: which jobs, not just the overall badge)
 - [ ] Debug leftovers in added lines (console.log, print, dbg!, debugger, unjustified unwrap/expect)
 - [ ] Hard-coded waits (waitForTimeout, sleep) in tests
-- [ ] Contract / API respected: public signatures, props, events, schema — no unflagged breaking change
+- [ ] Contract / API respected: public signatures, props, events, schema - no unflagged breaking change
 - [ ] i18n: no visible hard-coded string if the project is internationalized
 - [ ] Sensitive files: .env, *.pem, *.key, credentials, secrets → STOP
 - [ ] Disabled tests (.skip, xit, #[ignore]) without justification
@@ -47,11 +47,11 @@ Read the whole diff first, then work through the checklist:
 - [ ] Explicit verdict issued: approve OR request changes
 ```
 
-If there is a conflict with the target: rebase/merge the target into the source, re-validate lint/test, re-push — never force-push the default branch. Schema migration already applied → do not modify the old one, create a new one.
+If there is a conflict with the target: rebase/merge the target into the source, re-validate lint/test, re-push - never force-push the default branch. Schema migration already applied → do not modify the old one, create a new one.
 
 ## Templates
 
-- `templates/mr-review-report.md` — review report (verdict, blocking points, minor points)
+- `templates/mr-review-report.md` - review report (verdict, blocking points, minor points)
 
 ## Traps & rationalizations
 
@@ -74,4 +74,4 @@ As long as a blocking point remains, do not approve.
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial version, derived from an MR review workflow; forge/tracker/auto-merge coupling removed
+- 1.0.0 (2026-06-19) - initial version, derived from an MR review workflow; forge/tracker/auto-merge coupling removed

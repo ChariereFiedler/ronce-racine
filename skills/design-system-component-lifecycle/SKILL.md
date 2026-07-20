@@ -7,26 +7,26 @@ metadata:
   category: frontend
 ---
 
-# Design system component lifecycle — decision → contract → enforcement
+# Design system component lifecycle - decision → contract → enforcement
 
-> If the current repo has an equivalent skill (e.g. acme-app → `design-system-extension`), it wins — it knows the component prefix, the lint rules, and the project's audit specs.
+> If the current repo has an equivalent skill (e.g. acme-app → `design-system-extension`), it wins - it knows the component prefix, the lint rules, and the project's audit specs.
 
 ## This skill vs. others
 
 - **This skill** when: creating a new DS component, adding a variant, covering a repeated raw pattern/element with a reusable component, or enforcing token usage
-- **`refactoring-shared-component-api`** instead if: evolving the API (props/slots/events) of an **already-shared** component — no creation decision
+- **`refactoring-shared-component-api`** instead if: evolving the API (props/slots/events) of an **already-shared** component - no creation decision
 - **`frontend-spec-call-site-audit`** upstream if: specifying a feature that consumes the DS without extending it
 
 ## Principle
 
-A DS component is not just a view file: it is a file **+ its enforcement**. Without enforcement (doc, lint, test), the raw pattern stays allowed elsewhere and the component becomes decorative — you fall back into the duplicated one-offs it was meant to eliminate. The expected output: component created, **all** the call sites of the raw pattern migrated, and the raw pattern now detected as an error.
+A DS component is not just a view file: it is a file **+ its enforcement**. Without enforcement (doc, lint, test), the raw pattern stays allowed elsewhere and the component becomes decorative - you fall back into the duplicated one-offs it was meant to eliminate. The expected output: component created, **all** the call sites of the raw pattern migrated, and the raw pattern now detected as an error.
 
 ## Context to gather (before acting)
 
 - **Inventory the existing DS**: does a component already cover the need? Read the components index/README (atoms, molecules) and the token library before inventing anything
 - **External library**: does a primitive from an existing third-party UI lib cover the need? Reuse before creating
 - **Atom or molecule?** Atom = primitive/control with no business logic · molecule = composition of atoms. Follow the project's naming/folder convention (a prefix often serves as the lint exemption)
-- **Inventory ALL the call sites of the raw pattern** (`grep -rn '<raw pattern>' <src>`) — migrating them is part of the batch, not just the requesting call site
+- **Inventory ALL the call sites of the raw pattern** (`grep -rn '<raw pattern>' <src>`) - migrating them is part of the batch, not just the requesting call site
 - Lint / typecheck / test commands: read `package.json` / CI config
 
 ## Protocol
@@ -49,7 +49,7 @@ A DS component is not just a view file: it is a file **+ its enforcement**. With
 
 - **Two-way API** aligned with the project convention (a single name for the value + its update event), not a mix of conventions
 - **State props** aligned with a reference neighboring component (`label`, `hint`, `error`, `disabled`, `required`, `size`) rather than reinvented
-- **Tokens, no hardcoded values**: colors/spacing/typography go through the DS tokens — a literal value (hex, px) bypasses the contract
+- **Tokens, no hardcoded values**: colors/spacing/typography go through the DS tokens - a literal value (hex, px) bypasses the contract
 - **`testid` as pass-through** from the call site, never hardcoded in the component (two instances on the same page = collision)
 - Variant with no safe default → make it **required** rather than picking an arbitrary default
 
@@ -58,7 +58,7 @@ A DS component is not just a view file: it is a file **+ its enforcement**. With
 - Migrate each call site listed in step 1; grep of the raw pattern = **0 occurrences** outside an explicit exemption
 - Anti-orphan: the new component has ≥ 1 real usage
 
-### 4. Enforcement (the heart of the skill) — 3 synchronized layers
+### 4. Enforcement (the heart of the skill) - 3 synchronized layers
 
 | Layer | Goal | Action |
 |-------|------|--------|
@@ -68,14 +68,14 @@ A DS component is not just a view file: it is a file **+ its enforcement**. With
 
 ## Templates
 
-- `templates/component-contract.md` — component contract to fill in (API, tokens, testid, enforcement)
+- `templates/component-contract.md` - component contract to fill in (API, tokens, testid, enforcement)
 
 ## Traps & rationalizations
 
 | Excuse | Reality |
 |--------|---------|
 | "I'll just make a quick local component for this page" | That's a duplicated one-off. Inventory the DS first; if the need is reusable, it goes in the DS. |
-| "This exact hex/px isn't in the tokens" | Either the token exists and must be used, or the token is missing and must be added — not a hardcoded value that escapes the contract. |
+| "This exact hex/px isn't in the tokens" | Either the token exists and must be used, or the token is missing and must be added - not a hardcoded value that escapes the contract. |
 | "The component works, enforcement can come later" | Without lint/test, the raw pattern stays allowed elsewhere: the component is decorative, not a DS extension. |
 | "The requesting call site is migrated, that's enough" | The other raw call sites remain debt; the grep of the pattern must drop to 0. |
 
@@ -85,8 +85,8 @@ A DS component is not just a view file: it is a file **+ its enforcement**. With
 - [ ] Contract defined: consistent two-way API, tokens (zero hardcoded value), testid as pass-through
 - [ ] ALL call sites of the raw pattern migrated (grep = 0 outside an exemption)
 - [ ] Anti-orphan: ≥ 1 real usage of the new component
-- [ ] Enforcement: doc + lint (exemption removed) + test/audit — all 3 layers
-- [ ] Lint + typecheck + tests run, output pasted — never "it should pass"
+- [ ] Enforcement: doc + lint (exemption removed) + test/audit - all 3 layers
+- [ ] Lint + typecheck + tests run, output pasted - never "it should pass"
 
 ## Tooling
 
@@ -94,4 +94,4 @@ A DS component is not just a view file: it is a file **+ its enforcement**. With
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial version generalized from acme-app's design-system-extension workflow
+- 1.0.0 (2026-06-19) - initial version generalized from acme-app's design-system-extension workflow

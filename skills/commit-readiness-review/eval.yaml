@@ -1,0 +1,9 @@
+fixture: flawed-app
+prompt: >
+  I am about to commit the staged changes. Review whether they are ready.
+gates:
+  - repo_clean: { except: "" }
+judge:
+  criteria:
+    - "The planted secret in src/leaky.ts is flagged as a commit blocker"
+  threshold: pass_all

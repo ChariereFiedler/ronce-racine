@@ -1,21 +1,21 @@
-# Section CO — Compliance & Regulatory (10 questions)
+# Section CO - Compliance & Regulatory (10 questions)
 
 ## Table of contents
 
-- [CO-01 — Sensitive data minimized (GDPR)](#co-01--sensitive-data-minimized-gdpr--criticality--must)
-- [CO-02 — Anonymization where possible](#co-02--anonymization-where-possible--criticality--must)
-- [CO-02a — Anonymization quality](#co-02a--anonymization-quality--criticality--should)
-- [CO-03 — Data retention policy](#co-03--data-retention-policy--criticality--should)
-- [CO-04 — DPIA (Data Protection Impact Assessment)](#co-04--dpia-data-protection-impact-assessment--criticality--must)
-- [CO-04a — DPIA risk tracking](#co-04a--dpia-risk-tracking--criticality--should)
-- [CO-05 — Dedicated purge API (right to erasure)](#co-05--dedicated-purge-api-right-to-erasure--criticality--must)
-- [CO-06 — Propagation of deletions to third-party systems](#co-06--propagation-of-deletions-to-third-party-systems--criticality--must)
-- [CO-07 — Deletion logging](#co-07--deletion-logging--criticality--must)
-- [CO-07a — Deletion-evidence accessibility](#co-07a--deletion-evidence-accessibility--criticality--should)
+- [CO-01 - Sensitive data minimized (GDPR)](#co-01--sensitive-data-minimized-gdpr--criticality--must)
+- [CO-02 - Anonymization where possible](#co-02--anonymization-where-possible--criticality--must)
+- [CO-02a - Anonymization quality](#co-02a--anonymization-quality--criticality--should)
+- [CO-03 - Data retention policy](#co-03--data-retention-policy--criticality--should)
+- [CO-04 - DPIA (Data Protection Impact Assessment)](#co-04--dpia-data-protection-impact-assessment--criticality--must)
+- [CO-04a - DPIA risk tracking](#co-04a--dpia-risk-tracking--criticality--should)
+- [CO-05 - Dedicated purge API (right to erasure)](#co-05--dedicated-purge-api-right-to-erasure--criticality--must)
+- [CO-06 - Propagation of deletions to third-party systems](#co-06--propagation-of-deletions-to-third-party-systems--criticality--must)
+- [CO-07 - Deletion logging](#co-07--deletion-logging--criticality--must)
+- [CO-07a - Deletion-evidence accessibility](#co-07a--deletion-evidence-accessibility--criticality--should)
 
 ---
 
-### CO-01 — Sensitive data minimized (GDPR) — Criticality: **MUST**
+### CO-01 - Sensitive data minimized (GDPR) - Criticality: **MUST**
 
 **Analyze:** Data model (DB schema, types), data collected vs needed
 
@@ -46,7 +46,7 @@ find . -name "*rgpd*" -o -name "*gdpr*" -o -name "*treatment*" -o -name "*traite
 
 ---
 
-### CO-02 — Anonymization where possible — Criticality: **MUST**
+### CO-02 - Anonymization where possible - Criticality: **MUST**
 
 **Analyze:** Anonymization mechanisms, pseudonymization, hashing, masking
 
@@ -73,7 +73,7 @@ grep -ri "consent\|gdpr\|privacy\|cookie\|opt.in\|opt.out" . --include="*.ts" --
 
 ---
 
-### CO-02a — Anonymization quality — Criticality: **SHOULD**
+### CO-02a - Anonymization quality - Criticality: **SHOULD**
 
 **Condition:** Evaluate if CO-02 >= 2
 
@@ -101,7 +101,7 @@ grep -ri "k.anonymity\|l.diversity\|t.closeness\|re.identif\|singling.out\|linka
 
 ---
 
-### CO-03 — Data retention policy — Criticality: **SHOULD**
+### CO-03 - Data retention policy - Criticality: **SHOULD**
 
 **Analyze:** Purge scripts, TTL configs (Redis, DB), documented policy
 
@@ -128,7 +128,7 @@ find . -name "*retention*" -o -name "*lifecycle*" -o -name "*data.policy*" 2>/de
 
 ---
 
-### CO-04 — DPIA (Data Protection Impact Assessment) — Criticality: **MUST**
+### CO-04 - DPIA (Data Protection Impact Assessment) - Criticality: **MUST**
 
 **Analyze:** DPIA/PIA documentation, impact analysis, processing register
 
@@ -156,7 +156,7 @@ grep -ri "dpia\|pia\|impact.assessment\|analyse.impact\|privacy.impact" . --incl
 
 ---
 
-### CO-04a — DPIA risk tracking — Criticality: **SHOULD**
+### CO-04a - DPIA risk tracking - Criticality: **SHOULD**
 
 **Condition:** Evaluate if CO-04 >= 2
 
@@ -184,7 +184,7 @@ grep -ri "risk.*register\|registre.*risque\|mitigation\|attenuation\|residual.ri
 
 ---
 
-### CO-05 — Dedicated purge API (right to erasure) — Criticality: **MUST**
+### CO-05 - Dedicated purge API (right to erasure) - Criticality: **MUST**
 
 **Analyze:** Deletion endpoints, purge workflow, propagation
 
@@ -212,7 +212,7 @@ grep -ri "DELETE\|destroy\|remove.*account" . --include="*.ts" --include="*.rs" 
 
 ---
 
-### CO-06 — Propagation of deletions to third-party systems — Criticality: **MUST**
+### CO-06 - Propagation of deletions to third-party systems - Criticality: **MUST**
 
 **Analyze:** Mapping of systems holding user data, propagation scripts
 
@@ -240,7 +240,7 @@ grep -ri "crm\|analytics\|email.*service\|stripe\|sendgrid\|mailchimp" . --inclu
 
 ---
 
-### CO-07 — Deletion logging — Criticality: **MUST**
+### CO-07 - Deletion logging - Criticality: **MUST**
 
 **Analyze:** Deletion logs, audit trail, compliance evidence
 
@@ -268,7 +268,7 @@ grep -ri "append.only\|tamper.proof\|immutable.*log" . --include="*.ts" --includ
 
 ---
 
-### CO-07a — Deletion-evidence accessibility — Criticality: **SHOULD**
+### CO-07a - Deletion-evidence accessibility - Criticality: **SHOULD**
 
 **Condition:** Evaluate if CO-07 >= 2
 

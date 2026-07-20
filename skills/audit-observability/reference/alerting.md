@@ -1,19 +1,19 @@
-# Alerting section — Catalog, notifications, correlation, runbooks, thresholds, post-mortems
+# Alerting section - Catalog, notifications, correlation, runbooks, thresholds, post-mortems
 
 6 questions. Alert catalog, multi-channel notifications, correlation/deduplication, runbooks, threshold tuning, post-mortems.
 
 ## Table of contents
 
-- [al-01 — Alert catalog (critical, warning, info)](#al-01--alert-catalog-critical-warning-info--criticality-must)
-- [al-02 — Multi-channel notifications](#al-02--multi-channel-notifications--criticality-should)
-- [al-03 — Correlation/deduplication (alert fatigue)](#al-03--correlationdeduplication-alert-fatigue--criticality-should)
-- [al-04 — Investigation runbook](#al-04--investigation-runbook--criticality-should)
-- [al-05 — Alert threshold tuning](#al-05--alert-threshold-tuning--criticality-should)
-- [al-06 — Post-mortem template + recurring incidents](#al-06--post-mortem-template--recurring-incidents--criticality-should)
+- [al-01 - Alert catalog (critical, warning, info)](#al-01--alert-catalog-critical-warning-info--criticality-must)
+- [al-02 - Multi-channel notifications](#al-02--multi-channel-notifications--criticality-should)
+- [al-03 - Correlation/deduplication (alert fatigue)](#al-03--correlationdeduplication-alert-fatigue--criticality-should)
+- [al-04 - Investigation runbook](#al-04--investigation-runbook--criticality-should)
+- [al-05 - Alert threshold tuning](#al-05--alert-threshold-tuning--criticality-should)
+- [al-06 - Post-mortem template + recurring incidents](#al-06--post-mortem-template--recurring-incidents--criticality-should)
 
 ---
 
-### al-01 — Alert catalog (critical, warning, info) · Criticality: **MUST**
+### al-01 - Alert catalog (critical, warning, info) · Criticality: **MUST**
 
 **Analyze:** Alert configs (Alertmanager, PagerDuty, OpsGenie, Grafana alerts), alert rules, severity classification, alerting-as-code
 
@@ -55,7 +55,7 @@ grep -ri "critical\|warning\|info\|severity\|priority\|P1\|P2\|P3\|P4" --include
 
 ---
 
-### al-02 — Multi-channel notifications · Criticality: **SHOULD**
+### al-02 - Multi-channel notifications · Criticality: **SHOULD**
 
 **Analyze:** Configured notification channels, routing by severity, failover, automatic escalation
 
@@ -86,7 +86,7 @@ grep -ri "escalat\|routing\|receiver\|notify\|on_call\|schedule" --include="*.ya
 
 ---
 
-### al-03 — Correlation/deduplication (alert fatigue) · Criticality: **SHOULD**
+### al-03 - Correlation/deduplication (alert fatigue) · Criticality: **SHOULD**
 
 **Analyze:** Alert deduplication, grouping, cross-service correlation, noise suppression, noise-ratio metrics
 
@@ -117,7 +117,7 @@ grep -ri "alert.*fatigue\|noise\|correlat\|dedup\|suppress\|inhibit" --include="
 
 ---
 
-### al-04 — Investigation runbook · Criticality: **SHOULD**
+### al-04 - Investigation runbook · Criticality: **SHOULD**
 
 **Analyze:** Documented runbooks, direct link from alerts, automated diagnostic scripts, post-incident feedback loop
 
@@ -150,7 +150,7 @@ find . -name "*diagnos*" -o -name "*debug*" -o -name "*healthcheck*" | grep -i s
 
 ---
 
-### al-05 — Alert threshold tuning · Criticality: **SHOULD**
+### al-05 - Alert threshold tuning · Criticality: **SHOULD**
 
 **Analyze:** Threshold review process, false-positive metrics, adaptive thresholds, SLO-based alerting
 
@@ -183,7 +183,7 @@ grep -ri "anomaly\|predict_linear\|forecast\|dynamic.*threshold\|adaptive" --inc
 
 ---
 
-### al-06 — Post-mortem template + recurring incidents · Criticality: **SHOULD**
+### al-06 - Post-mortem template + recurring incidents · Criticality: **SHOULD**
 
 **Analyze:** Post-mortem template, blameless culture, corrective-action tracking, recurrence metrics
 

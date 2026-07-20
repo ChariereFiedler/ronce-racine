@@ -4,12 +4,12 @@ Questions: te-03 (Full-injection E2E tests), te-03a (Flaky test management).
 
 ## Table of contents
 
-- [te-03 — Full-injection E2E tests](#te-03--full-injection-e2e-tests--should)
-- [te-03a — Flaky test management](#te-03a--flaky-test-management--should)
+- [te-03 - Full-injection E2E tests](#te-03--full-injection-e2e-tests--should)
+- [te-03a - Flaky test management](#te-03a--flaky-test-management--should)
 
 ---
 
-### te-03 — Full-injection E2E tests — `should`
+### te-03 - Full-injection E2E tests - `should`
 
 **Analyze:** Playwright, Cypress, Selenium files, e2e configs, e2e scripts in package.json
 
@@ -38,7 +38,7 @@ Questions: te-03 (Full-injection E2E tests), te-03a (Flaky test management).
 
 ---
 
-### te-03a — Flaky test management — `should`
+### te-03a - Flaky test management - `should`
 
 **Condition:** Applies if te-03 ≥ 2 (automated E2E suite in place).
 

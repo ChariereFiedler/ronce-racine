@@ -1,0 +1,14 @@
+fixture: backend-node
+prompt: >
+  We're adding subscriptions to this backend: users subscribe to a plan,
+  can upgrade or downgrade, and cancelling keeps access until the end of
+  the current period instead of losing it immediately. Design the domain
+  model before any code is written.
+gates:
+  - repo_clean: { except: "docs/, .claude/" }
+judge:
+  criteria:
+    - "Aggregate boundary and invariants for subscription identified"
+    - "Placement decision documented with rejected alternatives"
+    - "No implementation code written, only a spec"
+  threshold: pass_all

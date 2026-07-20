@@ -1,4 +1,4 @@
-# Rule — `sql-migrations-discipline`
+# Rule - `sql-migrations-discipline`
 
 > Migrations are append-only history. Never rewrite an applied one, and never block production with a single destructive step.
 
@@ -21,9 +21,9 @@
 
 ## Why it matters
 
-Migration tools trust their checksums to know what has run. Editing an applied migration desynchronizes every environment that already ran the old version — teammates and production diverge silently, and the tool refuses to proceed or, worse, skips the change. Forward-only migrations keep every environment on the same deterministic path.
+Migration tools trust their checksums to know what has run. Editing an applied migration desynchronizes every environment that already ran the old version - teammates and production diverge silently, and the tool refuses to proceed or, worse, skips the change. Forward-only migrations keep every environment on the same deterministic path.
 
-The two-step / expand-contract discipline exists because a single destructive change on a live table can lock it, break the currently-deployed code, or fail halfway with no clean rollback. Adding a column as nullable, backfilling, then tightening the constraint keeps the old and new code both working during the deploy window — the essence of a zero-downtime schema change. Replaying from a clean database catches migrations that only "work" because of accumulated local state.
+The two-step / expand-contract discipline exists because a single destructive change on a live table can lock it, break the currently-deployed code, or fail halfway with no clean rollback. Adding a column as nullable, backfilling, then tightening the constraint keeps the old and new code both working during the deploy window - the essence of a zero-downtime schema change. Replaying from a clean database catches migrations that only "work" because of accumulated local state.
 
 ## How to apply it
 

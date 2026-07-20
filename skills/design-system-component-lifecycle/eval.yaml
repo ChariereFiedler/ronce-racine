@@ -1,0 +1,13 @@
+fixture: design-system
+prompt: >
+  Add a size variant (sm/md/lg) to BaseButton. Use the existing design
+  tokens rather than hardcoded values, migrate every call site to pass an
+  explicit size, and document the component in src/components/README.md.
+gates:
+  - file_exists: "src/components/README.md"
+  - grep_zero: { pattern: "#[0-9a-fA-F]", in: "src/components/BaseButton.vue" }
+judge:
+  criteria:
+    - "New size prop added to BaseButton's contract, not a hardcoded value"
+    - "All three call sites pass an explicit size"
+  threshold: pass_all

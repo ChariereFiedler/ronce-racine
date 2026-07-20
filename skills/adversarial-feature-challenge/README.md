@@ -1,6 +1,6 @@
 # `adversarial-feature-challenge`
 
-> Deliberately try to break a "done" feature before it ships — because a green golden path proves only that the happy case works.
+> Deliberately try to break a "done" feature before it ships - because a green golden path proves only that the happy case works.
 
 | | |
 |---|---|
@@ -15,7 +15,7 @@
 
 ## Why it exists
 
-A passing golden path is the weakest possible evidence of quality: it is the one path the author already had in mind. Real defects hide at the edges — double-clicks, expired sessions, another tenant's token, a 10,000-character name, a 500 from an upstream call, a form that is unusable without a mouse.
+A passing golden path is the weakest possible evidence of quality: it is the one path the author already had in mind. Real defects hide at the edges - double-clicks, expired sessions, another tenant's token, a 10,000-character name, a 500 from an upstream call, a form that is unusable without a mouse.
 
 Two failure modes make this skill necessary:
 
@@ -30,7 +30,7 @@ Invoke it when a feature is "done" and about to be closed, and phrases like thes
 - a ticket whose only validation is that the golden path passes
 - right before shipping or closing a feature ticket
 
-Do **not** use it to prove the intended behavior works in the first place — that is `validating-features-end-to-end` (validate first, challenge afterward). Do **not** use it to grow automated coverage — that is `writing-robust-tests`.
+Do **not** use it to prove the intended behavior works in the first place - that is `validating-features-end-to-end` (validate first, challenge afterward). Do **not** use it to grow automated coverage - that is `writing-robust-tests`.
 
 ## How it works
 
@@ -45,21 +45,21 @@ Full step-by-step protocol → [`SKILL.md`](SKILL.md).
 ### Non-negotiable rules
 
 - **Trying to break, not validate.** The goal is failure, and finding none is a failure of the challenge.
-- **Every flaw needs an archivable reproduction** — steps plus output. An undocumented flaw is an opinion.
+- **Every flaw needs an archivable reproduction** - steps plus output. An undocumented flaw is an opinion.
 - **Don't triage away severity on the PO's behalf.** Record cosmetic bugs with their severity; let the owner decide.
 
 ## Worked example
 
 > A "rename project" feature is declared done. Golden path: type a new name, click Save, the header updates.
 
-Adopting the **malicious** persona, you send another tenant's project ID to the rename endpoint with your own token and get a `200` back — a cross-tenant write. You capture the two curl calls and the response body in `templates/challenge-report.md`, mark it **blocking**, and open a ticket.
+Adopting the **malicious** persona, you send another tenant's project ID to the rename endpoint with your own token and get a `200` back - a cross-tenant write. You capture the two curl calls and the response body in `templates/challenge-report.md`, mark it **blocking**, and open a ticket.
 
 Switching to the **distracted novice** persona on mobile, you double-click Save and the request fires twice, creating a duplicate audit-log entry. Captured, marked **improvement required**, ticketed.
 
-Two personas, two flaws, one blocking — the ticket does not get closed.
+Two personas, two flaws, one blocking - the ticket does not get closed.
 
 ## Related artifacts
 
-- [`validating-features-end-to-end`](../validating-features-end-to-end/) — prove the intended behavior works *before* challenging it.
-- [`writing-robust-tests`](../writing-robust-tests/) — harden coverage once the flaws are known.
-- [`bug-ticket-root-cause`](../bug-ticket-root-cause/) — turn each confirmed flaw into a root-caused ticket.
+- [`validating-features-end-to-end`](../validating-features-end-to-end/) - prove the intended behavior works *before* challenging it.
+- [`writing-robust-tests`](../writing-robust-tests/) - harden coverage once the flaws are known.
+- [`bug-ticket-root-cause`](../bug-ticket-root-cause/) - turn each confirmed flaw into a root-caused ticket.

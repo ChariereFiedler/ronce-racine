@@ -16,7 +16,7 @@
  */
 import { readFileSync, existsSync, readdirSync, mkdirSync, writeFileSync, cpSync, type Dirent } from "node:fs";
 import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { execSync } from "node:child_process";
 import { emitKeypressEvents } from "node:readline";
 
@@ -68,7 +68,8 @@ function compareToken(token: string, repo: string): string | null {
   if (!existsSync(inst)) return "absent";
   if (!existsSync(canon)) return "canonical-removed";
   if (!isDir) return readFileSync(canon).equals(readFileSync(inst)) ? null : "modified";
-  const canonFiles = listFiles(canon);
+  // Test procedures and eval manifests are never distributed (see copyToken) - exclude them from drift.
+  const canonFiles = listFiles(canon).filter((f) => !f.endsWith(".test.ts") && f !== "eval.yaml");
   const probs = [
     ...canonFiles.filter((f) => !existsSync(join(inst, f))).map((f) => `-${f}`),
     ...canonFiles.filter((f) => existsSync(join(inst, f)) && !readFileSync(join(canon, f)).equals(readFileSync(join(inst, f)))).map((f) => `~${f}`),
@@ -95,7 +96,7 @@ interface HookWiring {
   commandFile: string;
 }
 
-interface Item {
+export interface Item {
   kind: Kind;
   name: string; // file name (rule/agent) or folder name (skill) or hook file
   when: "always" | string[]; // recommended if the signal is present
@@ -107,7 +108,7 @@ interface Item {
 
 /** Catalog: the installer's "knowledge" (signal → artifact + reason). */
 const CATALOG: Item[] = [
-  // — rules —
+  // rules
   { kind: "rule", name: "minimal-code.md", when: ["code"], reason: "YAGNI + readability, any code project" },
   { kind: "rule", name: "commits.md", when: ["git"], reason: "commit message format" },
   { kind: "rule", name: "secure-logging.md", when: ["code"], reason: "GDPR: never log sensitive data" },
@@ -120,7 +121,7 @@ const CATALOG: Item[] = [
   { kind: "rule", name: "no-raw-sql-interpolation.md", when: ["sql"], reason: "SQL detected: anti-injection" },
   { kind: "rule", name: "sql-migrations-discipline.md", when: ["migrations"], reason: "migrations detected" },
   { kind: "rule", name: "detection-gap-protocol.md", when: ["code"], reason: "P0 found by user = detection failure", optional: true },
-  // — skills (process / cross-cutting) —
+  // skills (process / cross-cutting)
   { kind: "skill", name: "recording-decisions", when: "always", reason: "record non-obvious choices" },
   { kind: "skill", name: "detection-sweep", when: ["code"], reason: "project detection sweep" },
   { kind: "skill", name: "commit-readiness-review", when: ["git"], reason: "self-review before commit (+ scripts/precommit-scan.ts)" },
@@ -130,26 +131,26 @@ const CATALOG: Item[] = [
   { kind: "skill", name: "recurring-bug-root-cause", when: ["git"], reason: "recurring bug → root cause" },
   { kind: "skill", name: "daily-workflow-optimization", when: ["code"], reason: "reduce workflow friction", optional: true },
   { kind: "skill", name: "qa-session-intake", when: ["frontend"], reason: "turn a QA session into tickets", optional: true },
-  // — test skills —
+  // test skills
   { kind: "skill", name: "writing-robust-tests", when: ["tests", "code"], reason: "write robust tests" },
   { kind: "skill", name: "comprehensive-test-strategy", when: ["tests", "code"], reason: "risk-based test strategy" },
   { kind: "skill", name: "adversarial-feature-challenge", when: ["code"], reason: "adversarial stress-test of a feature" },
   { kind: "skill", name: "validating-features-end-to-end", when: ["code"], reason: "validate a feature before closing" },
-  // — design / impl skills —
+  // design / impl skills
   { kind: "skill", name: "domain-modeling-design", when: ["backend"], reason: "model a domain before coding" },
   { kind: "skill", name: "ddd-backend-implementation", when: ["backend"], reason: "implement in DDD layers" },
   { kind: "skill", name: "api-contract-versioning", when: ["backend"], reason: "evolve an API contract" },
   { kind: "skill", name: "database-schema-evolution", when: ["migrations", "sql"], reason: "risky schema migration" },
-  // — frontend skills —
+  // frontend skills
   { kind: "skill", name: "frontend-spec-call-site-audit", when: ["frontend"], reason: "frontend spec before ticket" },
   { kind: "skill", name: "frontend-fullstack-implementation", when: ["frontend"], reason: "implement a frontend feature" },
   { kind: "skill", name: "refactoring-shared-component-api", when: ["frontend"], reason: "change a shared component's API" },
   { kind: "skill", name: "design-system-component-lifecycle", when: ["frontend"], reason: "create/extend a DS component" },
   { kind: "skill", name: "visual-regression-check", when: ["frontend"], reason: "check the rendering before commit" },
-  // — ops skills —
+  // ops skills
   { kind: "skill", name: "ci-pipeline-orchestration", when: ["ci"], reason: "CI detected: check/diagnose/retry" },
   { kind: "skill", name: "production-incident-diagnostic", when: ["infra"], reason: "infra/deployment: prod incident triage" },
-  // — audit skills (heavy, optional) —
+  // audit skills (heavy, optional)
   { kind: "skill", name: "audit-industrialisation", when: ["code"], reason: "maturity audit orchestrator", optional: true },
   { kind: "skill", name: "audit-report", when: ["code"], reason: "audit report template/scoring", optional: true },
   { kind: "skill", name: "audit-security", when: ["backend", "infra"], reason: "application security audit", optional: true },
@@ -160,21 +161,21 @@ const CATALOG: Item[] = [
   { kind: "skill", name: "audit-observability", when: ["infra", "backend"], reason: "observability & alerting audit", optional: true },
   { kind: "skill", name: "audit-performance-frontend", when: ["frontend"], reason: "low-level frontend perf audit", optional: true },
   { kind: "skill", name: "audit-compliance", when: ["code"], reason: "compliance/GDPR/FinOps audit", optional: true },
-  // — scripts (standalone, read-only) —
+  // scripts (standalone, read-only)
   { kind: "script", name: "subscription-leak-scan.ts", when: ["frontend"], reason: "detects subscriptions/listeners/timers without teardown" },
-  // — hooks —
+  // hooks
   { kind: "hook", name: "skill-reminder.ts", when: "always", reason: "suggests the relevant skills for the prompt", wiring: [{ event: "UserPromptSubmit", commandFile: "skill-reminder.ts" }] },
   { kind: "hook", name: "bash-npm-silent.ts", when: ["code"], reason: "silences npm install/ci (less noise)", wiring: [{ event: "PreToolUse", matcher: "Bash", commandFile: "bash-npm-silent.ts" }] },
   { kind: "hook", name: "truncate-output.ts", when: ["code"], reason: "caps verbose output (cargo/git/docker…)", files: ["truncate-output.ts", "truncate-bash-output.ts"], wiring: [{ event: "PreToolUse", matcher: "Bash", commandFile: "truncate-output.ts" }] },
   { kind: "hook", name: "session-writer.ts", when: "always", reason: "per-branch session memo (writer/inject/precompact)", optional: true, files: ["session-writer.ts", "session-inject.ts", "session-precompact.ts"], wiring: [{ event: "Stop", commandFile: "session-writer.ts" }, { event: "SessionStart", matcher: "compact", commandFile: "session-inject.ts" }, { event: "PreCompact", commandFile: "session-precompact.ts" }] },
   { kind: "hook", name: "worktree-env-setup.ts", when: "always", reason: "symlink .env into git worktrees", optional: true, wiring: [{ event: "SessionStart", commandFile: "worktree-env-setup.ts" }] },
-  // — agents —
+  // agents
   { kind: "agent", name: "code-reviewer.md", when: ["git", "code"], reason: "diff review agent" },
   { kind: "agent", name: "qa-tester.md", when: ["tests"], reason: "E2E testing agent" },
 ];
 
 /** Bounded walk: extensions seen, presence of specs and a migrations folder. */
-function scan(repo: string): { exts: Set<string>; spec: boolean; migrations: boolean } {
+function scan(repo: string): { exts: Set<string>; spec: boolean; migrations: boolean; truncated: boolean } {
   // Prune `.claude` too: the tool's own installed artifacts (hook/script .ts
   // files) must not be detected as the project's code on a re-install.
   const PRUNE = new Set(["node_modules", ".git", ".claude", "target", "dist", "build", "vendor", ".nuxt", ".next", "coverage"]);
@@ -204,7 +205,9 @@ function scan(repo: string): { exts: Set<string>; spec: boolean; migrations: boo
     }
   };
   walk(repo);
-  return { exts, spec, migrations };
+  // No silent caps: on a huge repo the walk stops at the budget - say so, a
+  // missed deep signal (migrations/, *.sql) would otherwise look like "not there".
+  return { exts, spec, migrations, truncated: budget <= 0 };
 }
 
 function detect(repo: string): { signals: Set<string>; evidence: Record<string, string> } {
@@ -239,7 +242,8 @@ function detect(repo: string): { signals: Set<string>; evidence: Record<string, 
   if (dep(/playwright|cypress/)) add("tests", "E2E deps");
   if (dep(/vitest|jest|mocha|jasmine|karma/)) add("tests", "test runner");
 
-  const { exts, spec, migrations } = scan(repo);
+  const { exts, spec, migrations, truncated } = scan(repo);
+  if (truncated) add("scan-truncated", "large repo: detection stopped at the scan budget - deep signals may be missed; pass artifacts explicitly if needed");
   const anyCode = [".ts", ".tsx", ".js", ".jsx", ".vue", ".svelte", ".rs", ".go", ".java", ".py", ".php", ".rb"].some((e) =>
     exts.has(e),
   );
@@ -278,7 +282,7 @@ function printGroup(title: string, items: Item[]): void {
     const g = items.filter((i) => i.kind === k);
     if (!g.length) continue;
     console.log(`  ${KIND_LABEL[k]} (${g.length}) :`);
-    for (const i of g) console.log(`    • ${i.name.replace(/\.md$/, "")} — ${i.reason}`);
+    for (const i of g) console.log(`    • ${i.name.replace(/\.md$/, "")} - ${i.reason}`);
   }
 }
 
@@ -311,12 +315,22 @@ function mergeHookSettings(dotclaude: string, wirings: HookWiring[]): { added: n
       malformed = true; // keep {} but back up the original before overwriting
     }
   }
+  // A hooks section with an unexpected shape (array, string…) cannot be merged
+  // into: treat it like malformed JSON - back up the file and rebuild the section.
+  if (settings.hooks !== undefined && (typeof settings.hooks !== "object" || settings.hooks === null || Array.isArray(settings.hooks))) {
+    malformed = true;
+    delete settings.hooks;
+  }
   const hooks = (settings.hooks ??= {});
   let added = 0;
   for (const w of wirings) {
     const command = `npx tsx $CLAUDE_PROJECT_DIR/.claude/hooks/${w.commandFile}`;
-    const entries = (hooks[w.event] ??= []);
-    let entry = entries.find((e) => (e.matcher ?? "") === (w.matcher ?? ""));
+    if (!Array.isArray(hooks[w.event])) {
+      if (hooks[w.event] !== undefined) malformed = true;
+      hooks[w.event] = [];
+    }
+    const entries = hooks[w.event];
+    let entry = entries.find((e) => e && typeof e === "object" && Array.isArray(e.hooks) && (e.matcher ?? "") === (w.matcher ?? ""));
     if (!entry) {
       entry = { ...(w.matcher ? { matcher: w.matcher } : {}), hooks: [] };
       entries.push(entry);
@@ -406,7 +420,7 @@ function readItemDescription(item: Item): string {
       }
     }
   } catch {
-    // Cannot read — fall back to the default
+    // Cannot read - fall back to the default
   }
   return item.reason;
 }
@@ -467,7 +481,7 @@ function buildItemLine(item: Item, isChecked: boolean, isCursor: boolean): strin
   const baseName = item.name.replace(/\.md$/, "");
   const optTag = item.optional ? " · opt" : "";
   const nameField = (baseName + optTag).padEnd(28);
-  const line = `  ${isCursor ? "›" : " "} ${box} ${nameField}  — ${item.reason}`;
+  const line = `  ${isCursor ? "›" : " "} ${box} ${nameField}  - ${item.reason}`;
   if (isCursor) return INVERSE(line);
   if (item.optional) return DIM(line);
   return line;
@@ -580,6 +594,31 @@ function buildSelectorFrame(opts: {
 // ─── Interactive selector ─────────────────────────────────────────────────────
 
 /** TTY checkbox selector with a scrolling viewport and detail panel. Resolves the checked items, or null if cancelled. */
+// ─── Selector keyboard logic (pure, exported for tests) ───────────────────────
+
+export interface SelectorState { flat: Item[]; checked: Set<Item>; cursor: number }
+
+/**
+ * Applies one keypress to the selector state (mutated in place).
+ * Returns "continue", "confirm" (enter) or "cancel" (q / ctrl-c).
+ */
+export function applySelectorKey(state: SelectorState, key: { name?: string; ctrl?: boolean }): "continue" | "confirm" | "cancel" {
+  const k = key?.name;
+  if ((key?.ctrl && k === "c") || k === "q") return "cancel";
+  if (k === "up" || k === "k") state.cursor = (state.cursor - 1 + state.flat.length) % state.flat.length;
+  else if (k === "down" || k === "j") state.cursor = (state.cursor + 1) % state.flat.length;
+  else if (k === "space") {
+    const it = state.flat[state.cursor];
+    state.checked.has(it) ? state.checked.delete(it) : state.checked.add(it);
+  } else if (k === "a") {
+    const kind = state.flat[state.cursor].kind;
+    const group = state.flat.filter((i) => i.kind === kind);
+    const allOn = group.every((i) => state.checked.has(i));
+    group.forEach((i) => (allOn ? state.checked.delete(i) : state.checked.add(i)));
+  } else if (k === "return") return "confirm";
+  return "continue";
+}
+
 function interactiveSelect(items: Item[], preChecked: Set<Item>): Promise<Item[] | null> {
   const flat = KIND_ORDER.flatMap((k) => items.filter((i) => i.kind === k));
   const checked = new Set(preChecked);
@@ -613,25 +652,13 @@ function interactiveSelect(items: Item[], preChecked: Set<Item>): Promise<Item[]
       stdin.removeListener("keypress", onKey);
     };
 
+    const state: SelectorState = { flat, checked, cursor };
     const onKey = (_s: string, key: { name?: string; ctrl?: boolean }): void => {
       try {
-        const k = key?.name;
-        if ((key?.ctrl && k === "c") || k === "q") { cleanup(); resolve(null); return; }
-        if (k === "up" || k === "k") cursor = (cursor - 1 + flat.length) % flat.length;
-        else if (k === "down" || k === "j") cursor = (cursor + 1) % flat.length;
-        else if (k === "space") {
-          const it = flat[cursor];
-          checked.has(it) ? checked.delete(it) : checked.add(it);
-        } else if (k === "a") {
-          const kind = flat[cursor].kind;
-          const group = flat.filter((i) => i.kind === kind);
-          const allOn = group.every((i) => checked.has(i));
-          group.forEach((i) => (allOn ? checked.delete(i) : checked.add(i)));
-        } else if (k === "return") {
-          cleanup();
-          resolve(flat.filter((i) => checked.has(i)));
-          return;
-        }
+        const outcome = applySelectorKey(state, key);
+        cursor = state.cursor; // render() reads the outer binding
+        if (outcome === "cancel") { cleanup(); resolve(null); return; }
+        if (outcome === "confirm") { cleanup(); resolve(flat.filter((i) => checked.has(i))); return; }
         render();
       } catch {
         cleanup();
@@ -652,11 +679,33 @@ function interactiveSelect(items: Item[], preChecked: Set<Item>): Promise<Item[]
   });
 }
 
-async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rulesOnly: boolean }): Promise<void> {
+async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rulesOnly: boolean; pick: string[]; pickFlag: boolean }): Promise<void> {
+  if (opts.pickFlag && opts.pick.length === 0) {
+    console.error("--pick requires at least one token (kind:name), e.g. --pick skill:detection-sweep");
+    process.exit(2);
+  }
   let { picked, optional } = plan(repo);
   if (opts.rulesOnly) {
     picked = picked.filter((i) => i.kind === "rule");
     optional = optional.filter((i) => i.kind === "rule");
+  }
+  if (opts.pick.length) {
+    const tokenOf = (i: Item): string => `${i.kind}:${i.name.replace(/\.md$/, "")}`;
+    const unknown = opts.pick.filter((t) => !CATALOG.some((i) => tokenOf(i) === t || `${i.kind}:${i.name}` === t));
+    if (unknown.length) {
+      console.error(`Unknown pick token(s): ${unknown.join(", ")}`);
+      process.exit(2);
+    }
+    // --rules-only restricts --pick to the rules-only set: a non-rule pick token errors rather than being silently installed anyway.
+    if (opts.rulesOnly) {
+      const nonRule = opts.pick.filter((t) => !t.startsWith("rule:"));
+      if (nonRule.length) {
+        console.error(`--rules-only restricts --pick to rule:* tokens; got: ${nonRule.join(", ")}`);
+        process.exit(2);
+      }
+    }
+    picked = CATALOG.filter((i) => opts.pick.some((t) => tokenOf(i) === t || `${i.kind}:${i.name}` === t));
+    optional = [];
   }
   const candidates = [...picked, ...optional];
   const preChecked = new Set(opts.all ? candidates : picked);
@@ -666,20 +715,29 @@ async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rules
     items = [...preChecked];
   } else {
     const sel = await interactiveSelect(candidates, preChecked);
-    if (sel === null) { console.log("Cancelled — nothing installed."); return; }
+    if (sel === null) { console.log("Cancelled - nothing installed."); return; }
     items = sel;
   }
-  if (!items.length) { console.log("No item selected — nothing installed."); return; }
+  if (!items.length) { console.log("No item selected - nothing installed."); return; }
   const dotclaude = join(repo, ".claude");
 
   // Preserve deliberately customized (detached) items: never overwrite them on
   // re-install. They stay recorded as installed but their files are left as-is.
   const prevLock = readLock(repo);
   const detached = new Set(prevLock?.detached ?? []);
+  // Pre-existing content we never installed (first install, or a token added since)
+  // is user work: back it up before overwriting instead of silently clobbering it.
+  const installedBefore = new Set(prevLock?.installed ?? []);
   let nPreserved = 0;
+  let nBackedUp = 0;
   const copyToken = (token: string, src: string, dst: string, recursive = false): void => {
     if (detached.has(token)) { nPreserved++; return; }
-    cpSync(src, dst, recursive ? { recursive: true } : undefined);
+    if (!installedBefore.has(token) && existsSync(dst)) {
+      cpSync(dst, dst + ".pre-install.bak", { recursive: true });
+      nBackedUp++;
+    }
+    // Test procedures (*.test.ts) and eval manifests (eval.yaml) stay in the canonical repo - never distributed.
+    cpSync(src, dst, recursive ? { recursive: true, filter: (s) => !s.endsWith(".test.ts") && !s.endsWith("eval.yaml") } : undefined);
   };
 
   const adopted: string[] = [];
@@ -748,15 +806,16 @@ async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rules
   writeFileSync(join(repo, LOCKFILE), JSON.stringify(lock, null, 2) + "\n");
 
   console.log(`Installed into ${dotclaude}: ${nRules} rules, ${nSkills} skills, ${nScripts} scripts, ${nAgents} agents${nHooks > 0 ? `, ${nHooks} hook(s)` : ""}.`);
-  if (nPreserved > 0) console.log(`Preserved ${nPreserved} detached (customized) item(s) — left untouched.`);
-  console.log(`Lockfile: ${LOCKFILE} (source ${lock.source.slice(0, 8)}) — drift via 'install.ts check .'`);
+  if (nPreserved > 0) console.log(`Preserved ${nPreserved} detached (customized) item(s) - left untouched.`);
+  if (nBackedUp > 0) console.log(`⚠ Backed up ${nBackedUp} pre-existing item(s) to *.pre-install.bak - review before deleting (or 'detach' them to keep your version).`);
+  console.log(`Lockfile: ${LOCKFILE} (source ${lock.source.slice(0, 8)}) - drift via 'install.ts check .'`);
   if (adopted.length) console.log(`Rules manifest: .claude/rules/shared/.adopted (${adopted.length} rules)`);
   if (collectedWirings.length > 0) {
     const settingsPath = join(dotclaude, "settings.json");
     const { added, backedUp, malformed } = mergeHookSettings(dotclaude, collectedWirings);
-    if (malformed) console.log(`\n⚠ ${settingsPath} was not valid JSON — backed up to settings.json.bak and rewritten.`);
+    if (malformed) console.log(`\n⚠ ${settingsPath} was not valid JSON (or its hooks section had an unexpected shape) - backed up to settings.json.bak and rewritten.`);
     if (added > 0) console.log(`${malformed ? "" : "\n"}Wired ${added} hook(s) into ${settingsPath}${backedUp && !malformed ? " (backup: settings.json.bak)" : ""}.`);
-    else if (!malformed) console.log(`\nHooks already wired in ${settingsPath} — no change.`);
+    else if (!malformed) console.log(`\nHooks already wired in ${settingsPath} - no change.`);
     console.log(`(details: .claude/hooks/README.md)`);
   }
   console.log(`\nReview the diff then commit (.claude/ travels via git → team + CI).`);
@@ -766,7 +825,7 @@ async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rules
 function doCheck(repo: string, strict: boolean): void {
   const lock = readLock(repo);
   if (!lock) {
-    console.error(`No lockfile (${LOCKFILE}) — run 'install.ts install ${repo}' first.`);
+    console.error(`No lockfile (${LOCKFILE}) - run 'install.ts install ${repo}' first.`);
     process.exit(2);
   }
   const checked = lock.installed.filter((t) => !lock.detached.includes(t));
@@ -779,7 +838,7 @@ function doCheck(repo: string, strict: boolean): void {
 
   const current = sourceSha();
   const stale = lock.source !== "local" && current !== "local" && lock.source !== current;
-  if (stale) console.log(`↑ stale: installed from ${lock.source.slice(0, 8)}, canonical at ${current.slice(0, 8)} — re-run 'install.ts install ${repo}'.`);
+  if (stale) console.log(`↑ stale: installed from ${lock.source.slice(0, 8)}, canonical at ${current.slice(0, 8)} - re-run 'install.ts install ${repo}'.`);
 
   if (!drift.length) {
     console.log(`✓ ${checked.length} artifacts match the canonical source${stale ? " (but stale)" : ""}.`);
@@ -789,7 +848,7 @@ function doCheck(repo: string, strict: boolean): void {
   if (strict) process.exit(1);
 }
 
-/** Detaches items (removes them from drift control — deliberate customization). */
+/** Detaches items (removes them from drift control - deliberate customization). */
 function doDetach(repo: string, tokensToDetach: string[]): void {
   const lock = readLock(repo);
   if (!lock) {
@@ -803,20 +862,39 @@ function doDetach(repo: string, tokensToDetach: string[]): void {
   }
   lock.detached = [...new Set([...lock.detached, ...tokensToDetach])].sort();
   writeFileSync(join(repo, LOCKFILE), JSON.stringify(lock, null, 2) + "\n");
-  console.log(`Detached: ${tokensToDetach.join(", ")} — excluded from drift control.`);
+  console.log(`Detached: ${tokensToDetach.join(", ")} - excluded from drift control.`);
 }
 
-const [cmd, repo, ...rest] = process.argv.slice(2);
-const COMMANDS = ["plan", "install", "check", "detach"];
-if (!repo || !COMMANDS.includes(cmd)) {
-  console.error("usage: install.ts <plan|install|check|detach> <repo> [--all|--yes|--rules-only|--strict|<token...>]");
-  process.exit(2);
+/** Collects only the args following "--pick", stopping at the next flag (arg starting with "-"). */
+function pickTokens(rest: string[]): string[] {
+  const start = rest.indexOf("--pick");
+  if (start === -1) return [];
+  const tokens: string[] = [];
+  for (let i = start + 1; i < rest.length && !rest[i].startsWith("-"); i++) tokens.push(rest[i]);
+  return tokens;
 }
-if (!existsSync(repo)) {
-  console.error(`repo not found: ${repo}`);
-  process.exit(2);
+
+// Only run the CLI when launched directly (the module stays importable in tests).
+const isMain = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
+if (isMain) {
+  const [cmd, repo, ...rest] = process.argv.slice(2);
+  const COMMANDS = ["plan", "install", "check", "detach"];
+  if (!repo || !COMMANDS.includes(cmd)) {
+    console.error("usage: install.ts <plan|install|check|detach> <repo> [--all|--yes|--rules-only|--strict|<token...>]");
+    process.exit(2);
+  }
+  if (!existsSync(repo)) {
+    console.error(`repo not found: ${repo}`);
+    process.exit(2);
+  }
+  if (cmd === "plan") doPlan(repo);
+  else if (cmd === "install") await doInstall(repo, {
+    all: rest.includes("--all"),
+    yes: rest.includes("--yes") || rest.includes("-y"),
+    rulesOnly: rest.includes("--rules-only"),
+    pick: pickTokens(rest),
+    pickFlag: rest.includes("--pick"),
+  });
+  else if (cmd === "check") doCheck(repo, rest.includes("--strict"));
+  else doDetach(repo, rest.filter((a) => !a.startsWith("--")));
 }
-if (cmd === "plan") doPlan(repo);
-else if (cmd === "install") await doInstall(repo, { all: rest.includes("--all"), yes: rest.includes("--yes") || rest.includes("-y"), rulesOnly: rest.includes("--rules-only") });
-else if (cmd === "check") doCheck(repo, rest.includes("--strict"));
-else doDetach(repo, rest.filter((a) => !a.startsWith("--")));

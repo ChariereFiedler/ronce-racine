@@ -4,12 +4,12 @@ Questions: SE-08 (SIEM detection), SE-09 (Patching & communication).
 
 ## Table of contents
 
-- [SE-08 — SIEM detection](#se-08--siem-detection--criticality-should)
-- [SE-09 — Patching & communication](#se-09--patching--communication--criticality-must)
+- [SE-08 - SIEM detection](#se-08--siem-detection--criticality-should)
+- [SE-09 - Patching & communication](#se-09--patching--communication--criticality-must)
 
 ---
 
-### SE-08 — SIEM detection — Criticality: **should**
+### SE-08 - SIEM detection - Criticality: **should**
 
 **Analyze:** Deployed SIEM, correlation rules, log source integration, SOAR, UEBA
 
@@ -38,7 +38,7 @@ grep -riE "alert\|rule\|correlation\|anomaly\|detection" . --include="*.yml" --i
 
 ---
 
-### SE-09 — Patching & communication — Criticality: **must**
+### SE-09 - Patching & communication - Criticality: **must**
 
 **Analyze:** Patching process, SLA by CVSS severity, automation, vulnerability scanning, communication
 

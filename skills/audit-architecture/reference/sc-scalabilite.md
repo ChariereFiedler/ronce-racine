@@ -1,18 +1,18 @@
-# Section SC — Technical scalability (7 questions)
+# Section SC - Technical scalability (7 questions)
 
 ## Questions
 
-- SC-01 — Capacity Planning (SHOULD)
-- SC-02 — Regular load testing (SHOULD)
-- SC-03 — Auto-scaling (horizontal/vertical) (SHOULD)
-- SC-04 — Queues/brokers to smooth peaks (SHOULD)
-- SC-05 — QoS and processing prioritization (SHOULD)
-- SC-06 — Partitioning by client or task (COULD)
-- SC-07 — Specialized workers (Split API / ETL) (SHOULD)
+- SC-01 - Capacity Planning (SHOULD)
+- SC-02 - Regular load testing (SHOULD)
+- SC-03 - Auto-scaling (horizontal/vertical) (SHOULD)
+- SC-04 - Queues/brokers to smooth peaks (SHOULD)
+- SC-05 - QoS and processing prioritization (SHOULD)
+- SC-06 - Partitioning by client or task (COULD)
+- SC-07 - Specialized workers (Split API / ETL) (SHOULD)
 
 ---
 
-### SC-01 — Capacity Planning · Criticality: **SHOULD**
+### SC-01 - Capacity Planning · Criticality: **SHOULD**
 
 **Analyze:** Load models, bottleneck analysis, growth forecasts, cost models
 
@@ -35,7 +35,7 @@ grep -ri "k6\|gatling\|jmeter\|locust" . 2>/dev/null | head -5
 
 ---
 
-### SC-02 — Regular load testing · Criticality: **SHOULD**
+### SC-02 - Regular load testing · Criticality: **SHOULD**
 
 **Analyze:** k6/Gatling/JMeter scripts, CI load testing, soak tests, spike tests
 
@@ -58,7 +58,7 @@ grep -ri "load.test\|stress.test\|spike.test\|soak.test" . --include="*.yml" --i
 
 ---
 
-### SC-03 — Auto-scaling (horizontal/vertical) · Criticality: **SHOULD**
+### SC-03 - Auto-scaling (horizontal/vertical) · Criticality: **SHOULD**
 
 **Analyze:** HPA, KEDA, auto-scaling groups, metrics-based scaling, scale-to-zero
 
@@ -81,7 +81,7 @@ ls kubernetes/ helm/ k8s/ 2>/dev/null
 
 ---
 
-### SC-04 — Queues/brokers to smooth peaks · Criticality: **SHOULD**
+### SC-04 - Queues/brokers to smooth peaks · Criticality: **SHOULD**
 
 **Analyze:** RabbitMQ, Kafka, SQS, NATS, DLQ, back-pressure
 
@@ -104,7 +104,7 @@ grep -ri "dead.letter\|dlq\|back.pressure" . 2>/dev/null | head -5
 
 ---
 
-### SC-05 — QoS and processing prioritization · Criticality: **SHOULD**
+### SC-05 - QoS and processing prioritization · Criticality: **SHOULD**
 
 **Analyze:** Priority queues, rate limiting, fair scheduling, preemption
 
@@ -127,7 +127,7 @@ grep -ri "PriorityClass\|ResourceQuota" . --include="*.yml" --include="*.yaml" 2
 
 ---
 
-### SC-06 — Partitioning by client or task · Criticality: **COULD**
+### SC-06 - Partitioning by client or task · Criticality: **COULD**
 
 **Analyze:** Sharding, tenant isolation, cell-based architecture, geographic sharding
 
@@ -149,7 +149,7 @@ grep -ri "shard\|tenant.id\|multi.tenant\|partition\|cell.based" . --include="*.
 
 ---
 
-### SC-07 — Specialized workers (Split API / ETL) · Criticality: **SHOULD**
+### SC-07 - Specialized workers (Split API / ETL) · Criticality: **SHOULD**
 
 **Analyze:** API/workers/batch separation, read replicas, CQRS, async processing
 

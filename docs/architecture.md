@@ -11,7 +11,7 @@ A generic rule should have **a single source of truth**.
 ```mermaid
 flowchart TB
     subgraph canon["ronce-racine (this repo)"]
-        R["rules/*.md — single source"]
+        R["rules/*.md - single source"]
     end
     subgraph perso["Global layer (personal)"]
         S["~/.claude/rules/shared → symlink"]
@@ -24,7 +24,7 @@ flowchart TB
     A -->|"install.ts check (CI gate)"| A
 ```
 
-### Global layer (personal) — `~/.claude/rules/`
+### Global layer (personal) - `~/.claude/rules/`
 
 `~/.claude/rules/` is a **user-level** rules directory natively supported by Claude Code: it applies to **all projects** on the machine. In it we place a `shared → ronce-racine/rules` symlink.
 
@@ -32,7 +32,7 @@ flowchart TB
 - Limitation: machine-local and **not versioned per project** → invisible to a teammate or a CI runner that just clones the project repo.
 - Priority: user-level rules are loaded **before** project rules, so a project rule with the same name still takes precedence.
 
-### Per-repo layer (team / CI) — `.claude/rules/shared/`
+### Per-repo layer (team / CI) - `.claude/rules/shared/`
 
 For teammates and **headless/CI agents** to see the rules, you need **real committed files** in the repo. A symlink pointing outside the repo (`~/lab/...`) does not travel via git: it would point nowhere after a clone.
 
@@ -66,7 +66,7 @@ flowchart TB
     T -->|"install.ts check (drift + staleness)"| L
 ```
 
-- **`plan`** scans the target repo (frontend/backend/tests/sql/migrations/ci/infra/git) and only proposes the relevant artifacts — since the metadata of installed skills loads in every session, we don't install everything.
+- **`plan`** scans the target repo (frontend/backend/tests/sql/migrations/ci/infra/git) and only proposes the relevant artifacts - since the metadata of installed skills loads in every session, we don't install everything.
 - **`install`** copies to the right place (`rules/shared/` + `.adopted`, `skills/<name>/`, `hooks/`, `agents/`) and writes the **lockfile** `.claude/.ronce-racine.json`: `{ source: <canonical SHA>, installed: [tokens], detached: [] }`.
 - **`check`** compares each managed artifact to the canonical version (byte-for-byte; recursive for skills) → **drift**; and compares the SHA → **staleness**. Soft by default (warns), `--strict` to block.
 - **`detach`** takes a deliberately customized artifact out of control (≈ the role of `.adopted` for rules, but per item).

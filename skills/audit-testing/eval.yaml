@@ -1,0 +1,12 @@
+fixture: audit-target
+prompt: >
+  Run a testing & validation audit of this project.
+  Write the report to AUDIT-TESTING.md.
+gates:
+  - file_exists: "AUDIT-TESTING.md"
+  - repo_clean: { except: "AUDIT-TESTING.md" }
+judge:
+  criteria:
+    - "Flags the absence of automated tests"
+    - "Reports a maturity score per question, 0-4"
+  threshold: pass_all

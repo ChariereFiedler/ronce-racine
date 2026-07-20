@@ -1,6 +1,6 @@
 # `merge-request-review`
 
-> Reviewing a change before integration means reading the diff line by line and issuing an explicit verdict — a green pipeline is not an approval.
+> Reviewing a change before integration means reading the diff line by line and issuing an explicit verdict - a green pipeline is not an approval.
 
 | | |
 |---|---|
@@ -11,7 +11,7 @@
 
 ## What it is
 
-`merge-request-review` is the discipline for reviewing **someone else's, or not-yet-integrated, work** before it lands on the mainline. It reframes review from a rubber stamp into an obligation: approving means you have read the full diff, worked through a fixed checklist, and issued an explicit verdict — approve or request changes, never a vague "looks good".
+`merge-request-review` is the discipline for reviewing **someone else's, or not-yet-integrated, work** before it lands on the mainline. It reframes review from a rubber stamp into an obligation: approving means you have read the full diff, worked through a fixed checklist, and issued an explicit verdict - approve or request changes, never a vague "looks good".
 
 It is forge- and tracker-agnostic. When the current repo has its own review skill that knows the platform and its API, that one wins.
 
@@ -38,17 +38,17 @@ Use a sibling instead when the work is **your own**: [`commit-readiness-review`]
 
 ## How it works
 
-Gather the real inputs — the full diff (`git diff <remote>/<target>...<remote>/<source>`, not the forge summary), the CI status job by job, the linked ticket, the repo conventions — then read the whole diff before working a fixed checklist that hunts for the leaks CI stays silent on: debug leftovers, hard-coded waits, breaking contract changes, sensitive files, disabled tests, out-of-scope changes. The review closes on an explicit verdict, and no blocking point may remain when approving.
+Gather the real inputs - the full diff (`git diff <remote>/<target>...<remote>/<source>`, not the forge summary), the CI status job by job, the linked ticket, the repo conventions - then read the whole diff before working a fixed checklist that hunts for the leaks CI stays silent on: debug leftovers, hard-coded waits, breaking contract changes, sensitive files, disabled tests, out-of-scope changes. The review closes on an explicit verdict, and no blocking point may remain when approving.
 
 Full step-by-step protocol → [`SKILL.md`](SKILL.md).
 
 ### Record the verdict
 
-[`templates/mr-review-report.md`](templates/mr-review-report.md) captures the verdict (APPROVE / REQUEST CHANGES), blocking points (`file:line — problem — expected fix`), minor non-blocking points, and the checklist. As long as a blocking point remains, do not approve.
+[`templates/mr-review-report.md`](templates/mr-review-report.md) captures the verdict (APPROVE / REQUEST CHANGES), blocking points (`file:line - problem - expected fix`), minor non-blocking points, and the checklist. As long as a blocking point remains, do not approve.
 
 ## Worked example
 
-> "OK to merge this PR?" — a branch adding a CSV export endpoint.
+> "OK to merge this PR?" - a branch adding a CSV export endpoint.
 
 1. Fetch and diff the branch against `main`. CI is green.
 2. Reading the diff line by line: an added `console.log(user.email)` (debug leftover **and** a sensitive-data log), and a renamed response field `created` → `createdAt` that a mobile client consumes (unflagged breaking change).
@@ -56,5 +56,5 @@ Full step-by-step protocol → [`SKILL.md`](SKILL.md).
 
 ## Related artifacts
 
-- [`commit-readiness-review`](../commit-readiness-review/) — for reviewing your own changes before commit.
-- [`validating-features-end-to-end`](../validating-features-end-to-end/) — for "does it actually work", functional proof.
+- [`commit-readiness-review`](../commit-readiness-review/) - for reviewing your own changes before commit.
+- [`validating-features-end-to-end`](../validating-features-end-to-end/) - for "does it actually work", functional proof.

@@ -1,0 +1,15 @@
+fixture: backend-node
+prompt: >
+  Add an email column to the users table and every usage it needs across the
+  backend. There is no live database here, so do not run or apply anything:
+  scan for every usage, write the impact plan and the backfill/switch/contract
+  steps to MIGRATION_PLAN.md, and create only the new additive migration file.
+gates:
+  - file_exists: "MIGRATION_PLAN.md"
+  - grep_zero: { pattern: "DROP TABLE|DROP COLUMN|NOT NULL", in: "migrations/" }
+  - repo_clean: { except: "MIGRATION_PLAN.md, migrations/" }
+judge:
+  criteria:
+    - "New migration only adds a nullable column, no destructive change"
+    - "Plan lists every usage found by the exhaustive scan"
+  threshold: pass_all

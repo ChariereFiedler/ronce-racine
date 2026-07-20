@@ -1,14 +1,17 @@
 {
   "name": "ronce-racine",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "Ronce Racine — config Claude Code générique (rules always-on + skills on-demand) + CLI de distribution",
+  "description": "Ronce Racine - generic Claude Code config (always-on rules + on-demand skills) with a distribution CLI",
   "license": "MIT",
-  "bin": { "ronce-racine": "./rules.ts" },
+  "bin": { "ronce-racine": "./install.ts" },
+  "engines": { "node": ">=18" },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "tsx skills.ts validate && tsx skills.ts triggers && tsx skills.ts rules && tsx skills.ts scripts && tsx skills.ts hooks && tsx tests.ts",
+    "test:mutation": "tsx mutations.ts",
+    "eval:dry": "tsx playground/setup.ts >/dev/null && tsx eval.ts run --dry-run",
     "skills:list": "tsx skills.ts list",
     "skills:triggers": "tsx skills.ts triggers",
     "rules:validate": "tsx skills.ts rules"

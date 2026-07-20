@@ -7,15 +7,15 @@ metadata:
   category: process
 ---
 
-# Recording Decisions — capture non-obvious choices
+# Recording Decisions - capture non-obvious choices
 
-> If the current repo has an equivalent skill (e.g. acme-app → `record-decision`), it wins — it knows where the decision log lives.
+> If the current repo has an equivalent skill (e.g. acme-app → `record-decision`), it wins - it knows where the decision log lives.
 
 ## This skill vs. others
 
 - **This skill** when: a non-trivial technical choice is made mid-session and risks being undone out of ignorance
 - **`bug-ticket-root-cause`** if: you are tracing a bug to fix, not a design decision
-- **`writing-plans`** if: you are designing a full plan up front — the decision gets recorded at the moment it is made, it is not replaced by the plan
+- **`writing-plans`** if: you are designing a full plan up front - the decision gets recorded at the moment it is made, it is not replaced by the plan
 
 ## When to record
 
@@ -32,30 +32,30 @@ Do not record: variable names, import order, trivial choices.
 
 Two distinct regression vectors → two protections:
 
-1. **Decision log** — against deliberate migration ("nobody knows why it's like this, let's change it"). Location: `docs/adr/` if the repo has one, otherwise `.claude/decisions.md`. Format:
+1. **Decision log** - against deliberate migration ("nobody knows why it's like this, let's change it"). Location: `docs/adr/` if the repo has one, otherwise `.claude/decisions.md`. Format:
 
 ```markdown
-## YYYY-MM-DD — <Short title>
+## YYYY-MM-DD - <Short title>
 **Context**: [problem that forced the decision, ticket/branch]
-**Options**: 1. A — pro/con · 2. B — pro/con
+**Options**: 1. A - pro/con · 2. B - pro/con
 **Decision**: [choice + rationale]
 **Consequences**: [code impact, workflow, re-evaluate if <condition>]
 **Status**: Proposed | Accepted | Implemented | Deprecated
 ```
 
-2. **Comment at the implementation site** — against the impulsive "fix" during a refactor. Short, with a strong signal and a back-reference:
+2. **Comment at the implementation site** - against the impulsive "fix" during a refactor. Short, with a strong signal and a back-reference:
 
 ```
-// Intentional 5s polling — DO NOT migrate to WebSocket:
+// Intentional 5s polling - DO NOT migrate to WebSocket:
 // the LB drops idle connections >60s. See ADR-007.
 ```
 
 ## Rules
 
 - Record **at the moment of the decision**, not at the end of the session (context evaporates)
-- Never modify an existing decision — write a new one that deprecates it
+- Never modify an existing decision - write a new one that deprecates it
 - Include the re-evaluation condition ("if the infra changes…"): a decision with no expiry date becomes dogma
-- Not in a closed ticket, a chat message or a PR description alone — invisible from the code in three weeks
+- Not in a closed ticket, a chat message or a PR description alone - invisible from the code in three weeks
 
 ## Traps & rationalizations
 
@@ -81,4 +81,4 @@ Two distinct regression vectors → two protections:
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

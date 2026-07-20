@@ -4,13 +4,13 @@ Questions: ci-02 (CD pipeline), ci-06 (Environment management), ci-09 (Rollback 
 
 ## Table of contents
 
-- [ci-02 — CD pipeline and deployment strategies](#ci-02--cd-pipeline-and-deployment-strategies--must)
-- [ci-06 — Environment management (dev, staging, preprod, prod)](#ci-06--environment-management-dev-staging-preprod-prod--must)
-- [ci-09 — Deployment rollback and recovery](#ci-09--deployment-rollback-and-recovery--must)
+- [ci-02 - CD pipeline and deployment strategies](#ci-02--cd-pipeline-and-deployment-strategies--must)
+- [ci-06 - Environment management (dev, staging, preprod, prod)](#ci-06--environment-management-dev-staging-preprod-prod--must)
+- [ci-09 - Deployment rollback and recovery](#ci-09--deployment-rollback-and-recovery--must)
 
 ---
 
-### ci-02 — CD pipeline and deployment strategies — `must`
+### ci-02 - CD pipeline and deployment strategies - `must`
 
 **Analyze:** Deployment scripts, Kubernetes configs (Helm charts, kustomize), Terraform/Pulumi, docker-compose, ArgoCD/Flux configs
 
@@ -41,7 +41,7 @@ Questions: ci-02 (CD pipeline), ci-06 (Environment management), ci-09 (Rollback 
 
 ---
 
-### ci-06 — Environment management (dev, staging, preprod, prod) — `must`
+### ci-06 - Environment management (dev, staging, preprod, prod) - `must`
 
 **Analyze:** docker-compose, environment configs, env variables, provisioning scripts
 
@@ -70,7 +70,7 @@ Questions: ci-02 (CD pipeline), ci-06 (Environment management), ci-09 (Rollback 
 
 ---
 
-### ci-09 — Deployment rollback and recovery — `must`
+### ci-09 - Deployment rollback and recovery - `must`
 
 **Analyze:** Documented rollback procedures, rollback scripts, health check configs, database migrations
 

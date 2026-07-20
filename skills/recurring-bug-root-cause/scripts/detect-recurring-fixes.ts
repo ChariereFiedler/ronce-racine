@@ -31,14 +31,14 @@ for (const line of log.split('\n').filter(Boolean)) {
 
 const offenders = [...byScope].filter(([, fixes]) => fixes.length >= threshold).sort((a, b) => b[1].length - a[1].length)
 
-console.log(`# fix(scope) recurrences — ${windowDays}d window, threshold ${threshold}\n`)
+console.log(`# fix(scope) recurrences - ${windowDays}d window, threshold ${threshold}\n`)
 if (!offenders.length) {
   console.log('No scope at the threshold. ✅')
   process.exit(0)
 }
 for (const [scope, fixes] of offenders) {
   const level = fixes.length >= 5 ? '🔴 root-cause REQUIRED before any new fix' : '🟡 postmortem recommended'
-  console.log(`## ${scope} — ${fixes.length} fixes ${level}`)
+  console.log(`## ${scope} - ${fixes.length} fixes ${level}`)
   for (const f of fixes) console.log(`- ${f.date} ${f.hash} ${f.subject}`)
   console.log()
 }

@@ -9,11 +9,11 @@ metadata:
 
 # Versioning a network API contract
 
-> If the current repo has a specific skill or conventions for this case (e.g. acme-app → `api-contract-evolution`), they win — they know the project's paths, snapshots and stack.
+> If the current repo has a specific skill or conventions for this case (e.g. acme-app → `api-contract-evolution`), they win - they know the project's paths, snapshots and stack.
 
 ## This skill vs. others
 
-- **This skill** when: a **network** API contract (endpoint, schema, DTO, proto message) already consumed changes shape — REST, GraphQL or gRPC
+- **This skill** when: a **network** API contract (endpoint, schema, DTO, proto message) already consumed changes shape - REST, GraphQL or gRPC
 - **refactoring-shared-component-api** instead if: it is the API of an **in-process** UI component or module (props/emits/exported signature), not a contract crossing the network
 - New endpoint with no existing consumer: this is not a contract evolution, this skill does not apply
 
@@ -38,16 +38,16 @@ A network API contract has a chain of consumers that are **coupled and potential
 - [ ] 6. Verify end to end, contract diff reviewed and pasted
 ```
 
-1. **Inventory** — grep the field/route name across **all** families: client mirror types, adapters/composables, test fixtures & mocks, contract schema/snapshot, distributed clients (CLI, SDK, installed apps), outbound integrations/webhooks to third parties. List each one: this is the migration checklist.
-2. **Classify** — for each change, breaking (removal/rename/restructuring, tightened type, added required field) or additive (optional field added alongside). Explicit decision, never implicit.
-3. **Expand-contract** — add the new alongside the old (expand), migrate the consumers, then remove the old (contract) in a second step. Avoids any moment of breakage.
-4. **Non-co-deployed consumers** — a breaking change for them requires a compat shim (deserialization alias, temporary dual field, new API version/endpoint) **or** a verified tolerance, always with a **removal date tracked in a ticket** — never "we'll remove it later".
-5. **Chain sync** (order) — contract source of truth (DTO/schema/proto) + persistence if a column → regenerate the contract artifact and **review the diff** → mirror types + client adapters → test fixtures & page objects → distributed clients. A DB schema migration is a change separate from the contract change.
-6. **Verification** — build + lint + tests of the producer, then of the consumers, then contract comparison (compare mode, not `--update`), finally the touched end-to-end / E2E tests.
+1. **Inventory** - grep the field/route name across **all** families: client mirror types, adapters/composables, test fixtures & mocks, contract schema/snapshot, distributed clients (CLI, SDK, installed apps), outbound integrations/webhooks to third parties. List each one: this is the migration checklist.
+2. **Classify** - for each change, breaking (removal/rename/restructuring, tightened type, added required field) or additive (optional field added alongside). Explicit decision, never implicit.
+3. **Expand-contract** - add the new alongside the old (expand), migrate the consumers, then remove the old (contract) in a second step. Avoids any moment of breakage.
+4. **Non-co-deployed consumers** - a breaking change for them requires a compat shim (deserialization alias, temporary dual field, new API version/endpoint) **or** a verified tolerance, always with a **removal date tracked in a ticket** - never "we'll remove it later".
+5. **Chain sync** (order) - contract source of truth (DTO/schema/proto) + persistence if a column → regenerate the contract artifact and **review the diff** → mirror types + client adapters → test fixtures & page objects → distributed clients. A DB schema migration is a change separate from the contract change.
+6. **Verification** - build + lint + tests of the producer, then of the consumers, then contract comparison (compare mode, not `--update`), finally the touched end-to-end / E2E tests.
 
 ## Templates
 
-- `templates/consumer-inventory.md` — table of consumer families + status (migrated / dated compat / not affected) to paste into the MR
+- `templates/consumer-inventory.md` - table of consumer families + status (migrated / dated compat / not affected) to paste into the MR
 
 ## Traps & rationalizations
 
@@ -65,12 +65,12 @@ A network API contract has a chain of consumers that are **coupled and potential
 - [ ] Explicit breaking/additive decision per change; expand-contract applied when viable
 - [ ] Non-co-deployed consumers: compat or deprecation with a dated removal ticket
 - [ ] Contract-artifact diff (schema/snapshot) reviewed and pasted into the MR
-- [ ] Chain synchronized; build + lint + tests of producer and consumers run, output pasted — never "it should pass"
+- [ ] Chain synchronized; build + lint + tests of producer and consumers run, output pasted - never "it should pass"
 
 ## Tooling
 
-- `templates/consumer-inventory.md` — consumer migration checklist
+- `templates/consumer-inventory.md` - consumer migration checklist
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial release, generalized from the acme-app `api-contract-evolution` workflow (decoupled from a Rust/Axum stack, agnostic across REST/GraphQL/gRPC)
+- 1.0.0 (2026-06-19) - initial release, generalized from the acme-app `api-contract-evolution` workflow (decoupled from a Rust/Axum stack, agnostic across REST/GraphQL/gRPC)

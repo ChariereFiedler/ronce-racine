@@ -1,0 +1,12 @@
+fixture: audit-target
+prompt: >
+  Run a full software industrialisation audit of this project, orchestrating
+  all 8 domain audits.
+  Write the consolidated report to AUDIT-FULL.md.
+gates:
+  - file_exists: "AUDIT-FULL.md"
+  - repo_clean: { except: "AUDIT-FULL.md" }
+judge:
+  criteria:
+    - "Consolidated report covers all 8 audit domains"
+  threshold: pass_all

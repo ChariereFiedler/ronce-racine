@@ -1,22 +1,27 @@
 ---
 name: audit-performance-frontend
-description: Low-level frontend performance audit. Use when auditing frontend rendering performance, WebKit internals, JSC optimization, DOM structure, CSS rendering pipeline, memory/GC, cache strategy, or profiling methodology. Triggers on "audit performance", "audit frontend", "audit perf", "audit rendering", "audit webkit", "audit jsc".
-version: 1.0.0
+description: Low-level frontend performance audit, specialized for WebKit/JSC and embedded or real-time contexts - on a mainstream stack (React/Chrome SPA) many questions are N/A and the grid adapts. Use when auditing frontend rendering performance, WebKit internals, JSC optimization, DOM structure, CSS rendering pipeline, memory/GC, cache strategy, or profiling methodology. Triggers on "audit performance", "audit frontend", "audit perf", "audit rendering", "audit webkit", "audit jsc".
+version: 1.0.2
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-07-20
   category: audit
 ---
 
 ## When ME and not audit-industrialisation
 
 - **ME** when: an audit scoped to this domain only
-- **audit-industrialisation** instead if: a cross-domain global audit — it orchestrates every audit (including ME) and produces a consolidated report
+- **audit-industrialisation** instead if: a cross-domain global audit - it orchestrates every audit (including ME) and produces a consolidated report
 
 > For a full project audit, use `audit-industrialisation` rather than invoking each skill separately.
 
 ---
 
 # Low-Level Frontend Performance Audit
+
+> **Scope check before starting**: this grid targets WebKit/JSC internals and
+> embedded/real-time constraints. On a mainstream stack (e.g. a React SPA on
+> evergreen browsers), mark the engine-specific questions N/A per the Variants
+> section instead of forcing answers - a mostly-N/A domain is a valid outcome.
 
 ## Overview
 
@@ -26,32 +31,32 @@ Audit a project's frontend performance maturity, targeting sub-100ms rendering. 
 
 | Category | Questions | Grid |
 |-------|-----------|--------|
-| 1 — HTML & Critical Path | 4 (PF-01 to PF-04) | [reference/html-critical-path.md](reference/html-critical-path.md) |
-| 2 — CSS & Rendering Pipeline | 5 (PF-05 to PF-09) | [reference/css-rendering-pipeline.md](reference/css-rendering-pipeline.md) |
-| 3 — JavaScript Engine & Runtime JSC | 9 (PF-10 to PF-18) | [reference/js-engine-runtime.md](reference/js-engine-runtime.md) |
-| 4 — Memory & Garbage Collection | 4 (PF-19 to PF-22) | [reference/memory-gc.md](reference/memory-gc.md) |
-| 5 — Assets, Cache & Network | 4 (PF-23 to PF-26) | [reference/assets-cache-network.md](reference/assets-cache-network.md) |
-| 6 — Profiling & Tooling | 3 (PF-27 to PF-29) | [reference/profiling-tooling.md](reference/profiling-tooling.md) |
+| 1 - HTML & Critical Path | 4 (PF-01 to PF-04) | [reference/html-critical-path.md](reference/html-critical-path.md) |
+| 2 - CSS & Rendering Pipeline | 5 (PF-05 to PF-09) | [reference/css-rendering-pipeline.md](reference/css-rendering-pipeline.md) |
+| 3 - JavaScript Engine & Runtime JSC | 9 (PF-10 to PF-18) | [reference/js-engine-runtime.md](reference/js-engine-runtime.md) |
+| 4 - Memory & Garbage Collection | 4 (PF-19 to PF-22) | [reference/memory-gc.md](reference/memory-gc.md) |
+| 5 - Assets, Cache & Network | 4 (PF-23 to PF-26) | [reference/assets-cache-network.md](reference/assets-cache-network.md) |
+| 6 - Profiling & Tooling | 3 (PF-27 to PF-29) | [reference/profiling-tooling.md](reference/profiling-tooling.md) |
 
 ## Scoring
 
 - Each scored question gets a level from 0 to 4.
 - Questions marked **N/A** are excluded from the calculation.
-- **Global score** = sum of levels / number of scored questions (excluding N/A).
-- Criticality weighting:
-  - **MUST** (weight 3): PF-01, PF-02, PF-03, PF-06, PF-10, PF-13, PF-17, PF-23, PF-27, PF-28, PF-29
-  - **SHOULD** (weight 2): PF-04, PF-05, PF-07, PF-09, PF-11, PF-12, PF-14, PF-15, PF-19, PF-20, PF-21, PF-22, PF-24, PF-25, PF-26
-  - **COULD** (weight 1): PF-08, PF-16, PF-18
+- **Domain score** = sum of levels / number of scored questions (excluding N/A).
+- Criticality (used to prioritize remediation, NOT in the score - see `audit-report/reference/scoring-model.md`):
+  - **MUST**: PF-01, PF-02, PF-03, PF-06, PF-10, PF-13, PF-17, PF-23, PF-27, PF-28, PF-29
+  - **SHOULD**: PF-04, PF-05, PF-07, PF-09, PF-11, PF-12, PF-14, PF-15, PF-19, PF-20, PF-21, PF-22, PF-24, PF-25, PF-26
+  - **COULD**: PF-08, PF-16, PF-18
 
 ## Audit protocol
 
 1. **Detect the project type**: SPA, SSR, PWA, embedded WebKit, component library.
-2. **Category 1 — HTML**: scan for `document.write`, measure DOM depth, check blocking scripts and priority attributes.
-3. **Category 2 — CSS**: audit selectors, animations, compositing, custom properties, fonts.
-4. **Category 3 — JS Engine**: look for polymorphism patterns, `delete`, arrow functions in loops, `eval`, sparse arrays.
-5. **Category 4 — Memory**: check allocations in loops, event listeners without cleanup, caches without eviction.
-6. **Category 5 — Assets**: measure critical-path size, check compression, cache headers, font loading.
-7. **Category 6 — Profiling**: check instrumentation, metrics, performance CI.
+2. **Category 1 - HTML**: scan for `document.write`, measure DOM depth, check blocking scripts and priority attributes.
+3. **Category 2 - CSS**: audit selectors, animations, compositing, custom properties, fonts.
+4. **Category 3 - JS Engine**: look for polymorphism patterns, `delete`, arrow functions in loops, `eval`, sparse arrays.
+5. **Category 4 - Memory**: check allocations in loops, event listeners without cleanup, caches without eviction.
+6. **Category 5 - Assets**: measure critical-path size, check compression, cache headers, font loading.
+7. **Category 6 - Profiling**: check instrumentation, metrics, performance CI.
 8. **Run the verification commands** for each question (see grids).
 9. **Assign a level** (0-4) per question with justification and confidence level.
 10. **Mark N/A** the non-applicable questions (e.g. PF-10 to PF-18 if there is no custom JS, just a framework).
@@ -61,11 +66,11 @@ Audit a project's frontend performance maturity, targeting sub-100ms rendering. 
 
 **SSR application (Nuxt, Next.js)**
 - **PF-01 to PF-04**: Fully applicable, the server generates the initial HTML
-- **PF-23**: Adapted — TTFB includes server render time
+- **PF-23**: Adapted - TTFB includes server render time
 
 **UI component library**
 - **PF-23 to PF-26**: N/A (no control over deployment)
-- **PF-27 to PF-29**: Adapted — component performance benchmarks
+- **PF-27 to PF-29**: Adapted - component performance benchmarks
 
 **Static site (11ty, Hugo, Astro)**
 - **PF-10 to PF-18**: Often N/A (little custom JS)
@@ -79,17 +84,17 @@ Audit a project's frontend performance maturity, targeting sub-100ms rendering. 
 
 Each grid contains, per question: statement, criticality, elements to analyze, bash verification commands, points to check, and a 0-4 level table.
 
-- [reference/html-critical-path.md](reference/html-critical-path.md) — **Category 1, HTML & Critical Path**, 4 questions (PF-01 to PF-04)
-- [reference/css-rendering-pipeline.md](reference/css-rendering-pipeline.md) — **Category 2, CSS & Rendering Pipeline**, 5 questions (PF-05 to PF-09)
-- [reference/js-engine-runtime.md](reference/js-engine-runtime.md) — **Category 3, JavaScript Engine & Runtime JSC**, 9 questions (PF-10 to PF-18)
-- [reference/memory-gc.md](reference/memory-gc.md) — **Category 4, Memory & Garbage Collection**, 4 questions (PF-19 to PF-22)
-- [reference/assets-cache-network.md](reference/assets-cache-network.md) — **Category 5, Assets, Cache & Network**, 4 questions (PF-23 to PF-26)
-- [reference/profiling-tooling.md](reference/profiling-tooling.md) — **Category 6, Profiling & Tooling**, 3 questions (PF-27 to PF-29)
+- [reference/html-critical-path.md](reference/html-critical-path.md) - **Category 1, HTML & Critical Path**, 4 questions (PF-01 to PF-04)
+- [reference/css-rendering-pipeline.md](reference/css-rendering-pipeline.md) - **Category 2, CSS & Rendering Pipeline**, 5 questions (PF-05 to PF-09)
+- [reference/js-engine-runtime.md](reference/js-engine-runtime.md) - **Category 3, JavaScript Engine & Runtime JSC**, 9 questions (PF-10 to PF-18)
+- [reference/memory-gc.md](reference/memory-gc.md) - **Category 4, Memory & Garbage Collection**, 4 questions (PF-19 to PF-22)
+- [reference/assets-cache-network.md](reference/assets-cache-network.md) - **Category 5, Assets, Cache & Network**, 4 questions (PF-23 to PF-26)
+- [reference/profiling-tooling.md](reference/profiling-tooling.md) - **Category 6, Profiling & Tooling**, 3 questions (PF-27 to PF-29)
 
 ## Output format
 
 ```markdown
-## Frontend Performance — Global score: X.X/4 (Y questions scored out of 29)
+## Frontend Performance - Global score: X.X/4 (Y questions scored out of 29)
 
 ### Summary
 [2-3 sentences summarizing frontend performance maturity]
@@ -97,7 +102,7 @@ Each grid contains, per question: statement, criticality, elements to analyze, b
 
 ### Detail by question
 
-#### Category 1 — HTML & Critical Path
+#### Category 1 - HTML & Critical Path
 
 | Code | Question | Criticality | Level | Confidence | Justification |
 |------|----------|-----------|--------|-----------|---------------|
@@ -106,7 +111,7 @@ Each grid contains, per question: statement, criticality, elements to analyze, b
 | PF-03 | Layout thrashing | MUST | X | high/medium/low | ... |
 | PF-04 | Loading & priority | SHOULD | X | high/medium/low | ... |
 
-#### Category 2 — CSS & Rendering Pipeline
+#### Category 2 - CSS & Rendering Pipeline
 
 | Code | Question | Criticality | Level | Confidence | Justification |
 |------|----------|-----------|--------|-----------|---------------|
@@ -116,7 +121,7 @@ Each grid contains, per question: statement, criticality, elements to analyze, b
 | PF-08 | Custom properties | COULD | X | high/medium/low | ... |
 | PF-09 | Font rendering | SHOULD | X | high/medium/low | ... |
 
-#### Category 3 — JavaScript Engine & Runtime
+#### Category 3 - JavaScript Engine & Runtime
 
 | Code | Question | Criticality | Level | Confidence | Justification |
 |------|----------|-----------|--------|-----------|---------------|
@@ -130,7 +135,7 @@ Each grid contains, per question: statement, criticality, elements to analyze, b
 | PF-17 | Event loop | MUST | X | high/medium/low | ... |
 | PF-18 | Weak references | COULD | X | high/medium/low | ... |
 
-#### Category 4 — Memory & GC
+#### Category 4 - Memory & GC
 
 | Code | Question | Criticality | Level | Confidence | Justification |
 |------|----------|-----------|--------|-----------|---------------|
@@ -139,7 +144,7 @@ Each grid contains, per question: statement, criticality, elements to analyze, b
 | PF-21 | Memory leaks | SHOULD | X | high/medium/low | ... |
 | PF-22 | GPU memory | SHOULD | X | high/medium/low | ... |
 
-#### Category 5 — Assets, Cache & Network
+#### Category 5 - Assets, Cache & Network
 
 | Code | Question | Criticality | Level | Confidence | Justification |
 |------|----------|-----------|--------|-----------|---------------|
@@ -148,7 +153,7 @@ Each grid contains, per question: statement, criticality, elements to analyze, b
 | PF-25 | Multi-layer cache | SHOULD | X | high/medium/low | ... |
 | PF-26 | Font loading | SHOULD | X | high/medium/low | ... |
 
-#### Category 6 — Profiling & Tooling
+#### Category 6 - Profiling & Tooling
 
 | Code | Question | Criticality | Level | Confidence | Justification |
 |------|----------|-----------|--------|-----------|---------------|
@@ -182,4 +187,8 @@ Each grid contains, per question: statement, criticality, elements to analyze, b
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)
+- 1.0.2 (2026-07-20) - scope made explicit (WebKit/JSC specialization; mainstream stacks expect many N/A)
+
+- 1.0.1 (2026-07-20) - scoring aligned with scoring-model.md: flat mean only; criticality kept for remediation priority, weights removed from the score
+
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

@@ -1,6 +1,6 @@
 # `frontend-spec-call-site-audit`
 
-> Before writing a frontend ticket, map the graph the component lives in — call sites, incoming links, global navigation — so the spec never ships an isolated feature that breaks its neighbours.
+> Before writing a frontend ticket, map the graph the component lives in - call sites, incoming links, global navigation - so the spec never ships an isolated feature that breaks its neighbours.
 
 | | |
 |---|---|
@@ -11,7 +11,7 @@
 
 ## What it is
 
-`frontend-spec-call-site-audit` is a **pre-spec discipline**. It sits before any frontend ticket is written and forces a codebase audit first: no page or component is designed in a vacuum, so the acceptance criteria are only drafted once the surrounding graph — sidebar, creation menus, breadcrumbs, parent pages, incoming links — is mapped and cited in the ticket.
+`frontend-spec-call-site-audit` is a **pre-spec discipline**. It sits before any frontend ticket is written and forces a codebase audit first: no page or component is designed in a vacuum, so the acceptance criteria are only drafted once the surrounding graph - sidebar, creation menus, breadcrumbs, parent pages, incoming links - is mapped and cited in the ticket.
 
 Its hard rule: **refuse to draft acceptance criteria until the audit is done.**
 
@@ -25,30 +25,30 @@ The other chronic gap is edge cases. The empty state (0 entities) and the single
 
 Invoke it **before** writing any frontend feature ticket or spec:
 
-- a new page, a new component, a new dashboard section — "add an X page"
+- a new page, a new component, a new dashboard section - "add an X page"
 - drafting acceptance criteria for a UI change in an existing app
 
 Use a sibling instead when: the component's public API is changing with no new ticket ([`refactoring-shared-component-api`](../refactoring-shared-component-api/)), or the feature is already coded and needs coverage ([`writing-robust-tests`](../writing-robust-tests/)).
 
 ## How it works
 
-The skill runs a blocking 6-point audit — call sites, incoming links, global navigation, data scope, UX edge cases (0/1/N + error + loading), i18n — whose grep results are pasted straight into the ticket. Only once that graph is mapped are acceptance criteria drafted, and at least one of them must be a full user flow rather than an isolated click.
+The skill runs a blocking 6-point audit - call sites, incoming links, global navigation, data scope, UX edge cases (0/1/N + error + loading), i18n - whose grep results are pasted straight into the ticket. Only once that graph is mapped are acceptance criteria drafted, and at least one of them must be a full user flow rather than an isolated click.
 
 Full step-by-step protocol → [`SKILL.md`](SKILL.md).
 
 ### Criteria as flows, not isolated actions
 
-At least one scenario must be a complete user flow — "How do you create an X from any page?", "What does the page look like at 0/1/N entities?", "The user goes back: what is preserved?" — because "click card → see detail" says nothing about the navigation graph.
+At least one scenario must be a complete user flow - "How do you create an X from any page?", "What does the page look like at 0/1/N entities?", "The user goes back: what is preserved?" - because "click card → see detail" says nothing about the navigation graph.
 
 ### The tooling
 
-- **[`scripts/audit-entry-points.ts`](scripts/audit-entry-points.ts)** `<ComponentName|-> <route|-> [rootDir]` — a zero-dependency scanner that pre-fills the audit: it greps call sites of the component, incoming links to the route, and heuristically lists the navigation files (sidebar/header/menu/breadcrumb/layout) to check by hand. Pass `-` to skip either criterion.
+- **[`scripts/audit-entry-points.ts`](scripts/audit-entry-points.ts)** `<ComponentName|-> <route|-> [rootDir]` - a zero-dependency scanner that pre-fills the audit: it greps call sites of the component, incoming links to the route, and heuristically lists the navigation files (sidebar/header/menu/breadcrumb/layout) to check by hand. Pass `-` to skip either criterion.
 
   ```bash
   npx tsx audit-entry-points.ts WebhookList /webhooks ./frontend
   ```
 
-- **[`templates/ticket-frontend.md`](templates/ticket-frontend.md)** — a ticket skeleton whose audit section is blocking: no acceptance criteria until it is filled.
+- **[`templates/ticket-frontend.md`](templates/ticket-frontend.md)** - a ticket skeleton whose audit section is blocking: no acceptance criteria until it is filled.
 
 ## Worked example
 
@@ -61,6 +61,6 @@ At least one scenario must be a complete user flow — "How do you create an X f
 
 ## Related artifacts
 
-- [`frontend-fullstack-implementation`](../frontend-fullstack-implementation/) — implement the feature once this audit and spec are done.
-- [`refactoring-shared-component-api`](../refactoring-shared-component-api/) — when the change is to a shared component's API, not a new ticket.
-- [`writing-robust-tests`](../writing-robust-tests/) — to cover the feature after it is coded.
+- [`frontend-fullstack-implementation`](../frontend-fullstack-implementation/) - implement the feature once this audit and spec are done.
+- [`refactoring-shared-component-api`](../refactoring-shared-component-api/) - when the change is to a shared component's API, not a new ticket.
+- [`writing-robust-tests`](../writing-robust-tests/) - to cover the feature after it is coded.

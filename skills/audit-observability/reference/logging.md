@@ -1,16 +1,16 @@
-# Logging section — Logs, guidelines, baggage
+# Logging section - Logs, guidelines, baggage
 
 3 questions. Correlated structured logs, logging guideline, contextual baggage.
 
 ## Table of contents
 
-- [ob-01 — Correlated structured logs](#ob-01--correlated-structured-logs--criticality-must)
-- [ob-02 — Logging guideline and message structure](#ob-02--logging-guideline-and-message-structure--criticality-should)
-- [ob-03 — Analysis and implementation of useful baggage](#ob-03--analysis-and-implementation-of-useful-baggage--criticality-should)
+- [ob-01 - Correlated structured logs](#ob-01--correlated-structured-logs--criticality-must)
+- [ob-02 - Logging guideline and message structure](#ob-02--logging-guideline-and-message-structure--criticality-should)
+- [ob-03 - Analysis and implementation of useful baggage](#ob-03--analysis-and-implementation-of-useful-baggage--criticality-should)
 
 ---
 
-### ob-01 — Correlated structured logs · Criticality: **MUST**
+### ob-01 - Correlated structured logs · Criticality: **MUST**
 
 **Analyze:** Logging config (Winston, Pino, Bunyan, structlog, slog), log format, traceId/spanId correlation, centralized aggregator
 
@@ -51,7 +51,7 @@ grep -ri "traceId\|trace_id\|traceparent\|correlationId\|x-request-id" --include
 
 ---
 
-### ob-02 — Logging guideline and message structure · Criticality: **SHOULD**
+### ob-02 - Logging guideline and message structure · Criticality: **SHOULD**
 
 **Analyze:** Documentation of logging conventions, message templates, automatic validation, severity levels
 
@@ -84,7 +84,7 @@ grep -ri "no-console\|log\|logging" .eslintrc* eslint.config* 2>/dev/null
 
 ---
 
-### ob-03 — Analysis and implementation of useful baggage · Criticality: **SHOULD**
+### ob-03 - Analysis and implementation of useful baggage · Criticality: **SHOULD**
 
 **Analyze:** Context propagation (MDC, AsyncLocalStorage, context.Context), OpenTelemetry baggage, automatic log/trace enrichment
 

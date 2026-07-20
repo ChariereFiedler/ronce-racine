@@ -1,0 +1,14 @@
+fixture: design-system
+prompt: >
+  A change to BaseButton is about to be committed. The app cannot be started
+  in this environment, so produce the pre-flight visual-check plan instead:
+  which surfaces to capture, which viewports, which states. Write it to
+  VISUAL-CHECK.md.
+gates:
+  - repo_clean: { except: "VISUAL-CHECK.md" }
+  - file_exists: "VISUAL-CHECK.md"
+judge:
+  criteria:
+    - "Plan lists all three surfaces: Home, Settings, Dyn"
+    - "Plan lists desktop 1280x720 and mobile 375x812 viewports"
+  threshold: pass_all

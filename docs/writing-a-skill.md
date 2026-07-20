@@ -27,11 +27,11 @@ metadata:
 ---
 ```
 
-- `description`: starts with "Use when", **third person** (never "I/you"), describes WHEN not HOW — never summarize the workflow in it (the agent would follow the summary instead of reading the skill).
+- `description`: starts with "Use when", **third person** (never "I/you"), describes WHEN not HOW - never summarize the workflow in it (the agent would follow the summary instead of reading the skill).
 - `version`: semver. Bump **patch** for a clarification, **minor** for an added section, **major** for a protocol change.
 - `metadata.last-reviewed`: date of the last review; `category` from the closed list.
 
-**Body — standard sections** (omit an irrelevant section, never fill it empty):
+**Body - standard sections** (omit an irrelevant section, never fill it empty):
 
 1. Title + principle · 2. Routing "When ME and not X" · 3. Context to gather · 4. Protocol · 5. Templates · 6. Pitfalls & rationalizations · 7. Exit condition · 8. Tooling · 9. Changelog.
 
@@ -39,7 +39,7 @@ metadata:
 
 - **Concise**: SKILL.md body < 500 lines. Beyond that → progressive disclosure: move heavy references (grids, APIs) into `reference/*.md` with a table of contents at the top.
 - **Reference depth ≤ 1**: all links start from the SKILL.md, never from a nested reference.
-- **Scripts over inline**: a deterministic detection command goes into `scripts/` ("Run `scripts/x.sh`") — more reliable, saves context.
+- **Scripts over inline**: a deterministic detection command goes into `scripts/` ("Run `scripts/x.sh`") - more reliable, saves context.
 - **Output templates** in `templates/`, pitfalls in an Excuse → Reality table, exit condition as a checklist.
 
 ## Validation

@@ -1,4 +1,4 @@
-# playground — installer sandbox
+# playground - installer sandbox
 
 Disposable target repos to try `install.ts` by hand (interactive selector,
 stack detection, lockfile, drift). `fixtures/` is **gitignored**.
@@ -39,6 +39,21 @@ cat   playground/fixtures/frontend-vue/.claude/.ronce-racine.json
 # drift check (after an install)
 npx tsx install.ts check playground/fixtures/frontend-vue
 ```
+
+## Known-defect fixture (`flawed-app`)
+
+`fixtures/flawed-app/` plants one defect per detector (secret, subscription
+leak, TODO, console.log, hard wait, disabled test, swallowed error) and ships
+its ground truth in `EXPECTED.md`. Use it to exercise the detection scripts
+and the audit grids against expected findings:
+
+```bash
+npx tsx skills/detection-sweep/scripts/sweep.ts playground/fixtures/flawed-app
+cd playground/fixtures/flawed-app && npx tsx ../../../scripts/subscription-leak-scan.ts
+```
+
+Any missed line = detector regression; any extra finding = false positive to
+triage. Contract: every detector counts exactly 1.
 
 ## Reset
 

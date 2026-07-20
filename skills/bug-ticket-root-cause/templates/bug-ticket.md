@@ -1,19 +1,19 @@
-# [Bug] <short title — symptom, not solution>
+# [Bug] <short title - symptom, not solution>
 
 ## Context
 **Observed**: <observed behavior>
 **Expected**: <correct behavior>
 **Where**: <page / endpoint / module>
-**Since when**: <commit, version, date — or unknown>
+**Since when**: <commit, version, date - or unknown>
 **Reproducibility**: <systematic / intermittent / conditions>
 **User impact**: <who, how often, workaround possible?>
 
 ## Root-cause analysis
-**Code access**: yes / no — if no, cause `to investigate`, do not disguise a design hypothesis as a root cause.
+**Code access**: yes / no - if no, cause `to investigate`, do not disguise a design hypothesis as a root cause.
 
-**Mechanism**: <what actually happens — NOT the symptom>
-**Cited code**: `file:line` — <the faulty code or the missing guard>
-**Introducing commit**: `hash` (<date>) — <context>
+**Mechanism**: <what actually happens - NOT the symptom>
+**Cited code**: `file:line` - <the faulty code or the missing guard>
+**Introducing commit**: `hash` (<date>) - <context>
 **Hypothesis status**: confirmed / strong / to validate / to investigate
 **Why the existing tests didn't catch the bug**: <honest answer>
 
@@ -37,7 +37,7 @@
 > Each test MUST fail before the fix and pass after. A fix with no confirmation test is incomplete.
 
 ## Priority
-<critical: prod down, data loss, exploitable flaw · high: broken with no workaround · medium: workaround possible · low: cosmetic> — <justification>
+<critical: prod down, data loss, exploitable flaw · high: broken with no workaround · medium: workaround possible · low: cosmetic> - <justification>
 
 ## Recurrence
-<Section present only if the scope has 2+ recent fixes — see the recurring-bug-root-cause skill.>
+<Section present only if the scope has 2+ recent fixes - see the recurring-bug-root-cause skill.>

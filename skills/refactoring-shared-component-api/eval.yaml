@@ -1,0 +1,15 @@
+fixture: design-system
+prompt: >
+  Rename the kind prop on BaseButton to variant. Update BaseButton.vue and
+  every call site in Home.vue, Settings.vue and Dyn.vue so nothing still
+  refers to the old prop name. Write the migration checklist to MIGRATION.md
+  at the repo root.
+gates:
+  - grep_zero: { pattern: "kind", in: "src/" }
+  - grep_count: { pattern: "variant=", in: "src/", count: "2" }
+  - file_exists: "MIGRATION.md"
+judge:
+  criteria:
+    - "Sweep found and migrated all three BaseButton call sites"
+    - "Checklist lists each call site with its status"
+  threshold: pass_all

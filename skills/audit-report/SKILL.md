@@ -1,21 +1,21 @@
 ---
 name: audit-report
 description: Use when consolidating audit results into a report or reformatting existing audit findings - template and scoring rules for the consolidated audit report. Standalone or as reference for the orchestrator. Triggers on "audit report", "rapport audit", "consolider audit", "consolidate audit", "reformat audit findings".
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-07-20
   category: audit
 ---
 
 ## This skill vs. audit-industrialisation
 
 - **This skill** when: reformatting/consolidating **already-produced** audit results into a structured report (scoring + template), or as a scoring reference
-- **audit-industrialisation** instead if: the audit must be **produced** end to end (profiling, running the domains, then consolidating) — it uses this skill in Phase 3
+- **audit-industrialisation** instead if: the audit must be **produced** end to end (profiling, running the domains, then consolidating) - it uses this skill in Phase 3
 - **an `audit-<domain>`**: to evaluate a single domain, not for the global report
 
 ---
 
-# Audit Report — template and computation rules
+# Audit Report - template and computation rules
 
 ## Role
 
@@ -27,7 +27,7 @@ The orchestration procedure (order in which domain audits run, collection, conso
 
 ## Prerequisites
 
-This skill expects the results of one or more domain audits (counts aligned with the audit skills — source: the "Coverage per skill" table in `audit-industrialisation`):
+This skill expects the results of one or more domain audits (counts aligned with the audit skills - source: the "Coverage per skill" table in `audit-industrialisation`):
 - `audit-ci-cd`: CI/CD & Release Management (section-ci, 10 questions)
 - `audit-testing`: Testing & Validation (section-te, 13 questions)
 - `audit-security`: Security (section-se, 16 questions)
@@ -47,10 +47,7 @@ Read that file to apply the exact weights and thresholds. Summary:
 
 - **Domain score** = arithmetic mean of the scored questions (**N/A excluded** from the denominator).
 - **Global score** = weighted average of the domain scores; non-audited domains excluded.
-  Weights: Security 1.5, Testing 1.2, CI/CD 1.0, Observability 1.0, Architecture 1.0,
-  Quality 1.0, Compliance 1.0, Frontend Perf 0.8.
-- **Maturity levels** (0-4 CMMI-adapted): Initial (0.0-0.9), Managed (1.0-1.9),
-  Defined (2.0-2.9), Controlled (3.0-3.5), Optimized (3.6-4.0).
+- The weight table and the maturity thresholds live ONLY in `reference/scoring-model.md` - never restate the numbers elsewhere.
 
 ## Processing rules
 
@@ -227,7 +224,7 @@ Based on the adapted CMMI maturity model (levels 0-4). The questions are defined
 
 ## Structured export (optional, project-specific)
 
-The generic deliverable is the **Markdown report**. A project that manages its audits in a dedicated tool (knowledge base, audit app) may additionally produce a structured export (YAML/JSON) with aligned lowercase IDs (`ci-01`, `te-09a`…) — but that format depends on the target tool and belongs to the **project skill**, not to this generic skill.
+The generic deliverable is the **Markdown report**. A project that manages its audits in a dedicated tool (knowledge base, audit app) may additionally produce a structured export (YAML/JSON) with aligned lowercase IDs (`ci-01`, `te-09a`…) - but that format depends on the target tool and belongs to the **project skill**, not to this generic skill.
 
 ## Exit condition
 
@@ -239,4 +236,6 @@ The generic deliverable is the **Markdown report**. A project that manages its a
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)
+- 1.0.1 (2026-07-20) - weight table and thresholds no longer restated outside reference/scoring-model.md
+
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

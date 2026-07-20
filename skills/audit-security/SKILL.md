@@ -12,7 +12,7 @@ metadata:
 ## When ME and not audit-industrialisation
 
 - **ME** when: audit focused on this domain only
-- **audit-industrialisation** instead if: global multi-domain audit — it orchestrates all the audits (including ME) and produces a consolidated report
+- **audit-industrialisation** instead if: global multi-domain audit - it orchestrates all the audits (including ME) and produces a consolidated report
 
 > For a full project audit, use `audit-industrialisation` rather than invoking each skill separately.
 
@@ -20,7 +20,7 @@ metadata:
 
 Audit the security maturity of a project: encryption in transit and at rest, key management, secrets rotation, JWT authentication, token revocation, roles and permissions, audit log, incident response plan, crisis communication, SIEM detection, patching, post-mortem, federated authentication, network security, container security. Produces a maturity score (0-4) per question.
 
-**16 questions** split across 7 sections. The detailed grids (statement, checks, commands, levels 0-4) are in `reference/` — see [Grids by section](#grids-by-section).
+**16 questions** split across 7 sections. The detailed grids (statement, checks, commands, levels 0-4) are in `reference/` - see [Grids by section](#grids-by-section).
 
 ## Score calculation
 
@@ -84,7 +84,7 @@ Each file contains the statement, the items to analyze/check, the bash commands 
 ## Output format
 
 ```markdown
-## Security — Overall score: X.X/4 (Y questions scored out of 16)
+## Security - Overall score: X.X/4 (Y questions scored out of 16)
 
 ### Summary
 [2-3 sentences summarizing the security maturity]
@@ -137,4 +137,4 @@ Each file contains the statement, the items to analyze/check, the bash commands 
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

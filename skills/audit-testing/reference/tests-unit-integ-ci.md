@@ -4,14 +4,14 @@ Questions: te-07 (Unit test structure), te-08 (Integration test structure), te-0
 
 ## Table of contents
 
-- [te-07 — Unit test structure](#te-07--unit-test-structure--must)
-- [te-08 — Integration test structure](#te-08--integration-test-structure--must)
-- [te-09 — Test execution in CI](#te-09--test-execution-in-ci--must)
-- [te-09a — Test feedback loop](#te-09a--test-feedback-loop--should)
+- [te-07 - Unit test structure](#te-07--unit-test-structure--must)
+- [te-08 - Integration test structure](#te-08--integration-test-structure--must)
+- [te-09 - Test execution in CI](#te-09--test-execution-in-ci--must)
+- [te-09a - Test feedback loop](#te-09a--test-feedback-loop--should)
 
 ---
 
-### te-07 — Unit test structure — `must`
+### te-07 - Unit test structure - `must`
 
 **Analyze:** Test files (`*.test.ts`, `*.spec.ts`, `*_test.go`, `test_*.py`), Jest/Vitest/pytest configs
 
@@ -40,7 +40,7 @@ Questions: te-07 (Unit test structure), te-08 (Integration test structure), te-0
 
 ---
 
-### te-08 — Integration test structure — `must`
+### te-08 - Integration test structure - `must`
 
 **Analyze:** Tests against a real database (Testcontainers, docker-compose test), API tests
 
@@ -68,7 +68,7 @@ Questions: te-07 (Unit test structure), te-08 (Integration test structure), te-0
 
 ---
 
-### te-09 — Test execution in CI — `must`
+### te-09 - Test execution in CI - `must`
 
 **Analyze:** CI pipeline, test stages, quality gates, uploaded coverage reports
 
@@ -96,7 +96,7 @@ Questions: te-07 (Unit test structure), te-08 (Integration test structure), te-0
 
 ---
 
-### te-09a — Test feedback loop — `should`
+### te-09a - Test feedback loop - `should`
 
 **Condition:** Applies if te-09 ≥ 2 (blocking CI in place).
 

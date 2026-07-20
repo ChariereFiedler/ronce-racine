@@ -1,6 +1,6 @@
 #!/usr/bin/env -S npx tsx
 /**
- * DEPRECATED — rules-only distribution CLI, superseded by `install.ts --rules-only`.
+ * DEPRECATED - rules-only distribution CLI, superseded by `install.ts --rules-only`.
  *
  * Kept working for existing adopters; it will be removed in a future version.
  * Prefer the single CLI, which unifies rules/skills/hooks/agents under one
@@ -66,5 +66,5 @@ if (!repo || (cmd !== "sync" && cmd !== "check")) {
   console.error("usage: rules.ts <sync|check> <repo>");
   process.exit(2);
 }
-console.error("⚠ rules.ts is DEPRECATED — use `install.ts --rules-only` (unified lockfile drift). Continuing…\n");
+console.error("⚠ rules.ts is DEPRECATED - use `install.ts --rules-only` (unified lockfile drift). Continuing…\n");
 (cmd === "sync" ? sync : check)(repo);

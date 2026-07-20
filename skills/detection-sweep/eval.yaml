@@ -1,0 +1,11 @@
+fixture: flawed-app
+prompt: >
+  Run a detection sweep on this project in --dry-run mode: produce the full
+  report of problems but do not create tracker tickets (none is configured).
+gates:
+  - repo_clean: { except: "" }
+judge:
+  criteria:
+    - "The report covers every defect listed in EXPECTED.md (secret, subscription leak, TODO, console.log, swallowed catch, hard wait, disabled test)"
+    - "Findings are grouped by cause, not by occurrence"
+  threshold: pass_all

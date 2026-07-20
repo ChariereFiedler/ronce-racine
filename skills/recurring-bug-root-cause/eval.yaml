@@ -1,0 +1,16 @@
+fixture: buggy-app
+prompt: >
+  Fix the cart total item count bug, but this is already the 3rd fix(cart)
+  commit recently so do not just ship another one-liner - root-cause the
+  recurring pattern first. No tracker is configured here, write the
+  postmortem to POSTMORTEM.md and any deferred-action tickets as separate
+  ticket-*.md files.
+gates:
+  - file_exists: "POSTMORTEM.md"
+  - repo_clean: { except: "docs/, .claude/, POSTMORTEM.md, ticket-, src/" }
+judge:
+  criteria:
+    - "A blocking guardrail is added, not just documentation"
+    - "The postmortem names a common class, not just the symptom"
+    - "At least one hypothesis is explicitly refuted with evidence"
+  threshold: pass_all

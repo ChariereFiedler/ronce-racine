@@ -1,0 +1,14 @@
+fixture: backend-node
+prompt: >
+  Implement a "register user with unique email" feature in this NestJS
+  backend, following DDD layering: domain aggregate with invariants,
+  application commands/queries with ports, infrastructure adapters, and a
+  handler that only parses input and serializes output.
+gates:
+  - repo_clean: { except: "src/, migrations/, docs/, .claude/" }
+judge:
+  criteria:
+    - "Domain, application, infrastructure, handler kept in separate files"
+    - "Email uniqueness invariant enforced in the domain, not the handler"
+    - "Commands kept separate from queries"
+  threshold: pass_all

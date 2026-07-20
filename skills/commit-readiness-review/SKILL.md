@@ -1,19 +1,19 @@
 ---
 name: commit-readiness-review
 description: Use before any Claude-initiated git commit - "ready to commit", "commit that", "quick commit", "prêt à commit", "commit ça", "vite un commit", time pressure to ship, diff containing test/debug leftovers or touching multiple stacks.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-07-20
   category: process
 ---
 
-# Commit Readiness Review — self-review before committing
+# Commit Readiness Review - self-review before committing
 
-> If the current repo has a project-specific pre-commit skill (e.g. acme-app → `pre-commit-self-review`), it wins — it knows the exact commands.
+> If the current repo has a project-specific pre-commit skill (e.g. acme-app → `pre-commit-self-review`), it wins - it knows the exact commands.
 
 ## This skill vs. others
 
-- **This skill** when: an agent-initiated commit is imminent — "commit that", "ready to commit", a diff with debug leftovers or touching several stacks, time pressure
+- **This skill** when: an agent-initiated commit is imminent - "commit that", "ready to commit", a diff with debug leftovers or touching several stacks, time pressure
 - **`validating-features-end-to-end`** instead if: the question is "does it work" (functional proof), not "is it committable"
 - **The repo's git skill** if it exists: the project's branch/message/tracker conventions win over this generic checklist
 
@@ -26,17 +26,17 @@ metadata:
 
 ## Principle
 
-- **Before the commit, never after** — no catch-up via `--amend` once pushed
-- **Time pressure does not change the checklist** — a committed secret costs a key rotation + history purge, not a revert
+- **Before the commit, never after** - no catch-up via `--amend` once pushed
+- **Time pressure does not change the checklist** - a committed secret costs a key rotation + history purge, not a revert
 - Targeted scope: check what changed, not the whole suite
 
 ## Workflow
 
 1. **Map the diff**: `git status` + `git diff --stat`. Identify the stacks touched (each extension → its checks) and at-risk files (`.env`, `*.pem`, `*.key`, credentials) → immediate STOP if present.
 2. **Secret scan** on the content. Two levels:
-   - **Dedicated tool if available** (preferred, fewer false negatives): `gitleaks protect --staged --redact` on the staged diff, or `gitleaks detect --no-git --redact` on the tree. If it is not installed, do not block on it — fall back to the grep below.
+   - **Dedicated tool if available** (preferred, fewer false negatives): `gitleaks protect --staged --redact` on the staged diff, or `gitleaks detect --no-git --redact` on the tree. If it is not installed, do not block on it - fall back to the grep below.
    - **Fallback grep**: `git diff HEAD | grep -iE "(password|api[_-]?key|secret|token|sk_live|ghp_|glpat-|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)\s*[:=]?"` plus at-risk files `git diff --name-only HEAD | grep -iE "\.env|\.pem|\.key|credentials|secret"`.
-   - Any detection = show the line to the user and wait for their decision. "It's just for debugging" is not an exception. False positive: exclude it ad hoc with a `gitleaks:allow` comment on the line, or systemically via the allowlist of a repo-level `.gitleaks.toml` config — never by loosening the global scan.
+   - Any detection = show the line to the user and wait for their decision. "It's just for debugging" is not an exception. False positive: exclude it ad hoc with a `gitleaks:allow` comment on the line, or systemically via the allowlist of a repo-level `.gitleaks.toml` config - never by loosening the global scan.
    - **Tooling details and post-leak procedure**: see `rules/pre-commit-secret-detection.md` for gitleaks install, pre-commit hook, allowlist and the rotation procedure if a secret is already pushed.
 3. **Per touched stack, in order format → lint → typecheck → targeted tests** (commands: `package.json` scripts, `Makefile`, repo conventions). Test the changed scope only; the full suite is for before push.
 4. **Problematic patterns in the diff** (added lines only):
@@ -44,7 +44,7 @@ metadata:
    - debug leftovers (`console.log`, `print(`, `dbg!`, `debugger`)
    - `TODO`/`FIXME` added → track in a ticket or remove
    - disabled tests (`.skip`, `xit`, `#[ignore]`) with no justification
-5. **Stage file by file** — never a blind `git add -A`/`git add .`. Verify each staged file belongs to the change.
+5. **Stage file by file** - never a blind `git add -A`/`git add .`. Verify each staged file belongs to the change.
 6. **Summary + confirmation**: files, check results (real ✅/❌, not assumed), proposed message in the repo format (`git log --oneline -5` for the format). Ask for confirmation before `git commit` unless an autonomous mode is explicitly active.
 
 ## Traps & rationalizations
@@ -71,8 +71,12 @@ A missing box = no commit.
 
 ## Tooling
 
-- `scripts/precommit-scan.ts` — scans the staged diff (`npx tsx scripts/precommit-scan.ts`): secrets via gitleaks or regex fallback, sensitive files, debug leftovers. Read-only, exit 1 on a secret/sensitive file. Wireable as a hook (see `hooks/`).
+- Test procedure: `scripts/precommit-scan.test.ts` - deterministic behavioral test of the script (positive + negative fixture). Run `npx tsx scripts/precommit-scan.test.ts` from the canonical repo after any change to the script (also picked up by `npm test`). Not distributed to target repos.
+
+- `scripts/precommit-scan.ts` - scans the staged diff (`npx tsx scripts/precommit-scan.ts`): secrets via gitleaks or regex fallback, sensitive files, debug leftovers. Read-only, exit 1 on a secret/sensitive file. Wireable as a hook (see `hooks/`).
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)
+- 1.0.1 (2026-07-20) - co-located test procedure for precommit-scan.ts (scripts/precommit-scan.test.ts)
+
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

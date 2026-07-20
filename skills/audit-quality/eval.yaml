@@ -1,0 +1,12 @@
+fixture: audit-target
+prompt: >
+  Run a QA & DevOps plus data quality audit of this project.
+  Write the report to AUDIT-QUALITY.md.
+gates:
+  - file_exists: "AUDIT-QUALITY.md"
+  - repo_clean: { except: "AUDIT-QUALITY.md" }
+judge:
+  criteria:
+    - "Flags the absence of both tests and a CI pipeline"
+    - "Reports a maturity score per question, 0-4"
+  threshold: pass_all

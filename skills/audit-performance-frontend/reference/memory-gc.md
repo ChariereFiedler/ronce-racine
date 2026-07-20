@@ -1,17 +1,17 @@
-# Grid — Memory & Garbage Collection
+# Grid - Memory & Garbage Collection
 
 Category 4 · 4 questions (PF-19 to PF-22).
 
 ## Table of contents
 
-- [PF-19 — JSC GC (Riptide) and pauses](#pf-19--jsc-gc-riptide-and-pauses--criticality-should)
-- [PF-20 — Reducing allocation pressure](#pf-20--reducing-allocation-pressure--criticality-should)
-- [PF-21 — Memory leaks and detached DOM](#pf-21--memory-leaks-and-detached-dom--criticality-should)
-- [PF-22 — GPU memory and compositing budget](#pf-22--gpu-memory-and-compositing-budget--criticality-should)
+- [PF-19 - JSC GC (Riptide) and pauses](#pf-19--jsc-gc-riptide-and-pauses--criticality-should)
+- [PF-20 - Reducing allocation pressure](#pf-20--reducing-allocation-pressure--criticality-should)
+- [PF-21 - Memory leaks and detached DOM](#pf-21--memory-leaks-and-detached-dom--criticality-should)
+- [PF-22 - GPU memory and compositing budget](#pf-22--gpu-memory-and-compositing-budget--criticality-should)
 
 ---
 
-### PF-19 — JSC GC (Riptide) and pauses · Criticality: **SHOULD**
+### PF-19 - JSC GC (Riptide) and pauses · Criticality: **SHOULD**
 
 **Analyze:** Allocation rate, GC pauses, heap size, Eden vs Full collection
 
@@ -38,7 +38,7 @@ grep -rn "new \|Object\.create\|\.map(\|\.filter(\|\.reduce(\|\.slice(\|\.concat
 
 ---
 
-### PF-20 — Reducing allocation pressure · Criticality: **SHOULD**
+### PF-20 - Reducing allocation pressure · Criticality: **SHOULD**
 
 **Analyze:** Object pooling, invisible allocations, SoA vs AoS, TypedArrays
 
@@ -67,7 +67,7 @@ grep -rn "\.map(\|\.filter(\|\.slice(\|\.concat(\|{\.\.\.}" . --include="*.ts" -
 
 ---
 
-### PF-21 — Memory leaks and detached DOM · Criticality: **SHOULD**
+### PF-21 - Memory leaks and detached DOM · Criticality: **SHOULD**
 
 **Analyze:** Event listeners, closures, setInterval/setTimeout, detached DOM trees
 
@@ -98,7 +98,7 @@ grep -rn "removeEventListener" . --include="*.ts" --include="*.js" --include="*.
 
 ---
 
-### PF-22 — GPU memory and compositing budget · Criticality: **SHOULD**
+### PF-22 - GPU memory and compositing budget · Criticality: **SHOULD**
 
 **Analyze:** VRAM consumed, layer count, canvas backing store, content-visibility
 

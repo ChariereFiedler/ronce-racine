@@ -19,23 +19,23 @@ metadata:
 
 ## Principle
 
-- **You try to break, not to validate.** 0 bugs found = a bad challenge, not a perfect feature — start over with another persona
+- **You try to break, not to validate.** 0 bugs found = a bad challenge, not a perfect feature - start over with another persona
 - **Proof mandatory**: every flaw = a documented reproduction (steps + curl/SQL/screenshot output), no offhand claims
-- The natural reflex covers backend security and edge cases well; **the systematically forgotten angles are UX, accessibility and non-technical personas** — hence the checklist
+- The natural reflex covers backend security and edge cases well; **the systematically forgotten angles are UX, accessibility and non-technical personas** - hence the checklist
 
 ## Context to gather (before acting)
 
 - The ticket/spec: what is the expected behavior and the business limits (thresholds, quotas, roles) to attack
-- How to start the app and call the API (project dev commands) — a challenge without a running app proves nothing
+- How to start the app and call the API (project dev commands) - a challenge without a running app proves nothing
 - Multi-tenant / authorization model: 2 accounts from 2 tenants to test cross-tenant leaks
 - Real surface: endpoints, forms, async jobs touched by the feature
 
 ## Protocol
 
-1. **Pick a persona** (table below) and attack the feature from its point of view — don't validate, break
+1. **Pick a persona** (table below) and attack the feature from its point of view - don't validate, break
 2. **Walk the layers**: go through every block of the checklist, inject `assets/fuzz-payloads.txt` into the inputs
 3. **Document each flaw** in `templates/challenge-report.md`: repro steps + output (curl/SQL/screenshot) + severity
-4. **Switch persona** and start over — 0 bugs = insufficient challenge, not a perfect feature
+4. **Switch persona** and start over - 0 bugs = insufficient challenge, not a perfect feature
 5. **Verdict + tickets**: one ticket per confirmed flaw, rule blocking / improvement / green-light
 
 ## Traps & rationalizations
@@ -50,8 +50,8 @@ metadata:
 
 ## Tooling
 
-- `templates/challenge-report.md` — full checklist to tick + flaws table + verdict, filled in during the challenge
-- `assets/fuzz-payloads.txt` — ready-to-inject payloads (SQLi, XSS, Unicode, numeric bounds, dates, tricky emails)
+- `templates/challenge-report.md` - full checklist to tick + flaws table + verdict, filled in during the challenge
+- `assets/fuzz-payloads.txt` - ready-to-inject payloads (SQLi, XSS, Unicode, numeric bounds, dates, tricky emails)
 
 ## Checklist by layer
 
@@ -83,7 +83,7 @@ metadata:
 
 ## Exit condition
 
-- [ ] At least 2 personas walked through (one of them non-technical) — **no feature is OK without ≥ 1 challenge round**
+- [ ] At least 2 personas walked through (one of them non-technical) - **no feature is OK without ≥ 1 challenge round**
 - [ ] Each checklist layer walked or explicitly waived (justified out-of-scope)
 - [ ] Each flaw = archived repro (steps + output) + severity in `templates/challenge-report.md`
 - [ ] One ticket opened per confirmed flaw
@@ -91,4 +91,4 @@ metadata:
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) — initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)
+- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

@@ -4,11 +4,11 @@ Questions: ci-08 (Artifact management and registries).
 
 ## Table of contents
 
-- [ci-08 — Artifact management and registries](#ci-08--artifact-management-and-registries--should)
+- [ci-08 - Artifact management and registries](#ci-08--artifact-management-and-registries--should)
 
 ---
 
-### ci-08 — Artifact management and registries — `should`
+### ci-08 - Artifact management and registries - `should`
 
 **Analyze:** Docker registry, private npm registry, publish configs, signatures, SBOM
 

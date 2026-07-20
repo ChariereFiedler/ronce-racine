@@ -1,15 +1,15 @@
 ---
 name: nom-en-kebab-case
-description: Use when <déclencheurs concrets en 3e personne — symptômes, situations, verbatims utilisateur>. <Ne PAS résumer le workflow ici : décrire QUAND, pas COMMENT.>
+description: Use when <déclencheurs concrets en 3e personne - symptômes, situations, verbatims utilisateur>. <Ne PAS résumer le workflow ici : décrire QUAND, pas COMMENT.>
 version: 1.0.0
 metadata:
   last-reviewed: AAAA-MM-JJ
   category: audit | feature | bug | frontend | test | process
 ---
 
-# Titre lisible — principe en une ligne
+# Titre lisible - principe en une ligne
 
-> Si le repo courant a un skill équivalent (ex: acme-app → `<nom-projet>`), il prime — il connaît les chemins, le tracker et les commandes du projet.
+> Si le repo courant a un skill équivalent (ex: acme-app → `<nom-projet>`), il prime - il connaît les chemins, le tracker et les commandes du projet.
 
 ## Quand MOI et pas X
 
@@ -40,7 +40,7 @@ metadata:
 
 ## Templates
 
-- `templates/<x>.md` — <sortie attendue à remplir>
+- `templates/<x>.md` - <sortie attendue à remplir>
 
 ## Pièges & rationalisations
 
@@ -51,13 +51,13 @@ metadata:
 ## Condition de sortie
 
 - [ ] <preuve mesurable que le skill a abouti>
-- [ ] <vérification lancée, sortie collée — jamais « ça devrait passer »>
+- [ ] <vérification lancée, sortie collée - jamais « ça devrait passer »>
 
 ## Outillage
 
-- `scripts/<x>.sh` — <détection statique runnable : « Run scripts/x.sh »>
-- `reference/<x>.md` — <grille / référence lourde chargée à la demande>
+- `scripts/<x>.sh` - <détection statique runnable : « Run scripts/x.sh »>
+- `reference/<x>.md` - <grille / référence lourde chargée à la demande>
 
 ## Changelog
 
-- 1.0.0 (AAAA-MM-JJ) — version initiale versionnée
+- 1.0.0 (AAAA-MM-JJ) - version initiale versionnée

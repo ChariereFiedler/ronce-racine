@@ -1,17 +1,17 @@
-# Metrics section — RED/USE, latency, saturation, transient errors
+# Metrics section - RED/USE, latency, saturation, transient errors
 
 4 questions. RED/USE metrics, latency drift tracking, pool saturation, abnormal transient-error detection.
 
 ## Table of contents
 
-- [ob-04 — RED/USE metrics](#ob-04--reduse-metrics--criticality-should)
-- [ob-07 — Latency drift tracking](#ob-07--latency-drift-tracking--criticality-should)
-- [ob-08 — Pool saturation (thread, DB, API)](#ob-08--pool-saturation-thread-db-api--criticality-could)
-- [ob-09 — Abnormal transient-error detection](#ob-09--abnormal-transient-error-detection--criticality-should)
+- [ob-04 - RED/USE metrics](#ob-04--reduse-metrics--criticality-should)
+- [ob-07 - Latency drift tracking](#ob-07--latency-drift-tracking--criticality-should)
+- [ob-08 - Pool saturation (thread, DB, API)](#ob-08--pool-saturation-thread-db-api--criticality-could)
+- [ob-09 - Abnormal transient-error detection](#ob-09--abnormal-transient-error-detection--criticality-should)
 
 ---
 
-### ob-04 — RED/USE metrics · Criticality: **SHOULD**
+### ob-04 - RED/USE metrics · Criticality: **SHOULD**
 
 **Analyze:** Prometheus instrumentation, OpenTelemetry metrics, StatsD, custom metrics, SLIs/SLOs
 
@@ -53,7 +53,7 @@ grep -ri "histogram\|counter\|gauge\|summary\|observe\|increment" --include="*.t
 
 ---
 
-### ob-07 — Latency drift tracking · Criticality: **SHOULD**
+### ob-07 - Latency drift tracking · Criticality: **SHOULD**
 
 **Analyze:** Latency alerts, latency SLO, dynamic baseline, anomaly detection, deployment correlation
 
@@ -93,7 +93,7 @@ grep -ri "predict_linear\|latency.*alert\|duration.*threshold\|slo.*latency" --i
 
 ---
 
-### ob-08 — Pool saturation (thread, DB, API) · Criticality: **COULD**
+### ob-08 - Pool saturation (thread, DB, API) · Criticality: **COULD**
 
 **Analyze:** Connection pool config (DB, Redis, HTTP), pool monitoring, thread pools, circuit breakers, PgBouncer
 
@@ -134,7 +134,7 @@ grep -ri "circuit.*breaker\|resilience4j\|bulkhead\|rate.*limit" --include="*.ts
 
 ---
 
-### ob-09 — Abnormal transient-error detection · Criticality: **SHOULD**
+### ob-09 - Abnormal transient-error detection · Criticality: **SHOULD**
 
 **Analyze:** Error classification (transient vs permanent), error-rate baseline, anomaly detection, retry policies
 

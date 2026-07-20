@@ -1,22 +1,22 @@
-# Grid — JavaScript Engine & Runtime JSC
+# Grid - JavaScript Engine & Runtime JSC
 
 Category 3 · 9 questions (PF-10 to PF-18).
 
 ## Table of contents
 
-- [PF-10 — Monomorphism, JSC Structures and inline caches](#pf-10--monomorphism-jsc-structures-and-inline-caches--criticality-must)
-- [PF-11 — NaN-boxing and JSC value representation](#pf-11--nan-boxing-and-jsc-value-representation--criticality-should)
-- [PF-12 — JSC compilation tiers (LLInt → Baseline → DFG → FTL)](#pf-12--jsc-compilation-tiers-llint--baseline--dfg--ftl--criticality-should)
-- [PF-13 — Deoptimization and JSC bailouts](#pf-13--deoptimization-and-jsc-bailouts--criticality-must)
-- [PF-14 — Functions, closures and call cost](#pf-14--functions-closures-and-call-cost--criticality-should)
-- [PF-15 — Arrays and JSC internal representation](#pf-15--arrays-and-jsc-internal-representation--criticality-should)
-- [PF-16 — Strings, RegExp and AtomStringTable](#pf-16--strings-regexp-and-atomstringtable--criticality-could)
-- [PF-17 — Event loop, microtasks and scheduling](#pf-17--event-loop-microtasks-and-scheduling--criticality-must)
-- [PF-18 — Weak references and memory cache management](#pf-18--weak-references-and-memory-cache-management--criticality-could)
+- [PF-10 - Monomorphism, JSC Structures and inline caches](#pf-10--monomorphism-jsc-structures-and-inline-caches--criticality-must)
+- [PF-11 - NaN-boxing and JSC value representation](#pf-11--nan-boxing-and-jsc-value-representation--criticality-should)
+- [PF-12 - JSC compilation tiers (LLInt → Baseline → DFG → FTL)](#pf-12--jsc-compilation-tiers-llint--baseline--dfg--ftl--criticality-should)
+- [PF-13 - Deoptimization and JSC bailouts](#pf-13--deoptimization-and-jsc-bailouts--criticality-must)
+- [PF-14 - Functions, closures and call cost](#pf-14--functions-closures-and-call-cost--criticality-should)
+- [PF-15 - Arrays and JSC internal representation](#pf-15--arrays-and-jsc-internal-representation--criticality-should)
+- [PF-16 - Strings, RegExp and AtomStringTable](#pf-16--strings-regexp-and-atomstringtable--criticality-could)
+- [PF-17 - Event loop, microtasks and scheduling](#pf-17--event-loop-microtasks-and-scheduling--criticality-must)
+- [PF-18 - Weak references and memory cache management](#pf-18--weak-references-and-memory-cache-management--criticality-could)
 
 ---
 
-### PF-10 — Monomorphism, JSC Structures and inline caches · Criticality: **MUST**
+### PF-10 - Monomorphism, JSC Structures and inline caches · Criticality: **MUST**
 
 **Analyze:** Object shape consistency, call-site polymorphism, use of `delete`
 
@@ -45,7 +45,7 @@ grep -rn "Object\.assign\|{\.\.\.obj}" . --include="*.ts" --include="*.js" 2>/de
 
 ---
 
-### PF-11 — NaN-boxing and JSC value representation · Criticality: **SHOULD**
+### PF-11 - NaN-boxing and JSC value representation · Criticality: **SHOULD**
 
 **Analyze:** Numeric type consistency, int32 overflow, boxing/unboxing
 
@@ -74,7 +74,7 @@ grep -rn "parseInt\|parseFloat\|Number(" . --include="*.ts" --include="*.js" 2>/
 
 ---
 
-### PF-12 — JSC compilation tiers (LLInt → Baseline → DFG → FTL) · Criticality: **SHOULD**
+### PF-12 - JSC compilation tiers (LLInt → Baseline → DFG → FTL) · Criticality: **SHOULD**
 
 **Analyze:** Warm-up of critical functions, hot function size, inlining
 
@@ -103,7 +103,7 @@ grep -ri "warm.up\|preheat\|prefetch\|pre.compile" . --include="*.ts" --include=
 
 ---
 
-### PF-13 — Deoptimization and JSC bailouts · Criticality: **MUST**
+### PF-13 - Deoptimization and JSC bailouts · Criticality: **MUST**
 
 **Analyze:** Type stability, OSR exits, bailouts, branch prediction
 
@@ -132,7 +132,7 @@ grep -rn "arguments\b\|eval(" . --include="*.ts" --include="*.js" 2>/dev/null | 
 
 ---
 
-### PF-14 — Functions, closures and call cost · Criticality: **SHOULD**
+### PF-14 - Functions, closures and call cost · Criticality: **SHOULD**
 
 **Analyze:** Arrow functions in loops, closures capturing variables, `.bind()`, `.call()`, `.apply()`
 
@@ -161,7 +161,7 @@ grep -rn "\beval(\|new Function(" . --include="*.ts" --include="*.js" 2>/dev/nul
 
 ---
 
-### PF-15 — Arrays and JSC internal representation · Criticality: **SHOULD**
+### PF-15 - Arrays and JSC internal representation · Criticality: **SHOULD**
 
 **Analyze:** Array homogeneity, sparse arrays, indexing type, TypedArrays
 
@@ -192,7 +192,7 @@ grep -rn "new Array(" . --include="*.ts" --include="*.js" 2>/dev/null | grep -v 
 
 ---
 
-### PF-16 — Strings, RegExp and AtomStringTable · Criticality: **COULD**
+### PF-16 - Strings, RegExp and AtomStringTable · Criticality: **COULD**
 
 **Analyze:** Concatenation in loops, dangerous RegExp, JSON.parse vs literals
 
@@ -221,7 +221,7 @@ grep -rn "new RegExp\|/.*+.*+\|/.*\*.*\*" . --include="*.ts" --include="*.js" 2>
 
 ---
 
-### PF-17 — Event loop, microtasks and scheduling · Criticality: **MUST**
+### PF-17 - Event loop, microtasks and scheduling · Criticality: **MUST**
 
 **Analyze:** Use of `requestAnimationFrame`, microtask starvation, frame budget, long tasks
 
@@ -253,7 +253,7 @@ grep -rn "MessageChannel\|scheduler\.postTask\|queueMicrotask" . --include="*.ts
 
 ---
 
-### PF-18 — Weak references and memory cache management · Criticality: **COULD**
+### PF-18 - Weak references and memory cache management · Criticality: **COULD**
 
 **Analyze:** Use of `WeakMap`/`WeakSet`/`WeakRef`/`FinalizationRegistry`, caches without eviction
 
