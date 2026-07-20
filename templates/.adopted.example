@@ -1,0 +1,8 @@
+# Règles génériques gérées par le canonique claude-rules.
+# Une par ligne. Les règles NON listées sont laissées intactes (version locale enrichie).
+# Synchroniser : npx tsx /chemin/vers/claude-rules/rules.ts sync .
+minimal-code.md
+commits.md
+test-discipline.md
+# secure-logging.md          # ← décommenter pour adopter la version générique
+# detection-gap-protocol.md  # ← idem
