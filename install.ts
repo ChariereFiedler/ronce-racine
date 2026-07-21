@@ -69,7 +69,7 @@ function compareToken(token: string, repo: string): string | null {
   if (!existsSync(canon)) return "canonical-removed";
   if (!isDir) return readFileSync(canon).equals(readFileSync(inst)) ? null : "modified";
   // Test procedures and eval manifests are never distributed (see copyToken) - exclude them from drift.
-  const canonFiles = listFiles(canon).filter((f) => !f.endsWith(".test.ts") && f !== "eval.yaml");
+  const canonFiles = listFiles(canon).filter((f) => !f.endsWith(".test.ts") && f !== "eval.yaml" && f !== "README.md");
   const probs = [
     ...canonFiles.filter((f) => !existsSync(join(inst, f))).map((f) => `-${f}`),
     ...canonFiles.filter((f) => existsSync(join(inst, f)) && !readFileSync(join(canon, f)).equals(readFileSync(join(inst, f)))).map((f) => `~${f}`),
@@ -737,7 +737,7 @@ async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rules
       nBackedUp++;
     }
     // Test procedures (*.test.ts) and eval manifests (eval.yaml) stay in the canonical repo - never distributed.
-    cpSync(src, dst, recursive ? { recursive: true, filter: (s) => !s.endsWith(".test.ts") && !s.endsWith("eval.yaml") } : undefined);
+    cpSync(src, dst, recursive ? { recursive: true, filter: (s) => !s.endsWith(".test.ts") && !s.endsWith("eval.yaml") && !s.endsWith("README.md") } : undefined);
   };
 
   const adopted: string[] = [];

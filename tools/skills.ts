@@ -90,6 +90,14 @@ function validateSkill(dir: string): string[] {
 
   if (!/^##\s+Changelog\s*$/m.test(body)) errs.push(`${dir}: ## Changelog section missing`);
 
+  // The human page sits next to the skill (a skill is a folder, so it has room
+  // for one) and is never distributed. It must point at what it documents,
+  // otherwise it drifts into a standalone text nobody reconciles.
+  const readme = join(SKILLS, dir, "README.md");
+  if (!existsSync(readme)) errs.push(`${dir}: README.md missing (human page)`);
+  else if (!readFileSync(readme, "utf8").includes("SKILL.md"))
+    errs.push(`${dir}/README.md: does not link its SKILL.md`);
+
   for (const ref of referencedPaths(body)) {
     if (!existsSync(join(SKILLS, dir, ref))) errs.push(`${dir}: broken link → ${ref}`);
   }
@@ -246,6 +254,12 @@ function rulesCheck(): void {
   const files = readdirSync(RULES)
     .filter((f) => f.endsWith(".md"))
     .sort();
+  // Each rule also has a human-facing page under docs/rules/ that restates it
+  // with the rationale the canonical file deliberately omits (every injected
+  // token costs). That restatement can drift, and nothing else watches it.
+  const DOCS_RULES = join(ROOT, "docs", "rules");
+  const docFiles = existsSync(DOCS_RULES) ? readdirSync(DOCS_RULES).filter((f) => f.endsWith(".md")) : [];
+
   const errors = files.flatMap((file) => {
     const { fm } = parseFrontmatter(readFileSync(join(RULES, file), "utf8"));
     const errs: string[] = [];
@@ -254,13 +268,28 @@ function rulesCheck(): void {
     const reviewed = fm.metadata?.["last-reviewed"];
     if (!reviewed) errs.push(`${file}: metadata.last-reviewed missing`);
     else if (!ISO_DATE.test(reviewed)) errs.push(`${file}: last-reviewed "${reviewed}" ≠ YYYY-MM-DD`);
+
+    const docPath = join(DOCS_RULES, file);
+    if (!existsSync(docPath)) {
+      errs.push(`${file}: no docs/rules/${file} page`);
+    } else {
+      const doc = readFileSync(docPath, "utf8");
+      const shown = /\|\s*\*\*Version\*\*\s*\|\s*([\d.]+)\s*\|/.exec(doc)?.[1];
+      if (!shown) errs.push(`docs/rules/${file}: no Version cell`);
+      else if (shown !== fm.version) errs.push(`docs/rules/${file}: documents ${shown}, rule is ${fm.version}`);
+      if (!doc.includes(`rules/${file}`)) errs.push(`docs/rules/${file}: does not link its canonical artifact`);
+    }
     return errs;
   });
+  for (const d of docFiles) {
+    if (!files.includes(d)) errors.push(`docs/rules/${d}: documents a rule that no longer exists`);
+  }
+
   if (errors.length) {
     console.error(`✗ ${errors.length} rule problem(s):\n  ${errors.join("\n  ")}`);
     process.exit(1);
   }
-  console.log(`✓ ${files.length} rules versioned`);
+  console.log(`✓ ${files.length} rules versioned, each with a matching docs page`);
 }
 
 /**

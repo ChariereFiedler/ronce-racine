@@ -82,7 +82,7 @@ Needs the `claude` CLI on PATH (or `EVAL_CLAUDE_BIN`). Full guide:
 | Type | Guide | Also required |
 |---|---|---|
 | Rule | [writing-a-rule.md](writing-a-rule.md) | `docs/rules/<name>.md`, entry in the README table |
-| Skill | [writing-a-skill.md](writing-a-skill.md) | `README.md` + `eval.yaml` in the skill folder |
+| Skill | [writing-a-skill.md](writing-a-skill.md) | `README.md` + `eval.yaml` in the skill folder (neither is distributed) |
 | Hook | see below | `@version` and `@last-reviewed` in the file header |
 | Agent | copy an existing `agents/*.md` | entry in the README table |
 | Script | belongs to a skill (`skills/<name>/scripts/`) | a co-located `*.test.ts` and a mutation entry |
@@ -96,12 +96,25 @@ filesystem or persist anything are documented in [`SECURITY.md`](../SECURITY.md)
 
 ## What travels and what does not
 
-The installer copies artifacts into a target repo's `.claude/`. Two things
-deliberately stay canonical and are excluded from both the copy and the drift
-comparison: `*.test.ts` (test procedures) and `eval.yaml` (eval manifests).
-They are how we verify the toolkit, not payload for its users. If you add a
-third category of internal-only file, exclude it in `copyToken` **and** in
-`compareToken` in `install.ts`, and cover it with a test.
+The installer copies artifacts into a target repo's `.claude/`. A target repo
+gets what its agent reads, and nothing that merely explains or verifies the
+toolkit. Excluded from both the copy and the drift comparison in `install.ts`
+(`copyToken` **and** `compareToken`):
+
+- `*.test.ts` - test procedures
+- `eval.yaml` - evaluation manifests
+- `README.md` - the human page of a skill, which describes THIS repository
+
+The one deliberate exception is `hooks/README.md`, copied on purpose: hooks
+execute automatically on the target's machine, so documenting what runs there
+is transparency rather than clutter. If you add another internal-only category,
+exclude it in both places and cover it with a test.
+
+Where human docs live follows the artifact's shape: next to it when the
+artifact is a folder (`skills/<name>/README.md`), under `docs/` when it is a
+single file (`docs/rules/<name>.md`, since a rule has no folder of its own).
+Neither is ever distributed, and both are guarded against drifting from the
+artifact they document.
 
 ## Conventions
 

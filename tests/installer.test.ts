@@ -30,19 +30,26 @@ test("install writes files + a valid lockfile", () => {
   assert(existsSync(join(repo, ".claude/rules/shared/.adopted")), ".adopted manifest should exist");
 });
 
-test("install ships NO test files or eval manifests into the target repo", () => {
-  const repo = freshRepo("no-test-files");
+test("install ships only what the agent consumes, no repo-internal material", () => {
+  // Human docs, test procedures and eval manifests explain or verify the
+  // toolkit; a target repo's .claude/ holds what the agent reads, nothing else.
+  // hooks/README.md is the deliberate exception: hooks RUN on the target's
+  // machine, so documenting what executes there is transparency, not clutter.
+  const INTERNAL = (rel: string, name: string): boolean =>
+    rel.endsWith("/hooks/README.md") ? false
+      : name.endsWith(".test.ts") || name === "eval.yaml" || name === "README.md";
+  const repo = freshRepo("no-internal-files");
   cli(["install.ts", "install", repo]);
   const found: string[] = [];
   const walk = (dir: string): void => {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
       const p = join(dir, e.name);
       if (e.isDirectory()) walk(p);
-      else if (e.name.endsWith(".test.ts") || e.name === "eval.yaml") found.push(p);
+      else if (INTERNAL(p, e.name)) found.push(p);
     }
   };
   walk(join(repo, ".claude"));
-  assert(found.length === 0, `test files and eval manifests must not be distributed: ${found.join(", ")}`);
+  assert(found.length === 0, `repo-internal material must not be distributed: ${found.join(", ")}`);
 });
 
 test("check is clean right after install", () => {

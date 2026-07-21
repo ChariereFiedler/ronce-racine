@@ -32,7 +32,7 @@ const MUTATIONS: Mutation[] = [
   {
     name: "installer: .test.ts distribution filter removed",
     file: "install.ts",
-    find: '{ recursive: true, filter: (s) => !s.endsWith(".test.ts") && !s.endsWith("eval.yaml") }',
+    find: '{ recursive: true, filter: (s) => !s.endsWith(".test.ts") && !s.endsWith("eval.yaml") && !s.endsWith("README.md") }',
     replace: "{ recursive: true }",
     test: "tests/installer.test.ts",
   },

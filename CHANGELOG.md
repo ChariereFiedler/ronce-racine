@@ -7,6 +7,23 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Individual artifacts (rules, skills, hooks) also carry their own `version` in
 their frontmatter; this file tracks the toolkit as a whole.
 
+## [0.4.0] - 2026-07-21
+
+### Changed
+- **A target repo no longer receives the toolkit's own documentation.** Skill
+  `README.md` pages describe THIS repository, so shipping them put roughly
+  1300 lines of irrelevant prose into every adopting repo's `.claude/`. They
+  now stay canonical, alongside `*.test.ts` and `eval.yaml`. The one deliberate
+  exception is `hooks/README.md`: hooks execute on the target's machine, so
+  documenting what runs there is transparency rather than clutter.
+
+### Added
+- Drift guards for the human documentation layer, which nothing watched before:
+  every rule must have a `docs/rules/` page whose stated version matches the
+  rule and which links the canonical artifact, and every skill must have a
+  `README.md` that links its `SKILL.md`. Orphan pages documenting a deleted
+  artifact now fail the build.
+
 ## [0.3.0] - 2026-07-21
 
 ### Added
