@@ -375,7 +375,17 @@ function docsCheck(): void {
   if (scriptsAreTs && /needs?\s+\*\*only Node\*\*|\*\*only Node\*\*/.test(readme))
     errors.push('README.md: claims "only Node" while scripts/ still ships TypeScript that needs tsx');
 
-  // 4. Documented commands must name a file that exists.
+  // 4. A publishable package must not be documented as unpublished. This exact
+  //    claim outlived the first publish and sat live on the repository home.
+  const pkg = JSON.parse(read("package.json")) as { private?: boolean; name?: string };
+  if (!pkg.private && /not (yet )?(on|published to) npm|not on npm yet/i.test(readme))
+    errors.push('README.md: says the package is not on npm, but package.json is publishable');
+
+  // 5. A published package should link its registry page.
+  if (!pkg.private && !readme.includes(`npmjs.com/package/${pkg.name}`))
+    errors.push(`README.md: no link to https://www.npmjs.com/package/${pkg.name}`);
+
+  // 6. Documented commands must name a file that exists.
   for (const rel of ["README.md", "docs/adopting-a-repo.md", "docs/developing.md"]) {
     for (const m of read(rel).matchAll(/npx tsx ((?:tools\/|playground\/)[\w./-]+\.ts)/g)) {
       if (!existsSync(join(ROOT, m[1]))) errors.push(`${rel}: documents ${m[1]}, which does not exist`);

@@ -2,6 +2,9 @@
 
 # Ronce Racine
 
+[![npm](https://img.shields.io/npm/v/ronce-racine)](https://www.npmjs.com/package/ronce-racine)
+[![license](https://img.shields.io/npm/l/ronce-racine)](LICENSE)
+
 Canonical source of **generic [Claude Code](https://claude.com/claude-code) config** (project-agnostic), installable in any repository. It provides a layer of *always-on* disciplines and *on-demand* workflows that spreads into every project:
 
 - **`rules/`**: *always-on* rules, injected by file type (`paths:`)
@@ -164,10 +167,6 @@ Executable detection scripts (TypeScript, `tsx`, read-only). Referenceable from 
 | `subscription-leak-scan.ts` | frontend (staged git diff) | subscription/listener/timer leaks |
 
 ## Quickstart
-
-> The package is not on npm yet: the commands below are the adoption path as of
-> the next release. Until then, clone the repo and run `npx tsx install.ts plan .`
-> from it (see [`docs/developing.md`](docs/developing.md)).
 
 ```bash
 # 1. Propose an adapted install for your project (read-only)

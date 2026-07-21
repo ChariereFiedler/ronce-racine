@@ -1,0 +1,60 @@
+# Fuzz payloads - one per line (# lines are comments)
+# Typical usage: for p in $(grep -v '^#' fuzz-payloads.txt); do curl -X POST -d "{\"name\":\"$p\"}" ...; done
+
+# Empty and boundaries
+
+null
+undefined
+   whitespace around
+
+# SQL injection
+'; DROP TABLE users;--
+' OR '1'='1
+1; SELECT pg_sleep(5)--
+
+# XSS
+<script>alert(1)</script>
+<img src=x onerror=alert(1)>
+javascript:alert(1)
+"><svg/onload=alert(1)>
+
+# Path traversal
+../../../etc/passwd
+..%2F..%2F..%2Fetc%2Fpasswd
+
+# Unicode / encoding
+😀🎉👨‍👩‍👧‍👦
+مرحبا بالعالم
+Z̴̢̛a̷l̸g̵o̶
+ﷺ
+
+
+# Format / type confusion
+0
+-1
+9007199254740993
+NaN
+Infinity
+1e308
+0x41414141
+true
+[]
+{}
+
+# Dates
+1970-01-01T00:00:00Z
+9999-12-31T23:59:59Z
+2026-02-30
+0000-00-00
+
+# Tricky emails
+user+tag@example.com
+USER@EXAMPLE.COM
+victim@corp.com%0ABcc:attacker@evil.com
+a@b
+x@example.com.
+
+# IDs
+00000000-0000-0000-0000-000000000000
+not-a-uuid
+\'

@@ -7,6 +7,21 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Individual artifacts (rules, skills, hooks) also carry their own `version` in
 their frontmatter; this file tracks the toolkit as a whole.
 
+## [0.5.2] - 2026-07-21
+
+### Fixed
+- The published README still carried "The package is not on npm yet", so the
+  npm page told visitors the package they were looking at did not exist. It
+  now links the registry page and carries a version badge.
+- `package.json` gained `homepage` and `bugs`, so the npm page links back to
+  the project and its issue tracker.
+
+### Added
+- `tools/skills.ts docs` now also fails when a publishable package is
+  documented as unpublished, or when the README does not link its registry
+  page. Both were real defects that survived the first version of this check,
+  which had been built around the two failures known at the time.
+
 ## [0.5.1] - 2026-07-21
 
 ### Fixed

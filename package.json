@@ -1,6 +1,6 @@
 {
   "name": "ronce-racine",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "type": "module",
   "description": "Ronce Racine - generic Claude Code config (always-on rules + on-demand skills) with a distribution CLI",
   "license": "MIT",
@@ -23,6 +23,10 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ChariereFiedler/ronce-racine.git"
+  },
+  "homepage": "https://github.com/ChariereFiedler/ronce-racine#readme",
+  "bugs": {
+    "url": "https://github.com/ChariereFiedler/ronce-racine/issues"
   },
   "keywords": [
     "claude-code",

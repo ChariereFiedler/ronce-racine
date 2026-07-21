@@ -1,0 +1,12 @@
+# Generic rules adopted (ronce-racine). Resync: ronce-racine install --rules-only .
+clean-architecture-deps.md
+commits.md
+error-handling-discipline.md
+minimal-code.md
+no-raw-sql-interpolation.md
+pre-commit-secret-detection.md
+secure-logging.md
+sql-migrations-discipline.md
+subscription-cleanup.md
+test-discipline.md
+ui-states-complete.md
