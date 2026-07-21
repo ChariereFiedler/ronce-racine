@@ -7,6 +7,9 @@ Doc aimed at an agent (LLM) that **works on** this repo or uses it to **equip an
 Canonical source of **generic Claude Code config** (project-agnostic), installable in any repository:
 `rules/` (always-on, by `paths`) · `skills/` (on-demand workflows) · `hooks/` (settings.json scripts - granular, one hook per `.ts` file) · `agents/` (subagents) · `scripts/` (executable detections). CLI: `install.ts` is the single tool (all families; rules-only via `--rules-only`).
 
+
+**Hook composition**: several plugins observe the same event and `PreToolUse` `updatedInput` is last-wins. A hook that rewrites a command MUST keep the original readable (trailing shell comment), must not rewrite when the rewrite buys nothing, and must never mask an exit code through a pipe. See `hooks/README.md`.
+
 ## Non-negotiable rules
 
 - **Genericity**: an artifact here contains **no** project coupling (crate/script/path name, imposed tracker, imposed stack). If useful but coupled → split: the generic principle here, the tooling in the project repo. A routing override "e.g. acme-app → `x`, it wins" is allowed.

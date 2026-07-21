@@ -216,6 +216,34 @@ test("session-precompact persists a memo from the event's transcript", () => {
   contains(readFileSync(memoPath, "utf8"), "refactor the parser", "memo must carry the intent");
 });
 
+test("a rewritten command stays readable and still executes", () => {
+  // A hook that rewrites updatedInput.command is not alone on the event: other
+  // plugins, transcripts and logs read it downstream. An opaque base64 blob
+  // breaks all of them, so the original must survive in clear.
+  const cases = ["git log", "git diff", "cargo build && npm test", `echo "a'b" && git diff`];
+  for (const original of cases) {
+    const out = updatedCommand(builtHook("truncate-output.ts", { tool_name: "Bash", tool_input: { command: original } }));
+    assert(out !== null, `${original} should have been wrapped`);
+    contains(out!, original, `the original command must remain readable in: ${out}`);
+    // Readability must not cost correctness: wrapping must not change the
+    // outcome. Comparing against the bare command also covers the case where a
+    // trailing comment would swallow part of it, or a quote would break parsing.
+    const wrapped = spawnSync("bash", ["-c", out!], { encoding: "utf8", timeout: 30_000 });
+    const bare = spawnSync("bash", ["-c", original], { encoding: "utf8", timeout: 30_000 });
+    assert(wrapped.status === bare.status,
+      `wrapping changed the exit code for ${original}: ${bare.status} -> ${wrapped.status}`);
+  }
+});
+
+test("bounded git commands are left alone: wrapping them buys nothing", () => {
+  // The 4000-char threshold never fires on these, so rewriting only costs
+  // readability and breaks downstream consumers for no benefit.
+  for (const bounded of ["git log --oneline -5", "git diff --stat", "git log -20", "git diff --name-only"]) {
+    const out = updatedCommand(builtHook("truncate-output.ts", { tool_name: "Bash", tool_input: { command: bounded } }));
+    assert(out === null, `${bounded} must not be rewritten, got ${out}`);
+  }
+});
+
 // ---- the BUILT hooks: what a target repo actually runs ---------------------
 
 test("every built hook runs and produces its effect, not just exit 0", () => {

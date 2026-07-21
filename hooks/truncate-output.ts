@@ -26,7 +26,10 @@ const VERBOSE_PATTERNS: RegExp[] = [
   // two-hook conflict on the same command - PreToolUse updatedInput is last-wins).
   /^\s*npm\s+run\s+(build|test|typecheck|lint)\b/,
   /^\s*npx\s+(vitest|tsc|nuxi|tsx)\b/,
-  /^\s*git\s+(log|diff)\b/,
+  // git log/diff are only voluminous UNBOUNDED: `--oneline`, `-n`, `-<count>`
+  // or a `--stat` summary stay short, and rewriting them costs readability for
+  // nothing since the 4000-char threshold would never fire anyway.
+  /^\s*git\s+(log|diff)\b(?!.*(--oneline|--stat|--name-only|--name-status|\s-\d+|\s-n\s))/,
   /^\s*curl\s/,
   /^\s*docker\s+(build|logs)\b/,
   /^\s*rustup\s/,
@@ -46,10 +49,15 @@ export function isVerboseCommand(cmd: string): boolean {
 
 export function wrapCommand(cmd: string, hookDir: string): string {
   const encoded = Buffer.from(cmd).toString('base64')
-  // Run the helper via `npx tsx` (works on any Node ≥ 18) rather than
-  // `node --experimental-strip-types` (only Node ≥ 22.6), matching how the
-  // hooks themselves are wired in settings.json.
-  return `TRUNCATE_CMD_B64=${encoded} node '${hookDir}/truncate-bash-output.mjs'`
+  // The command travels base64-encoded so no shell quoting can break it, but an
+  // opaque blob is hostile to anything downstream: other hooks observing the
+  // same event, a human reading the transcript, a log. So the original is kept
+  // in clear as a TRAILING COMMENT - a shell comment runs to end of line and
+  // swallows quotes and apostrophes without interpreting them, which a leading
+  // `: 'cmd';` prefix does not (it breaks on `echo it's fine`).
+  // Newlines are flattened, otherwise the comment would swallow the next line.
+  const readable = cmd.replace(/\s*\n\s*/g, ' ').trim()
+  return `TRUNCATE_CMD_B64=${encoded} node '${hookDir}/truncate-bash-output.mjs' # ${readable}`
 }
 
 function readStdin(): string {

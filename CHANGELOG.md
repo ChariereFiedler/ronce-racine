@@ -7,6 +7,30 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Individual artifacts (rules, skills, hooks) also carry their own `version` in
 their frontmatter; this file tracks the toolkit as a whole.
 
+## [0.5.3] - 2026-07-21
+
+A hook is never alone on its event.
+
+### Changed
+- **`truncate-output` keeps the rewritten command readable.** It replaced the
+  command with an opaque base64 blob, which broke every downstream consumer:
+  other plugins observing the same `PreToolUse` event, the transcript, the
+  logs. The original now travels as a trailing shell comment, which runs to end
+  of line and swallows quotes and apostrophes without interpreting them (a
+  leading `: 'cmd';` prefix does not: it breaks on `echo it's fine`).
+- **Bounded `git log` / `git diff` are no longer wrapped.** With `--oneline`,
+  `--stat`, `--name-only` or a count, their output never reaches the truncation
+  threshold, so rewriting them cost readability and broke composition for
+  nothing.
+
+### Added
+- A composition rule in `hooks/README.md` and `AGENTS.md`: a hook that rewrites
+  a command must preserve the original in readable form, must not rewrite when
+  the rewrite buys nothing, and must never mask an exit code through a pipe.
+- Regression tests asserting that a wrapped command keeps its original readable
+  AND yields the same exit code as the bare one, so readability cannot be
+  bought at the cost of correctness.
+
 ## [0.5.2] - 2026-07-21
 
 ### Fixed

@@ -155,6 +155,20 @@ const MUTATIONS: Mutation[] = [
     replace: "npx -y tsx '${hookDir}/truncate-bash-output.ts'",
     test: "tests/hooks.test.ts",
   },
+  {
+    name: "truncate-output: rewritten command no longer readable",
+    file: "hooks/truncate-output.ts",
+    find: "truncate-bash-output.mjs' # ${readable}",
+    replace: "truncate-bash-output.mjs'",
+    test: "tests/hooks.test.ts",
+  },
+  {
+    name: "truncate-output: bounded git commands wrapped for nothing",
+    file: "hooks/truncate-output.ts",
+    find: "(?!.*(--oneline|--stat|--name-only|--name-status|\\s-\\d+|\\s-n\\s))",
+    replace: "",
+    test: "tests/hooks.test.ts",
+  },
 ];
 
 // This harness edits tracked files in place. Two concurrent runs corrupt each

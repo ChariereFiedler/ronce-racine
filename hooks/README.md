@@ -6,6 +6,28 @@ Hooks are authored in TypeScript but SHIP BUILT: the installer copies `.mjs` fil
 
 > **Note** - the `install.ts` installer copies the selected hooks and automatically composes the merged `settings.json` snippet - the manual wiring below is only useful for a hand install.
 
+
+## Composition rule: a hook is never alone on its event
+
+Several plugins can observe the same Claude Code event, and `PreToolUse`
+`updatedInput` is last-wins. A hook that rewrites a command therefore hands its
+output to whatever runs next, plus the transcript and the logs.
+
+**A hook that rewrites a command must preserve the original in readable form.**
+`truncate-output` learned this the hard way: it replaced the command with an
+opaque base64 blob, which broke every downstream consumer and made transcripts
+unreadable. It now carries the original as a trailing shell comment, which runs
+to end of line and swallows quotes and apostrophes without interpreting them.
+
+Two corollaries:
+
+- **Rewrite only when the rewrite earns its cost.** `truncate-output` used to
+  wrap `git log --oneline -5`, whose output never reaches the truncation
+  threshold: pure loss.
+- **Never mask an exit code.** Piping through `head` or `tail` replaces the
+  command's status with the pipe's. `bash-npm-silent` adds a flag rather than a
+  pipe for exactly this reason.
+
 ---
 
 ## `skill-reminder.ts` - skill suggestion (UserPromptSubmit)
