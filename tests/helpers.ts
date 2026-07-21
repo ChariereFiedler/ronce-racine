@@ -46,6 +46,12 @@ export function cli(args: string[]): Run {
   return { status: r.status, stdout: r.stdout ?? "", stderr: r.stderr ?? "" };
 }
 /** Runs a hooks/<file> with a JSON stdin payload. */
+/**
+ * Runs a hook from SOURCE. Prefer builtHook() for anything that must hold in a
+ * target repo: two published hooks were dead because their entry guard tested a
+ * .ts extension that the shipped .mjs no longer has, and every test ran the
+ * source, so nothing noticed.
+ */
 export function hook(file: string, input: unknown, env: Record<string, string> = {}): Run {
   const r = spawnSync(TSX, [join(ROOT, "hooks", file)], {
     cwd: ROOT, encoding: "utf8", input: JSON.stringify(input),
@@ -94,4 +100,14 @@ export function finish(label: string): void {
     process.exit(1);
   }
   console.log(`✓ ${passed} ${label} tests passed`);
+}
+
+/** Runs a hook exactly as a target repo does: the BUILT .mjs, on plain node. */
+export function builtHook(file: string, input: unknown, env: Record<string, string> = {}): Run {
+  const built = join(ROOT, "dist", "hooks", file.replace(/\.ts$/, ".mjs"));
+  const r = spawnSync("node", [built], {
+    cwd: ROOT, encoding: "utf8", input: JSON.stringify(input),
+    env: { ...process.env, ...env },
+  });
+  return { status: r.status, stdout: r.stdout ?? "", stderr: r.stderr ?? "" };
 }

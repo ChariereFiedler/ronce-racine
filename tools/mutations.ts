@@ -141,6 +141,20 @@ const MUTATIONS: Mutation[] = [
     replace: "isStale(lock.source, checked)",
     test: "tests/installer.test.ts",
   },
+  {
+    name: "truncate-output: entry guard bound to the .ts extension",
+    file: "hooks/truncate-output.ts",
+    find: "if (invoked === 'truncate-output') main()",
+    replace: "if (process.argv[1]?.endsWith('truncate-output.ts')) main()",
+    test: "tests/hooks.test.ts",
+  },
+  {
+    name: "truncate-output: helper pointed at a file that does not ship",
+    file: "hooks/truncate-output.ts",
+    find: "node '${hookDir}/truncate-bash-output.mjs'",
+    replace: "npx -y tsx '${hookDir}/truncate-bash-output.ts'",
+    test: "tests/hooks.test.ts",
+  },
 ];
 
 // This harness edits tracked files in place. Two concurrent runs corrupt each
@@ -177,12 +191,19 @@ for (const m of MUTATIONS) {
     continue;
   }
   writeFileSync(path, original.replace(m.find, m.replace));
+  // Hooks and the CLI are BUILT before they ship, and the tests that matter
+  // exercise the built artifact. Mutating the source without rebuilding leaves
+  // the test reading the previous, correct output: the mutation survives and
+  // the harness reports a Liar test that is really a stale-build artifact.
+  const isBuildInput = m.file.startsWith("hooks/") || m.file === "install.ts";
   try {
+    if (isBuildInput) spawnSync(TSX, [join(ROOT, "tools", "build.ts")], { cwd: ROOT, encoding: "utf8" });
     const r = spawnSync(TSX, [join(ROOT, m.test)], { cwd: ROOT, encoding: "utf8" });
     if (r.status === 0) survivors.push(`${m.name}: tests stayed GREEN on mutated code (Liar test)`);
     else killed++;
   } finally {
     writeFileSync(path, original);
+    if (isBuildInput) spawnSync(TSX, [join(ROOT, "tools", "build.ts")], { cwd: ROOT, encoding: "utf8" });
   }
   console.log(`  ${survivors.at(-1)?.startsWith(m.name) ? "✗ survived" : "✓ killed  "} ${m.name}`);
 }

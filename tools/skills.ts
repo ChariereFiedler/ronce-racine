@@ -322,15 +322,83 @@ function templatesCheck(): void {
   console.log(`✓ ${files.length} templates valid`);
 }
 
+
+/**
+ * Documentation integrity: catches docs that describe a behavior the code no
+ * longer has. Two such defects shipped to users before this existed:
+ *  - hooks/README.md, which the installer copies into every adopting repo,
+ *    still showed `npx tsx .../hook.ts` wiring after hooks moved to built
+ *    `node .../hook.mjs`;
+ *  - the README promised "Node only" while the detection scripts still ship
+ *    as TypeScript and need tsx.
+ * Prose cannot be type-checked, so this asserts the few claims that are
+ * mechanically verifiable against the source of truth: the installer itself.
+ */
+function docsCheck(): void {
+  const errors: string[] = [];
+  const read = (rel: string): string => readFileSync(join(ROOT, rel), "utf8");
+
+  // 1. Hook wiring shown in docs must match what the installer actually writes.
+  const installer = read("install.ts");
+  const shipsMjs = /shippedHookName\s*=.*\.mjs/.test(installer);
+  const runsNode = /`\$\{?runtime\}?|`node \$CLAUDE_PROJECT_DIR/.test(installer) || /command = `node /.test(installer);
+  const hooksReadme = read("hooks/README.md");
+  for (const m of hooksReadme.matchAll(/"command":\s*"([^"]*\/\.claude\/hooks\/[^"]+)"/g)) {
+    const cmd = m[1];
+    if (shipsMjs && cmd.includes(".ts"))
+      errors.push(`hooks/README.md: wiring example runs a .ts hook, but hooks ship built: ${cmd}`);
+    if (runsNode && cmd.startsWith("npx tsx"))
+      errors.push(`hooks/README.md: wiring example uses npx tsx, but the installer writes node: ${cmd}`);
+  }
+
+  // 2. Every hook must be documented, and no phantom hook may be.
+  const hookFiles = readdirSync(join(ROOT, "hooks")).filter((f) => f.endsWith(".ts")).map((f) => f.replace(/\.ts$/, ""));
+  for (const h of hookFiles) {
+    if (!hooksReadme.includes(h)) errors.push(`hooks/README.md: ${h} exists but is undocumented`);
+  }
+  // Only headings name a hook; a backticked .ts anywhere else may legitimately
+  // reference the installer or a skill script, which are not hooks.
+  // A heading may name a hook, or a skill script that can be wired as one.
+  const wirable = new Set(hookFiles);
+  for (const sk of readdirSync(SKILLS)) {
+    const dir = join(SKILLS, sk, "scripts");
+    if (existsSync(dir)) for (const f of readdirSync(dir)) if (f.endsWith(".ts") && !f.endsWith(".test.ts")) wirable.add(f.replace(/\.ts$/, ""));
+  }
+  for (const m of hooksReadme.matchAll(/^#+\s+`([a-z-]+)\.(?:ts|mjs)`/gm)) {
+    if (!wirable.has(m[1])) errors.push(`hooks/README.md: documents ${m[1]}, which no longer exists`);
+  }
+
+  // 3. A doc that claims Node alone suffices must not contradict what ships:
+  //    skill/standalone scripts are TypeScript and still need tsx.
+  const scriptsAreTs = readdirSync(join(ROOT, "scripts")).some((f) => f.endsWith(".ts"));
+  const readme = read("README.md");
+  if (scriptsAreTs && /needs?\s+\*\*only Node\*\*|\*\*only Node\*\*/.test(readme))
+    errors.push('README.md: claims "only Node" while scripts/ still ships TypeScript that needs tsx');
+
+  // 4. Documented commands must name a file that exists.
+  for (const rel of ["README.md", "docs/adopting-a-repo.md", "docs/developing.md"]) {
+    for (const m of read(rel).matchAll(/npx tsx ((?:tools\/|playground\/)[\w./-]+\.ts)/g)) {
+      if (!existsSync(join(ROOT, m[1]))) errors.push(`${rel}: documents ${m[1]}, which does not exist`);
+    }
+  }
+
+  if (errors.length) {
+    console.error(`✗ ${errors.length} documentation problem(s):\n  ${errors.join("\n  ")}`);
+    process.exit(1);
+  }
+  console.log("✓ documentation matches what the installer actually does");
+}
+
 const cmd = process.argv[2] ?? "validate";
 if (cmd === "validate") validate();
 else if (cmd === "templates") templatesCheck();
+else if (cmd === "docs") docsCheck();
 else if (cmd === "list") list();
 else if (cmd === "triggers") triggersCheck();
 else if (cmd === "rules") rulesCheck();
 else if (cmd === "scripts") scriptsCheck();
 else if (cmd === "hooks") hooksCheck();
 else {
-  console.error("usage: skills.ts <validate|list|triggers|rules|scripts|hooks>");
+  console.error("usage: skills.ts <validate|list|triggers|rules|scripts|hooks|templates|docs>");
   process.exit(2);
 }

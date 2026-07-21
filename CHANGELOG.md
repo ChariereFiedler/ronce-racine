@@ -7,6 +7,30 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Individual artifacts (rules, skills, hooks) also carry their own `version` in
 their frontmatter; this file tracks the toolkit as a whole.
 
+## [0.5.1] - 2026-07-21
+
+### Fixed
+- **Two shipped hooks were silently dead.** `truncate-output` and
+  `truncate-bash-output` guarded their entry point on a `.ts` extension the
+  built `.mjs` no longer has, so `main()` never ran: the hook exited 0
+  producing nothing, and nothing signalled the failure. The truncate wrapper
+  also pointed at a `.ts` helper the package does not ship.
+- `hooks/README.md`, which ships into every adopting repo, still described the
+  pre-0.5.0 wiring: it claimed the target needed `tsx` and showed
+  `npx tsx .../hook.ts` in every example, while the installer now writes
+  `node .../hook.mjs`.
+- The Requirements section overstated "Node only": hooks do run on plain Node,
+  but the optional detection scripts still ship as TypeScript and need `tsx`.
+
+### Added
+- `tools/skills.ts docs`, wired into `npm test`: compares the documentation
+  against what the installer actually generates, so a doc describing a past
+  behavior fails the build instead of reaching users.
+- The `doc-code-parity` rule, and `builtHook()` in the test harness: assertions
+  about shipped behavior now run the built artifact, not the source. The
+  mutation harness rebuilds when it mutates a build input, so a stale build can
+  no longer disguise a real defect as a false positive.
+
 ## [0.5.0] - 2026-07-21
 
 Adoption stops requiring a clone.

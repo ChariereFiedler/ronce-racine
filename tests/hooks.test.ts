@@ -7,7 +7,7 @@ import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from "node
 import { join, dirname } from "node:path";
 import { spawnSync } from "node:child_process";
 import {
-  test, assert, contains, absent, hook, freshRepo, initWork, finish, WORK,
+  test, assert, contains, absent, hook, builtHook, freshRepo, initWork, finish, WORK,
   type Run,
 } from "./helpers.js";
 import { buildMemo, persistMemo, repoSlug, branchSlug } from "../hooks/session-writer.js";
@@ -45,10 +45,14 @@ test("bash-npm-silent: compound command is left untouched", () => {
 
 // ---- truncate-output -----------------------------------------------------
 
-test("truncate-output: wraps cargo with a portable runtime (npx tsx, not strip-types)", () => {
-  const cmd = updatedCommand(hook("truncate-output.ts", { tool_name: "Bash", tool_input: { command: "cargo build" } }));
+test("truncate-output: wraps cargo with the runtime a target repo actually has", () => {
+  // Asserted on the BUILT hook: this is about what ships, and the shipped form
+  // is the only place where a wrong runtime or a wrong extension shows up.
+  const cmd = updatedCommand(builtHook("truncate-output.ts", { tool_name: "Bash", tool_input: { command: "cargo build" } }));
   assert(cmd !== null, "cargo build should be wrapped");
-  contains(cmd!, "npx -y tsx", "must run helper via npx tsx (works on any Node)");
+  contains(cmd!, "node ", "the helper must run on plain node");
+  contains(cmd!, "truncate-bash-output.mjs", "it must point at the file that ships");
+  absent(cmd!, "tsx", "a target repo has no tsx");
   absent(cmd!, "experimental-strip-types", "must not depend on Node >= 22.6");
 });
 
@@ -210,6 +214,28 @@ test("session-precompact persists a memo from the event's transcript", () => {
   const memoPath = join(home, ".claude/projects", repoSlug(repo), "sessions", branchSlug("master") + ".md");
   assert(existsSync(memoPath), "precompact must write the memo");
   contains(readFileSync(memoPath, "utf8"), "refactor the parser", "memo must carry the intent");
+});
+
+// ---- the BUILT hooks: what a target repo actually runs ---------------------
+
+test("every built hook runs and produces its effect, not just exit 0", () => {
+  // Two shipped hooks were silently dead: their entry guard tested for a .ts
+  // extension the built .mjs does not have, so main() never ran. Exit 0 with no
+  // output looked healthy. These assertions run what actually ships.
+  const wrapped = builtHook("truncate-output.ts", { tool_name: "Bash", tool_input: { command: "cargo build" } });
+  assert(wrapped.status === 0, `built truncate-output exit ${wrapped.status}: ${wrapped.stderr}`);
+  assert(wrapped.stdout.trim().length > 0, "built truncate-output produced nothing: its entry guard did not fire");
+  const cmd = JSON.parse(wrapped.stdout).hookSpecificOutput.updatedInput.command as string;
+  contains(cmd, "truncate-bash-output.mjs", "the wrapper must point at the file that actually ships");
+  absent(cmd, ".ts", "a built hook must never reference a TypeScript path");
+  absent(cmd, "tsx", "a target repo has no tsx");
+
+  const suggest = builtHook("skill-reminder.ts", { prompt: "lance un sweep" });
+  assert(suggest.status === 0, "built skill-reminder must exit 0");
+  contains(suggest.stdout, "detection-sweep", "built skill-reminder produced no suggestion");
+
+  const silent = builtHook("bash-npm-silent.ts", { tool_name: "Bash", tool_input: { command: "npm ci" } });
+  contains(silent.stdout, "--silent", "built bash-npm-silent did not rewrite the command");
 });
 
 finish("hooks");

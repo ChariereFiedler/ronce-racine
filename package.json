@@ -1,6 +1,6 @@
 {
   "name": "ronce-racine",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "description": "Ronce Racine - generic Claude Code config (always-on rules + on-demand skills) with a distribution CLI",
   "license": "MIT",
@@ -20,15 +20,23 @@
     "!docs/superpowers/",
     "AGENTS.md"
   ],
-  "repository": { "type": "git", "url": "git+https://github.com/ChariereFiedler/ronce-racine.git" },
-  "keywords": ["claude-code", "ai-agents", "developer-tools", "code-quality"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChariereFiedler/ronce-racine.git"
+  },
+  "keywords": [
+    "claude-code",
+    "ai-agents",
+    "developer-tools",
+    "code-quality"
+  ],
   "engines": {
     "node": ">=18"
   },
   "scripts": {
     "build": "tsx tools/build.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx tools/skills.ts validate && tsx tools/skills.ts triggers && tsx tools/skills.ts rules && tsx tools/skills.ts scripts && tsx tools/skills.ts hooks && tsx tools/skills.ts templates && tsx tools/tests.ts",
+    "test": "tsx tools/skills.ts validate && tsx tools/skills.ts triggers && tsx tools/skills.ts rules && tsx tools/skills.ts scripts && tsx tools/skills.ts hooks && tsx tools/skills.ts templates && tsx tools/skills.ts docs && tsx tools/tests.ts",
     "test:mutation": "tsx tools/mutations.ts",
     "eval:dry": "tsx playground/setup.ts >/dev/null && tsx tools/eval.ts run --dry-run",
     "skills:list": "tsx tools/skills.ts list",

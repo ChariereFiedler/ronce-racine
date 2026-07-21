@@ -2,7 +2,7 @@
 
 Generic Claude Code hooks, to be wired into `settings.json` (or a repo's `.claude/settings.json`). The harness runs these scripts; they depend on no particular project.
 
-All scripts are TypeScript, run via `tsx` (like `install.ts`/`tools/skills.ts`). The target repo must have `tsx` available (`npx tsx` resolves it on the fly).
+Hooks are authored in TypeScript but SHIP BUILT: the installer copies `.mjs` files that run on plain `node`. A target repo needs Node and nothing else to run them - no `tsx`, no compilation on every invocation (which used to cost about half a second per prompt).
 
 > **Note** - the `install.ts` installer copies the selected hooks and automatically composes the merged `settings.json` snippet - the manual wiring below is only useful for a hand install.
 
@@ -18,7 +18,7 @@ Locates skills in this order: `$CLAUDE_PROJECT_DIR/.claude/skills`, `./.claude/s
 {
   "hooks": {
     "UserPromptSubmit": [
-      { "hooks": [{ "type": "command", "command": "npx tsx $CLAUDE_PROJECT_DIR/.claude/hooks/skill-reminder.ts" }] }
+      { "hooks": [{ "type": "command", "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/skill-reminder.mjs" }] }
     ]
   }
 }
@@ -42,7 +42,7 @@ Leaves interactive `npm install <pkg>` calls (adding a dependency) untouched.
     "PreToolUse": [
       { "matcher": "Bash",
         "hooks": [{ "type": "command",
-          "command": "npx tsx $CLAUDE_PROJECT_DIR/.claude/hooks/bash-npm-silent.ts" }] }
+          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/bash-npm-silent.mjs" }] }
     ]
   }
 }
@@ -66,7 +66,7 @@ Leaves interactive `npm install <pkg>` calls (adding a dependency) untouched.
     "PreToolUse": [
       { "matcher": "Bash",
         "hooks": [{ "type": "command",
-          "command": "npx tsx $CLAUDE_PROJECT_DIR/.claude/hooks/truncate-output.ts" }] }
+          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/truncate-output.mjs" }] }
     ]
   }
 }
@@ -89,7 +89,7 @@ Writes a session memo to `~/.claude/projects/<repo-slug>/sessions/<branch>.md` (
   "hooks": {
     "Stop": [
       { "hooks": [{ "type": "command",
-          "command": "npx tsx $CLAUDE_PROJECT_DIR/.claude/hooks/session-writer.ts" }] }
+          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/session-writer.mjs" }] }
     ]
   }
 }
@@ -107,7 +107,7 @@ Re-reads the memo (written by `session-writer`) and injects it as `additionalCon
     "SessionStart": [
       { "matcher": "compact",
         "hooks": [{ "type": "command",
-          "command": "npx tsx $CLAUDE_PROJECT_DIR/.claude/hooks/session-inject.ts" }] }
+          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/session-inject.mjs" }] }
     ]
   }
 }
@@ -124,7 +124,7 @@ Injects the memo as `systemMessage` into the compaction prompt, so the generated
   "hooks": {
     "PreCompact": [
       { "hooks": [{ "type": "command",
-          "command": "npx tsx $CLAUDE_PROJECT_DIR/.claude/hooks/session-precompact.ts" }] }
+          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/session-precompact.mjs" }] }
     ]
   }
 }
@@ -143,7 +143,7 @@ If the session starts in a linked git worktree (not the main worktree) and the m
   "hooks": {
     "SessionStart": [
       { "hooks": [{ "type": "command",
-          "command": "npx tsx $CLAUDE_PROJECT_DIR/.claude/hooks/worktree-env-setup.ts" }] }
+          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/worktree-env-setup.mjs" }] }
     ]
   }
 }

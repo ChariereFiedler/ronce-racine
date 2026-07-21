@@ -49,7 +49,7 @@ export function wrapCommand(cmd: string, hookDir: string): string {
   // Run the helper via `npx tsx` (works on any Node ≥ 18) rather than
   // `node --experimental-strip-types` (only Node ≥ 22.6), matching how the
   // hooks themselves are wired in settings.json.
-  return `TRUNCATE_CMD_B64=${encoded} npx -y tsx '${hookDir}/truncate-bash-output.ts'`
+  return `TRUNCATE_CMD_B64=${encoded} node '${hookDir}/truncate-bash-output.mjs'`
 }
 
 function readStdin(): string {
@@ -95,4 +95,9 @@ function main(): void {
   process.stdout.write(JSON.stringify(output))
 }
 
-if (process.argv[1]?.endsWith('truncate-output.ts')) main()
+// Entry guard by BASENAME, never by extension: this file is authored as .ts and
+// ships as .mjs, and an extension-bound guard silently disables main() in the
+// built copy - the hook then exits 0 doing nothing, with no signal at all.
+const invoked = (process.argv[1] ?? "").split("/").pop()?.replace(/\.(ts|mjs|js)$/, "")
+if (invoked === 'truncate-output') main()
+

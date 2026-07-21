@@ -21,8 +21,13 @@ Copy-pasted `.claude/` config **rots**: every repo drifts, and nobody remembers 
 
 ## Requirements
 
-- **Node ≥ 18**. The installer runs via `npx ronce-racine`, no clone needed; the target repo needs **only Node**, because hooks ship pre-built (`dist/hooks/*.js`).
+- **Node ≥ 18** in the target repo. The installer runs via `npx ronce-racine`,
+  no clone needed, and hooks ship pre-built (`.mjs`) so they run on plain
+  `node` with no TypeScript runtime.
 - **rules / skills / agents are plain Markdown** and need no toolchain at all.
+- **`tsx` only if you install a detection script.** The optional `scripts/*.ts`
+  (secret scan, project sweep, call-site audit) ship as TypeScript and are run
+  on demand with `npx tsx`. Skip them and Node alone is enough.
 
 ## The name
 
@@ -67,6 +72,7 @@ The two coexist: an adopted repo loads its project copy (which takes precedence)
 | `clean-architecture-deps.md` | code (ts/py/go/rs/php/java) | dependencies toward the domain, no logic in the handler |
 | `no-raw-sql-interpolation.md` | code (ts/py/go/rs/php/java) | parameterized queries, never SQL interpolation |
 | `ui-states-complete.md` | components (tsx/jsx/vue/svelte) | loading/error/empty/success all handled and distinguishable |
+| `doc-code-parity.md` | Markdown (README, docs/) | documented commands are run before commit; behavior changes sweep the docs |
 
 Each rule also carries `version` + `metadata.last-reviewed` (parity with the skills), validated by `npm test`.
 

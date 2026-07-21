@@ -50,4 +50,9 @@ function main(): void {
   process.stdout.write(truncateOutput(output))
 }
 
-if (process.argv[1]?.endsWith('truncate-bash-output.ts')) main()
+// Entry guard by BASENAME, never by extension: this file is authored as .ts and
+// ships as .mjs, and an extension-bound guard silently disables main() in the
+// built copy - the hook then exits 0 doing nothing, with no signal at all.
+const invoked = (process.argv[1] ?? "").split("/").pop()?.replace(/\.(ts|mjs|js)$/, "")
+if (invoked === 'truncate-bash-output') main()
+
