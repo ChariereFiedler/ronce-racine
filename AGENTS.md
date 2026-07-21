@@ -5,7 +5,7 @@ Doc aimed at an agent (LLM) that **works on** this repo or uses it to **equip an
 ## What this repo is
 
 Canonical source of **generic Claude Code config** (project-agnostic), installable in any repository:
-`rules/` (always-on, by `paths`) · `skills/` (on-demand workflows) · `hooks/` (settings.json scripts - granular, one hook per `.ts` file) · `agents/` (subagents) · `scripts/` (executable detections). CLI: `install.ts` is the single tool (all families; rules-only via `--rules-only`). `rules.ts` is deprecated (still works, prints a deprecation notice) in favor of `install.ts install <repo> --rules-only`.
+`rules/` (always-on, by `paths`) · `skills/` (on-demand workflows) · `hooks/` (settings.json scripts - granular, one hook per `.ts` file) · `agents/` (subagents) · `scripts/` (executable detections). CLI: `install.ts` is the single tool (all families; rules-only via `--rules-only`).
 
 ## Non-negotiable rules
 
@@ -33,7 +33,7 @@ Hooks live in `hooks/`: one `.ts` file per logical hook. Each file must carry in
  * @last-reviewed YYYY-MM-DD
 ```
 
-The `skills.ts hooks` harness checks these two fields on every `npm test`. Available wirings per hook:
+The `tools/skills.ts hooks` harness checks these two fields on every `npm test`. Available wirings per hook:
 
 | Hook | Event | Matcher |
 |------|-----------|---------|
@@ -49,7 +49,7 @@ The `install.ts` installer merges the hook wirings for the selected hooks into `
 
 ## Modifying / adding a skill
 
-1. Read `docs/writing-a-skill.md` (contract) + `templates/SKILL.template.md` (model).
+1. Read `docs/writing-a-skill.md` (contract) + `docs/templates/SKILL.template.md` (model).
 2. The skill must be generic, follow the standard sections, and have a `name` + `description` frontmatter ("Use when …", third person, **describes WHEN not HOW**) + `version` (semver) + `metadata.last-reviewed` + `category`.
 3. Body < 500 lines; beyond that → progressive disclosure (`reference/*.md`). Runnable detection → `scripts/*.ts` (never `.sh`). Output template → `templates/`.
 4. Bump `version` + `last-reviewed`, add a line to the `## Changelog`.
@@ -57,18 +57,18 @@ The `install.ts` installer merges the hook wirings for the selected hooks into `
 
 ## Modifying / adding a rule
 
-1. Read `docs/writing-a-rule.md` + `templates/rule.template.md`.
+1. Read `docs/writing-a-rule.md` + `docs/templates/rule.template.md`.
 2. Frontmatter: `paths` (globs; omit = always-on) + `version` + `metadata.last-reviewed`. Body: imperative, short bullets, no magic numbers.
 3. `npm test` green + `README.md` table.
 
 ## Harness (`npm test`)
 
 Five axes, all must pass:
-- `skills.ts validate` - frontmatter, version, sections, `reference/`/`scripts/`/`templates/` links, depth ≤ 1.
-- `skills.ts triggers` - routing discriminability (each quoted trigger classifies its skill in the top-3).
-- `skills.ts rules` - versioning of the rules.
-- `skills.ts scripts` - existence and non-emptiness of each `.ts` in `scripts/`.
-- `skills.ts hooks` - presence and validity of `@version` (semver) and `@last-reviewed` (ISO date) in each `hooks/*.ts`.
+- `tools/skills.ts validate` - frontmatter, version, sections, `reference/`/`scripts/`/`templates/` links, depth ≤ 1.
+- `tools/skills.ts triggers` - routing discriminability (each quoted trigger classifies its skill in the top-3).
+- `tools/skills.ts rules` - versioning of the rules.
+- `tools/skills.ts scripts` - existence and non-emptiness of each `.ts` in `scripts/`.
+- `tools/skills.ts hooks` - presence and validity of `@version` (semver) and `@last-reviewed` (ISO date) in each `hooks/*.ts`.
 
 Useful commands: `npm run skills:list`, `npm run skills:triggers`, `npm run rules:validate`, `npm run typecheck`.
 
@@ -77,7 +77,8 @@ Useful commands: `npm run skills:list`, `npm run skills:triggers`, `npm run rule
 ```
 rules/        skills/<name>/SKILL.md (+ reference/ scripts/ templates/)
 hooks/        agents/         scripts/
-rules.ts      install.ts      skills.ts        (all TypeScript, via tsx)
+install.ts     (user-facing CLI, at the root)
+tools/         (internal harnesses: skills.ts, tests.ts, mutations.ts, eval.ts, all via tsx)
 docs/         templates/      README.md  AGENTS.md
 ```
 

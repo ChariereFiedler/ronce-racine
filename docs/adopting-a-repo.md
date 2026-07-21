@@ -63,8 +63,6 @@ git add .claude/rules/shared
 git commit -m "chore(rules): adopt the generic canonical rules (ronce-racine)"
 ```
 
-> Deprecated: `rules.ts sync .` still works but prints a deprecation notice - prefer `install.ts install . --rules-only`.
-
 ## 3. Anti-drift CI gate (recommended)
 
 Add the job from [`templates/anti-drift.gitlab-ci.yml`](../templates/anti-drift.gitlab-ci.yml) to the repo's `.gitlab-ci.yml`. It fails if an adopted rule has diverged from the canonical version.

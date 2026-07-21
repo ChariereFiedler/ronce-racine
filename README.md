@@ -1,3 +1,5 @@
+![Ronce Racine](assets/header.webp)
+
 # Ronce Racine
 
 Canonical source of **generic [Claude Code](https://claude.com/claude-code) config** (project-agnostic), installable in any repository. It provides a layer of *always-on* disciplines and *on-demand* workflows that spreads into every project:
@@ -37,15 +39,15 @@ flowchart LR
     R1["repo A<br/>.claude/rules/shared/*"]
     R2["repo B<br/>.claude/rules/shared/*"]
     C -- "symlink (personal, all machines)" --> G
-    C -- "rules.ts sync (real files, git)" --> R1
-    C -- "rules.ts sync" --> R2
+    C -- "install.ts install --rules-only (real files, git)" --> R1
+    C -- "install.ts install --rules-only" --> R2
     G -. "all your projects, interactive" .-> R1
 ```
 
 | Layer | Mechanism | Scope |
 |--------|-----------|--------|
 | **Global (personal)** | `~/.claude/rules/shared` → symlink to `rules/` | All your machines, all your projects, interactive. Not versioned per project. |
-| **Per-repo (team / CI)** | `rules.ts sync <repo>` copies real files into `<repo>/.claude/rules/shared/` | Travels via git → teammates + headless/CI agents |
+| **Per-repo (team / CI)** | `install.ts install <repo> --rules-only` copies real files into `<repo>/.claude/rules/shared/` | Travels via git → teammates + headless/CI agents |
 
 The two coexist: an adopted repo loads its project copy (which takes precedence) **and** the global layer; identical content → no effect. Detail → [`docs/architecture.md`](docs/architecture.md).
 
@@ -91,7 +93,7 @@ Generalized (project-agnostic) versions of the heavy workflows. The project vari
 
 > Deliberately excluded: `git-workflow`, `jira-bug` (coupled to a specific project: dedicated branch hierarchy and Jira tracker).
 
-Some skills embed detection `scripts/` (read-only) and `reference/` files loaded on demand (progressive disclosure of the audit grids). Validation: `npm test` (the `skills.ts` harness).
+Some skills embed detection `scripts/` (read-only) and `reference/` files loaded on demand (progressive disclosure of the audit grids). Validation: `npm test` (the `tools/skills.ts` harness).
 
 Distribution: the **smart installer** (`install.ts`, see below) copies the relevant skills into `<repo>/.claude/skills/` and watches their drift. Manually: copy the desired folder into `~/.claude/skills/` (global) or `<repo>/.claude/skills/` (per-repo). `install.ts` is the single CLI for all families (rules/skills/hooks/agents); for rules only, use `install.ts install <repo> --rules-only`.
 
@@ -177,7 +179,7 @@ Copies rules (+ the `.adopted` manifest), skills, hooks and agents into `<repo>/
 npx tsx /path/to/ronce-racine/install.ts install <repo> --rules-only   # rules + lockfile only
 ```
 
-Then wire the anti-drift CI gate → [`templates/anti-drift.gitlab-ci.yml`](templates/anti-drift.gitlab-ci.yml). *(The legacy `rules.ts sync/check` CLI still works but is deprecated in favor of `--rules-only`.)*
+Then wire the anti-drift CI gate → [`templates/anti-drift.gitlab-ci.yml`](templates/anti-drift.gitlab-ci.yml).
 
 ## Global setup (once per machine)
 

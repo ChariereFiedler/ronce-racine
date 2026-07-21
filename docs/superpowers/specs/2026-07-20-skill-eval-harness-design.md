@@ -179,3 +179,35 @@ gates are computed against the fixture, never guessed.
 Remaining: the full 34-skill run has not been executed end to end (cost); it is
 the pre-release gate. `eval/reports/` baselines and `--confirm-judge` remain
 deferred.
+
+## Known-failing eval (2026-07-21)
+
+`ddd-backend-implementation` fails its judge criterion "Email uniqueness
+invariant enforced in the domain, not the handler". Its mechanical gate (the
+dependency direction) passes; the criterion itself is the problem. Uniqueness
+across aggregates needs a repository lookup, so it cannot live inside the
+aggregate: DDD literature places it in a domain service or an application
+handler backed by a port. The criterion asks for something the pattern does
+not actually prescribe.
+
+Left failing on purpose rather than reworded under release pressure: settling
+it means taking a position on where cross-aggregate invariants belong, which
+deserves its own discussion. Everything else passes.
+
+## Gate-design rule learned over six failing runs (2026-07-21)
+
+`repo_clean` with an allowlist only fits READ-ONLY skills. For a skill that
+builds something, an agent legitimately produces files nobody can enumerate
+upfront (tests, configs, adapters, CI jobs, probe scripts): the except list
+never converges, and each run punishes the agent for obeying its own skill.
+Gate the INVARIANT instead - what must not happen:
+
+| Skill | Invariant gated |
+|---|---|
+| adversarial-feature-challenge | challenge without fixing: no validation added to the attacked function |
+| ddd-backend-implementation | dependencies point inward: the domain never imports infrastructure |
+| recurring-bug-root-cause | the bug is actually gone: the planted defect no longer greps |
+
+Two vocabulary gaps surfaced the same way and were closed: `name-*` prefix
+globs in `except`, and `grep_min` (a floor) for agent-authored output where an
+exact count is unknowable.

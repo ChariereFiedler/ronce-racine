@@ -27,6 +27,6 @@ claude-config:drift:
     - changes:
         - ".claude/**"
 
-# Rules-only variant (without the installer, based on the .adopted manifest):
-#   script: npx -y tsx /tmp/ronce-racine/rules.ts check .
+# Rules-only variant (based on the .adopted manifest):
+#   script: npx -y tsx /tmp/ronce-racine/install.ts check . --strict
 #   rules: { changes: [".claude/rules/shared/**"] }

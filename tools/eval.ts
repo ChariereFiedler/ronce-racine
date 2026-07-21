@@ -15,8 +15,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
-const GATE_KINDS = ["file_exists", "file_absent", "grep_zero", "grep_count", "repo_clean", "transcript_contains", "transcript_absent", "exit_ok"];
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const GATE_KINDS = ["file_exists", "file_absent", "grep_zero", "grep_count", "grep_min", "repo_clean", "transcript_contains", "transcript_absent", "exit_ok"];
 
 export interface EvalGate { kind: string; args: Record<string, string> }
 export interface EvalManifest {
@@ -99,7 +99,26 @@ export interface GateContext {
   baseline: Map<string, string>;
 }
 
-const SNAP_PRUNE = new Set([".git", ".claude", "node_modules"]);
+// Dependency lock files (package-lock.json, yarn.lock, pnpm-lock.yaml) are environment
+// noise produced by an incidental install, not a deliverable of the skill under test;
+// they masked real signal in two runs.
+// Compiled output is in the same category: a skill whose exit condition demands a
+// green build legitimately produces dist/, and grading it on that is grading the
+// compiler, not the skill.
+const SNAP_PRUNE = new Set([
+  ".git",
+  ".claude",
+  "node_modules",
+  "package-lock.json",
+  "yarn.lock",
+  "pnpm-lock.yaml",
+  "dist",
+  "build",
+  "coverage",
+  ".next",
+  ".nuxt",
+  "target",
+]);
 
 export function snapshotRepo(dir: string): Map<string, string> {
   const out = new Map<string, string>();
@@ -141,6 +160,16 @@ export function applyGate(gate: EvalGate, ctx: GateContext): string | null {
         return `grep_zero: invalid pattern /${a.pattern}/: ${err}`;
       }
     }
+    // Use grep_min over agent-authored output, where an exact count is
+    // unknowable; reserve grep_count for values computed against the fixture.
+    case "grep_min": {
+      try {
+        const n = grepHits(ctx, a.pattern, a.in);
+        return n >= Number(a.count) ? null : `grep_min: expected at least ${a.count}, got ${n} for /${a.pattern}/`;
+      } catch (e) {
+        return `grep_min: invalid pattern /${a.pattern}/: ${(e as Error).message}`;
+      }
+    }
     case "grep_count": {
       try {
         const n = grepHits(ctx, a.pattern, a.in);
@@ -152,7 +181,11 @@ export function applyGate(gate: EvalGate, ctx: GateContext): string | null {
     }
     case "repo_clean": {
       const except = (a.except ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-      const allowed = (rel: string): boolean => except.some((e) => rel === e || rel.startsWith(e.replace(/\/$/, "") + "/"));
+      // An entry is an exact path, a `dir/` prefix, or a `name-*` glob - the last
+      // one for skills whose deliverables cannot be named upfront (one ticket per
+      // finding, one migration per change).
+      const allowed = (rel: string): boolean => except.some((e) =>
+        e.endsWith("*") ? rel.startsWith(e.slice(0, -1)) : rel === e || rel.startsWith(e.replace(/\/$/, "") + "/"));
       const now = snapshotRepo(ctx.repoDir);
       const dirty: string[] = [];
       for (const [rel, content] of now) {

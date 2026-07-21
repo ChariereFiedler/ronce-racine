@@ -2,7 +2,7 @@
 
 Generic Claude Code hooks, to be wired into `settings.json` (or a repo's `.claude/settings.json`). The harness runs these scripts; they depend on no particular project.
 
-All scripts are TypeScript, run via `tsx` (like `rules.ts`/`skills.ts`). The target repo must have `tsx` available (`npx tsx` resolves it on the fly).
+All scripts are TypeScript, run via `tsx` (like `install.ts`/`tools/skills.ts`). The target repo must have `tsx` available (`npx tsx` resolves it on the fly).
 
 > **Note** - the `install.ts` installer copies the selected hooks and automatically composes the merged `settings.json` snippet - the manual wiring below is only useful for a hand install.
 

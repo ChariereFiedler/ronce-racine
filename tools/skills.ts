@@ -12,7 +12,7 @@ import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SKILLS = join(ROOT, "skills");
 const RULES = join(ROOT, "rules");
 
@@ -263,8 +263,39 @@ function rulesCheck(): void {
   console.log(`✓ ${files.length} rules versioned`);
 }
 
+/**
+ * Validates the contributor-facing templates. They escape every other check
+ * (they are not skills), yet they are the first thing a contributor copies and
+ * they render on the repository home. Two regressions already shipped this way:
+ * an untranslated French template, and a frontmatter GitHub could not parse.
+ */
+function templatesCheck(): void {
+  const dir = join(ROOT, "docs", "templates");
+  const files = readdirSync(dir).filter((f) => f.endsWith(".md")).sort();
+  const errors: string[] = [];
+  for (const f of files) {
+    const raw = readFileSync(join(dir, f), "utf8");
+    // A ": " inside an unquoted scalar makes the frontmatter invalid YAML.
+    for (const line of raw.split("\n---")[0].split("\n")) {
+      const m = /^([\w-]+):\s+(.*)$/.exec(line);
+      if (m && !/^["'].*["']$/.test(m[2]) && m[2].includes(": "))
+        errors.push(`${f}: frontmatter "${m[1]}" holds an unquoted ": " - invalid YAML`);
+    }
+    // Accents alone missed "Quand MOI et pas X"; a few function words catch prose.
+    if (/[éèêàçùôîïâûÉÈÀÇ]/.test(raw)) errors.push(`${f}: French characters (the repo is English-facing)`);
+    const fr = raw.match(/\b(quand|pour|avec|dans|les|une|qui|sans|sortie|etape|principe)\b/gi);
+    if (fr) errors.push(`${f}: French words ${[...new Set(fr.map((w) => w.toLowerCase()))].join(", ")}`);
+  }
+  if (errors.length) {
+    console.error(`✗ ${errors.length} template problem(s):\n  ${errors.join("\n  ")}`);
+    process.exit(1);
+  }
+  console.log(`✓ ${files.length} templates valid`);
+}
+
 const cmd = process.argv[2] ?? "validate";
 if (cmd === "validate") validate();
+else if (cmd === "templates") templatesCheck();
 else if (cmd === "list") list();
 else if (cmd === "triggers") triggersCheck();
 else if (cmd === "rules") rulesCheck();

@@ -797,7 +797,7 @@ async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rules
 
   if (adopted.length) {
     const manifest = join(dotclaude, "rules/shared/.adopted");
-    const header = "# Generic rules adopted (ronce-racine). Resync: install.ts or rules.ts sync .\n";
+    const header = "# Generic rules adopted (ronce-racine). Resync: install.ts install --rules-only .\n";
     writeFileSync(manifest, header + adopted.sort().join("\n") + "\n");
   }
 

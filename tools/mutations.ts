@@ -11,12 +11,12 @@
  * Companion of the writing-robust-tests skill (§5 "the test can fail") applied
  * to this repo's own harness.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const TSX = join(ROOT, "node_modules", ".bin", "tsx");
 
 interface Mutation { name: string; file: string; find: string; replace: string; test: string }
@@ -52,21 +52,21 @@ const MUTATIONS: Mutation[] = [
   },
   {
     name: "eval: repo_clean modification detection disabled",
-    file: "eval.ts",
+    file: "tools/eval.ts",
     find: "else if (ctx.baseline.get(rel) !== content) dirty.push(`~${rel}`);",
     replace: "",
     test: "tests/eval.test.ts",
   },
   {
     name: "eval: judge anti-leniency downgrade removed",
-    file: "eval.ts",
+    file: "tools/eval.ts",
     find: 'verdict: v.verdict === "pass" && v.evidence?.trim() ? "pass" : "fail",',
     replace: "verdict: v.verdict,",
     test: "tests/eval.test.ts",
   },
   {
     name: "eval: inline-object pair matching broken",
-    file: "eval.ts",
+    file: "tools/eval.ts",
     find: '/([\\w-]+):\\s*("(?:[^"\\\\]|\\\\.)*"|[^,}]+)/g',
     replace: "/([\\w-]+):\\s*([^,]+)/g",
     test: "tests/eval.test.ts",
@@ -121,6 +121,19 @@ const MUTATIONS: Mutation[] = [
     test: "skills/refactoring-shared-component-api/scripts/sweep-call-sites.test.ts",
   },
 ];
+
+// This harness edits tracked files in place. Two concurrent runs corrupt each
+// other: the first mutates a file, the second reports its target snippet as
+// missing and calls the table stale. Refuse to start rather than mislead.
+const LOCK = join(ROOT, ".mutations.lock");
+if (existsSync(LOCK)) {
+  console.error(`✗ another mutation run holds ${LOCK}.\n  If no run is active, delete the file and retry.`);
+  process.exit(2);
+}
+writeFileSync(LOCK, `${process.pid}\n`);
+const releaseLock = (): void => { try { rmSync(LOCK, { force: true }); } catch { /* best effort */ } };
+process.on("exit", releaseLock);
+process.on("SIGINT", () => { releaseLock(); process.exit(130); });
 
 let killed = 0;
 const survivors: string[] = [];

@@ -5,7 +5,11 @@ prompt: >
   application commands/queries with ports, infrastructure adapters, and a
   handler that only parses input and serializes output.
 gates:
-  - repo_clean: { except: "src/, migrations/, docs/, .claude/" }
+  # An implementation skill produces files nobody can enumerate upfront (tests,
+  # configs, adapters), so repo_clean is the wrong instrument here. Gate the
+  # skill's own non-negotiable invariant instead: dependencies point INWARD, so
+  # the domain layer never imports infrastructure or the web framework.
+  - grep_zero: { pattern: "from ['\"].*infrastructure|@nestjs|pg['\"]", in: "src/users/domain" }
 judge:
   criteria:
     - "Domain, application, infrastructure, handler kept in separate files"

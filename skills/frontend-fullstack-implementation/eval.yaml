@@ -6,7 +6,10 @@ prompt: >
   loading/error/empty/success states with data-testid="profile-<state>".
 gates:
   - file_exists: "src/pages/Profile.vue"
-  - grep_count: { pattern: "data-testid=\"profile-", in: "src/", count: "4" }
+  - grep_count: { pattern: "data-testid=\"profile-loading\"", in: "src/", count: "1" }
+  - grep_count: { pattern: "data-testid=\"profile-error\"", in: "src/", count: "1" }
+  - grep_count: { pattern: "data-testid=\"profile-empty\"", in: "src/", count: "1" }
+  - grep_count: { pattern: "data-testid=\"profile-list\"", in: "src/", count: "1" }
 judge:
   criteria:
     - "Layers separated: types, store, composable, page, components"

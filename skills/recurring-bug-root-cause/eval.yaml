@@ -7,7 +7,10 @@ prompt: >
   ticket-*.md files.
 gates:
   - file_exists: "POSTMORTEM.md"
-  - repo_clean: { except: "docs/, .claude/, POSTMORTEM.md, ticket-, src/" }
+  # The guardrail this skill mandates can be a git hook, a CI job or an npm
+  # script, so enumerating them in a repo_clean except list is a losing game.
+  # Gate the outcome that matters instead: the planted bug is actually fixed.
+  - grep_zero: { pattern: "items.length - 1", in: "src/" }
 judge:
   criteria:
     - "A blocking guardrail is added, not just documentation"

@@ -15,6 +15,7 @@ If an idea is useful but coupled to a project, **split it**: the generic princip
 Detailed criteria:
 - Rules → [`docs/writing-a-rule.md`](docs/writing-a-rule.md)
 - Skills → [`docs/writing-a-skill.md`](docs/writing-a-skill.md)
+- Working on the toolkit itself → [`docs/developing.md`](docs/developing.md)
 - Context for an LLM agent → [`AGENTS.md`](AGENTS.md)
 
 ## Language

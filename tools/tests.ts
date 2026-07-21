@@ -14,7 +14,7 @@ import { join, dirname, relative } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-const ROOT = dirname(fileURLToPath(import.meta.url));
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const TSX = join(ROOT, "node_modules", ".bin", "tsx");
 
 // Optional filter: `tsx tests.ts installer` runs only matching files.

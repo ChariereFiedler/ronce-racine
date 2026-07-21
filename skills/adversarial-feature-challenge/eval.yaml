@@ -1,12 +1,17 @@
 fixture: shipped-feature
 prompt: >
   The discount feature in src/discount.ts is announced done, the golden path
-  test passes. Red-team it before we ship.
+  test passes. Red-team it before we ship, and fill your challenge report in
+  CHALLENGE-REPORT.md at the repo root.
 gates:
-  - repo_clean: { except: "" }
+  - file_exists: "CHALLENGE-REPORT.md"
+  # The invariant is "challenge, do not fix": probe scripts are the archived
+  # repro the skill asks for, so they are welcome, but the feature under attack
+  # must come out untouched (a fix would add validation to applyDiscount).
+  - grep_zero: { pattern: "throw |RangeError|Error\\(", in: "src/discount.ts" }
 judge:
   criteria:
-    - "At least two personas used to attack the feature"
+    - "At least two personas are named in the report"
     - "Negative price, unknown code, empty code reproduced as flaws"
     - "Verdict given: blocking, improvement required, or green-light"
   threshold: pass_all

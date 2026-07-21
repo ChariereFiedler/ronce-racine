@@ -36,7 +36,7 @@ flowchart TB
 
 For teammates and **headless/CI agents** to see the rules, you need **real committed files** in the repo. A symlink pointing outside the repo (`~/lab/...`) does not travel via git: it would point nowhere after a clone.
 
-`install.ts install --rules-only` copies the **adopted** rules (declared in `.adopted`) from the canonical source into `.claude/rules/shared/`. `install.ts check` is the anti-drift gate (exit 1 on `--strict` if an adopted rule has diverged). (The legacy `rules.ts sync`/`rules.ts check` still work but are deprecated in favor of `--rules-only`.)
+`install.ts install --rules-only` copies the **adopted** rules (declared in `.adopted`) from the canonical source into `.claude/rules/shared/`. `install.ts check` is the anti-drift gate (exit 1 on `--strict` if an adopted rule has diverged).
 
 ## The `.adopted` manifest
 
@@ -50,7 +50,7 @@ In an adopted repo, the rule exists twice in context (global + project), with id
 
 ## Beyond rules: skills, hooks, agents
 
-The same drift problem applies to **skills** (on-demand workflows), **hooks** (settings.json scripts) and **agents** (subagents). `install.ts` is the single CLI and covers all **4 families** (rules included, via `--rules-only` when you want rules and nothing else); the legacy `rules.ts` is deprecated.
+The same drift problem applies to **skills** (on-demand workflows), **hooks** (settings.json scripts) and **agents** (subagents). `install.ts` is the single CLI and covers all **4 families** (rules included, via `--rules-only` when you want rules and nothing else).
 
 ```mermaid
 flowchart TB
@@ -73,4 +73,4 @@ flowchart TB
 
 ### Versioning & validation
 
-Skills and rules carry `version` (semver) + `metadata.last-reviewed` in their frontmatter. The `skills.ts` harness (`npm test`) validates three axes: **structure** of the skills (frontmatter, sections, links), **routing discriminability** (each trigger classifies its skill at the top), **versioning of the rules**. Detailed contract: [writing-a-skill.md](writing-a-skill.md) · [writing-a-rule.md](writing-a-rule.md).
+Skills and rules carry `version` (semver) + `metadata.last-reviewed` in their frontmatter. The `tools/skills.ts` harness (`npm test`) validates three axes: **structure** of the skills (frontmatter, sections, links), **routing discriminability** (each trigger classifies its skill at the top), **versioning of the rules**. Detailed contract: [writing-a-skill.md](writing-a-skill.md) · [writing-a-rule.md](writing-a-rule.md).

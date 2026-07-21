@@ -1,6 +1,6 @@
 # Evaluating the prose skills
 
-`eval.ts` plays a skill through headless `claude -p` inside a throwaway
+`tools/eval.ts` plays a skill through headless `claude -p` inside a throwaway
 fixture and verdicts the result: mechanical gates first (from the skill's exit
 conditions), an adjunct LLM judge for what stays subjective.
 Design: [the spec](superpowers/specs/2026-07-20-skill-eval-harness-design.md).
@@ -8,9 +8,9 @@ Design: [the spec](superpowers/specs/2026-07-20-skill-eval-harness-design.md).
 ## Commands
 
     npx tsx playground/setup.ts        # materialize the fixtures once
-    npx tsx eval.ts run --dry-run      # validate every skills/*/eval.yaml (CI does this)
-    npx tsx eval.ts run --only detection-sweep   # one skill, real agent run (API cost)
-    npx tsx eval.ts run                # full run - before a release only
+    npx tsx tools/eval.ts run --dry-run      # validate every skills/*/eval.yaml (CI does this)
+    npx tsx tools/eval.ts run --only detection-sweep   # one skill, real agent run (API cost)
+    npx tsx tools/eval.ts run                # full run - before a release only
 
 Real runs need the `claude` CLI on PATH (or `EVAL_CLAUDE_BIN`); they are never
 part of the public CI. Verdicts: PASS · FAIL(gate) · JUDGE-FAIL(criterion,
@@ -24,7 +24,7 @@ exit conditions, and class C (judge plus a `repo_clean` that only permits the
 written deliverable) for judgment-heavy skills. A pure gates-only manifest is
 allowed by the format but none is needed so far. Gate vocabulary:
 `file_exists`, `file_absent`, `grep_zero`, `grep_count`, `repo_clean`,
-`transcript_contains`, `transcript_absent`, `exit_ok`. Extend the runner if a
+`grep_min`, `transcript_contains`, `transcript_absent`, `exit_ok`. Extend the runner if a
 new gate kind is needed - never free-form logic in YAML.
 
 Judge criteria must be SHORT one-liners: the anti-leniency parser requires the

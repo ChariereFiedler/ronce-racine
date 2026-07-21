@@ -35,7 +35,7 @@ metadata:
 - No `<!-- ... -->` provenance comment: the source of truth is this repo, no need to repeat it (and Claude Code strips them from context anyway).
 - Keep it short: a long rule is followed less. Details and examples → a linked doc, not the rule.
 
-Ready-to-copy skeleton: [`templates/rule.template.md`](../templates/rule.template.md).
+Ready-to-copy skeleton: [`templates/rule.template.md`](templates/rule.template.md).
 
 ## After adding / modifying
 

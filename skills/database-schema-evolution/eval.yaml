@@ -6,10 +6,11 @@ prompt: >
   steps to MIGRATION_PLAN.md, and create only the new additive migration file.
 gates:
   - file_exists: "MIGRATION_PLAN.md"
-  - grep_zero: { pattern: "DROP TABLE|DROP COLUMN|NOT NULL", in: "migrations/" }
+  - grep_zero: { pattern: "DROP TABLE|DROP COLUMN", in: "migrations/" }
   - repo_clean: { except: "MIGRATION_PLAN.md, migrations/" }
 judge:
   criteria:
     - "New migration only adds a nullable column, no destructive change"
     - "Plan lists every usage found by the exhaustive scan"
+    - "Any NOT NULL column added comes with a DEFAULT"
   threshold: pass_all

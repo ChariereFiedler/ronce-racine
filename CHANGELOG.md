@@ -7,6 +7,48 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Individual artifacts (rules, skills, hooks) also carry their own `version` in
 their frontmatter; this file tracks the toolkit as a whole.
 
+## [0.3.0] - 2026-07-21
+
+### Added
+- `docs/developing.md`: working on the toolkit itself - repo map, what each
+  harness actually protects, the playground, and how to add every artifact
+  type (hooks and agents had no guide at all).
+- A header illustration on the README.
+
+### Changed
+- The internal harnesses (`skills.ts`, `tests.ts`, `mutations.ts`, `eval.ts`)
+  moved to `tools/`. `install.ts`, the only user-facing entry point, stays at
+  the repo root.
+- `templates/` split by audience: it now holds only what a CONSUMER copies
+  into their repo, while the artifact skeletons a CONTRIBUTOR starts from
+  moved to `docs/templates/`.
+- `docs/writing-a-skill.md` rewritten against the current contract. It
+  described the pre-0.2.0 world, so a contributor following it produced a
+  skill that CI rejects: no mention of the required `eval.yaml`, the per-skill
+  `README.md`, the bilingual quoted triggers, or the test procedure that any
+  script must ship.
+- `bug-triage-structured` 1.1.0 and `adversarial-feature-challenge` 1.1.0:
+  two protocol steps that evaluation runs showed agents skipping (the
+  recurrence check, the persona switch) are now mechanical - a command to run
+  and a count to state, rather than an instruction to remember.
+
+### Fixed
+- `templates/SKILL.template.md` was still entirely in French and carried a
+  frontmatter GitHub could not parse (an unquoted colon), so the repository
+  home rendered a YAML error banner. Both are now guarded by
+  `tools/skills.ts templates`, wired into `npm test`.
+- Evaluation manifests no longer punish an agent for obeying its own skill:
+  build output and dependency lock files are pruned from the snapshot, and
+  `repo_clean`'s `except` accepts a `name-*` prefix glob for skills whose
+  deliverables cannot be named upfront (one ticket per finding).
+- The `writing-robust-tests` fixture can actually run a test suite offline
+  (`node --test`, nothing to install), so the "see it red, then green"
+  discipline the skill demands is demonstrable rather than impossible.
+
+### Removed
+- `rules.ts`, deprecated since 0.1.x and superseded by
+  `install.ts install <repo> --rules-only`.
+
 ## [0.2.0] - 2026-07-20
 
 The toolkit can now test itself, at every level: its code, its detection

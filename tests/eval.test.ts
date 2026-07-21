@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 /** Unit tests of the skill-eval harness: manifest parser, gates, judge parsing. */
 import { test, assert, contains, initWork, finish, WORK, TSX, ROOT } from "./helpers.js";
-import { parseEvalManifest, applyGate, snapshotRepo, runOne, parseJudgeVerdicts, judgePassed, buildJudgePrompt, type GateContext } from "../eval.js";
+import { parseEvalManifest, applyGate, snapshotRepo, runOne, parseJudgeVerdicts, judgePassed, buildJudgePrompt, type GateContext } from "../tools/eval.js";
 import { mkdirSync, writeFileSync, unlinkSync, chmodSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -74,6 +74,21 @@ test("gates: grep_zero and grep_count walk the tree", () => {
   assert(applyGate({ kind: "grep_zero", args: { pattern: "debugger" } }, ctx) === null, "no hit passes (whole repo)");
 });
 
+test("gates: grep_min asserts a floor, not an exact count", () => {
+  // For agent-authored output an exact count is unknowable; a floor is not.
+  const dir = join(WORK, "gates-min");
+  mkdirSync(join(dir, "src"), { recursive: true });
+  writeFileSync(join(dir, "src", "a.test.js"), "priceWithTax(1)\npriceWithTax(2)\n");
+  const ctx = gateCtx(dir);
+  assert(applyGate({ kind: "grep_min", args: { pattern: "priceWithTax", in: "src/", count: "2" } }, ctx) === null,
+    "exactly the floor passes");
+  assert(applyGate({ kind: "grep_min", args: { pattern: "priceWithTax", in: "src/", count: "1" } }, ctx) === null,
+    "above the floor passes");
+  const under = applyGate({ kind: "grep_min", args: { pattern: "priceWithTax", in: "src/", count: "3" } }, ctx);
+  assert(under !== null, "below the floor fails");
+  contains(under, "at least 3", "the message states the floor");
+});
+
 test("gates: repo_clean detects additions and modifications, honors except", () => {
   const dir = join(WORK, "gates3");
   mkdirSync(dir, { recursive: true });
@@ -85,6 +100,23 @@ test("gates: repo_clean detects additions and modifications, honors except", () 
   assert(applyGate({ kind: "repo_clean", args: { except: "NEW.md" } }, ctx) !== null, "modification still fails without except");
   const ok = applyGate({ kind: "repo_clean", args: { except: "NEW.md, kept.ts" } }, ctx);
   assert(ok === null, `except list must allow both: ${ok}`);
+});
+
+test("gates: repo_clean except accepts a trailing * as a name prefix", () => {
+  // A skill that produces one ticket per action cannot name its files upfront.
+  const dir = join(WORK, "gates-glob");
+  mkdirSync(dir, { recursive: true });
+  const ctx = gateCtx(dir);
+  writeFileSync(join(dir, "ticket-first.md"), "a\n");
+  writeFileSync(join(dir, "ticket-second.md"), "b\n");
+  assert(applyGate({ kind: "repo_clean", args: { except: "ticket-" } }, ctx) !== null,
+    "a bare prefix must NOT match file names (directory semantics)");
+  const ok = applyGate({ kind: "repo_clean", args: { except: "ticket-*" } }, ctx);
+  assert(ok === null, `trailing * must allow every ticket-* file: ${ok}`);
+
+  writeFileSync(join(dir, "unrelated.md"), "c\n");
+  assert(applyGate({ kind: "repo_clean", args: { except: "ticket-*" } }, ctx) !== null,
+    "the glob must not allow unrelated files");
 });
 
 test("gates: repo_clean detects file deletions", () => {
@@ -150,7 +182,7 @@ test("runOne: a missing claude binary is ERROR, not FAIL", () => {
 });
 
 test("dry-run validates manifests without running anything", () => {
-  const r = spawnSync(TSX, [join(ROOT, "eval.ts"), "run", "--dry-run"], { cwd: ROOT, encoding: "utf8" });
+  const r = spawnSync(TSX, [join(ROOT, "tools", "eval.ts"), "run", "--dry-run"], { cwd: ROOT, encoding: "utf8" });
   assert(r.status === 0, `dry-run exit ${r.status}: ${r.stderr}`);
   contains(r.stdout, "manifest(s) valid", "dry-run must report validation");
 });
@@ -173,13 +205,13 @@ gates:
 });
 
 test("eval.ts run --only without value exits 2 with usage", () => {
-  const r = spawnSync(TSX, [join(ROOT, "eval.ts"), "run", "--only"], { cwd: ROOT, encoding: "utf8" });
+  const r = spawnSync(TSX, [join(ROOT, "tools", "eval.ts"), "run", "--only"], { cwd: ROOT, encoding: "utf8" });
   assert(r.status === 2, `expected exit 2, got ${r.status}`);
   contains(r.stderr, "usage", "stderr must contain usage message");
 });
 
 test("eval.ts run --only before another flag exits 2 with usage", () => {
-  const r = spawnSync(TSX, [join(ROOT, "eval.ts"), "run", "--only", "--dry-run"], { cwd: ROOT, encoding: "utf8" });
+  const r = spawnSync(TSX, [join(ROOT, "tools", "eval.ts"), "run", "--only", "--dry-run"], { cwd: ROOT, encoding: "utf8" });
   assert(r.status === 2, `expected exit 2, got ${r.status}`);
   contains(r.stderr, "usage", "stderr must contain usage message");
 });

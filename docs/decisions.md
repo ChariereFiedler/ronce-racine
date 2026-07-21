@@ -60,3 +60,13 @@ Rationale: memorable alliteration; the meaning fits the repo - a bramble (*ronce
 **Consequences**: any future publication must regenerate the orphan branch from the private work branch - never push the work history to the public remote. The public repo's history starts at v0.1.0 by design.
 
 **Status**: Done.
+
+## 2026-07-21 - Public releases are linear, not orphan-per-release
+
+**Context**: the 2026-07-20 entry established publishing from an orphan branch to keep the private work history out of the public repository. Applying that literally to the second release would have meant a second unrelated-history orphan, forcing a force-push over the published v0.1.0 and breaking every existing clone.
+
+**Decision**: keep ONE public history. Each release is a single commit whose TREE is the work branch's tree and whose PARENT is the previous public commit, built with `git commit-tree $(git rev-parse <work-branch>^{tree}) -p github/main`. The private history still never reaches the public remote, and the public repository grows a normal linear history (v0.1.0 -> v0.2.0 -> ...) that pulls cleanly.
+
+**Consequences**: no force-push, existing clones pull normally, `git log` on the public repo reads as one commit per release. The squash is deliberate: public history granularity is the release, not the work commit.
+
+**Status**: Done (v0.2.0 published this way).

@@ -1,9 +1,9 @@
 ---
 name: bug-triage-structured
 description: Use when a bug needs full triage before deciding what to do with it - "reproduce and analyze this bug", "reproduis et analyse ce bug", "fix now or open a ticket?", "faut-il corriger maintenant ou ouvrir un ticket", "triage this bug", "trie ce bug", a fresh bug report where reproduction and root cause are still unknown. NOT for merely documenting an already-understood bug.
-version: 1.0.0
+version: 1.1.0
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-07-21
   category: bug
 ---
 
@@ -62,8 +62,14 @@ In **both** branches, write/identify the test that materializes the bug: it must
 - Fix branch: add the test, see it red, fix, see it green (paste both outputs).
 - Ticket branch: fill the ticket's confirmation-tests table (Type · target file · assertion · ❌ before / ✅ after) without coding the fix.
 
-### 5. Check for recurrence
-If the scope has already had 2+ recent fixes → apply `recurring-bug-root-cause` (tooled guardrail) instead of laying down the Nth one-line fix.
+### 5. Check for recurrence (run it, do not eyeball it)
+Never skip this step: a bug that already came back is a different problem from a first-time bug, and the triage decision changes.
+
+```bash
+git log --oneline -20 --grep="fix(<scope>)"    # <scope> = the area you just triaged
+```
+
+If the scope has already had 2+ recent fixes → apply `recurring-bug-root-cause` (tooled guardrail) instead of laying down the Nth one-line fix. State the count in the triage sheet even when it is zero, so the check is visibly done.
 
 ## Templates
 
@@ -92,5 +98,7 @@ If the scope has already had 2+ recent fixes → apply `recurring-bug-root-cause
 - `templates/bug-triage.md` - triage sheet / tracker-agnostic ticket body
 
 ## Changelog
+
+- 1.1.0 (2026-07-21) - recurrence check made mechanical (git log command, count stated even when zero); eval runs showed agents skipping it
 
 - 1.0.0 (2026-06-19) - initial release: project-agnostic generalization of the add-bug workflow into full triage (repro → root-cause → decision → confirmation)

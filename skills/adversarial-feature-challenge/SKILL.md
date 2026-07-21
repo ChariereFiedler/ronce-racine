@@ -1,9 +1,9 @@
 ---
 name: adversarial-feature-challenge
 description: Use when a feature is "done" and needs adversarial stress-testing before shipping - "is it really ready", "est-ce vraiment prêt", "find the bugs", "trouve les bugs", "red team", before closing a ticket whose only validation is the golden path passing.
-version: 1.0.0
+version: 1.1.0
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-07-21
   category: feature
 ---
 
@@ -35,7 +35,7 @@ metadata:
 1. **Pick a persona** (table below) and attack the feature from its point of view - don't validate, break
 2. **Walk the layers**: go through every block of the checklist, inject `assets/fuzz-payloads.txt` into the inputs
 3. **Document each flaw** in `templates/challenge-report.md`: repro steps + output (curl/SQL/screenshot) + severity
-4. **Switch persona** and start over - 0 bugs = insufficient challenge, not a perfect feature
+4. **Switch persona** and start over - 0 bugs = insufficient challenge, not a perfect feature. **Stopping after one persona is not a challenge**: the first persona finds what you already suspected, the second finds what you did not. Name each persona explicitly in the report as you go, so the count is visible.
 5. **Verdict + tickets**: one ticket per confirmed flaw, rule blocking / improvement / green-light
 
 ## Traps & rationalizations
@@ -90,5 +90,7 @@ metadata:
 - [ ] Verdict set: blocking / improvement required / green-light
 
 ## Changelog
+
+- 1.1.0 (2026-07-21) - persona switch made explicit and countable; eval runs showed agents stopping after one
 
 - 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

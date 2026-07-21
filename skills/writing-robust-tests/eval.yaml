@@ -1,11 +1,13 @@
 fixture: frontend-vue
 prompt: >
-  Write robust tests for src/App.vue following the project's conventions.
+  src/pricing.js has no test coverage. Write robust tests for it following the
+  project conventions. The suite runs with npm test (node --test, nothing to
+  install).
 gates:
   - grep_zero: { pattern: "waitForTimeout|Thread\\.sleep|sleep\\(" }
+  - grep_min: { pattern: "priceWithTax", in: "src/", count: "2" }
 judge:
   criteria:
-    - "A new test file exercising App.vue was created"
-    - "The transcript shows each test seen red (code mutated) then green"
-    - "No hard waits and no fragile locators in the produced tests"
+    - "Boundary and error cases are covered, not only the happy path"
+    - "The transcript shows a test failing before it passes"
   threshold: pass_all

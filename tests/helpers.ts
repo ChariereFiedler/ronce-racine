@@ -3,7 +3,7 @@
  *
  * Each *.test.ts file is standalone: it can be run directly
  * (`npx tsx tests/installer.test.ts`, `npx tsx skills/<s>/scripts/<x>.test.ts`)
- * or discovered by the root runner (`tsx tests.ts`, wired into `npm test`).
+ * or discovered by the root runner (`tsx tools/tests.ts`, wired into `npm test`).
  *
  * No dates/random: fixtures live under a per-file temp dir, wiped by initWork().
  */
@@ -40,7 +40,7 @@ export function absent(haystack: string, needle: string, msg: string): void {
 }
 
 export interface Run { status: number | null; stdout: string; stderr: string; }
-/** Runs the toolkit CLI (install.ts, skills.ts…) from the repo root. */
+/** Runs the toolkit CLI (install.ts, tools/skills.ts…) from the repo root. */
 export function cli(args: string[]): Run {
   const r = spawnSync(TSX, args, { cwd: ROOT, encoding: "utf8" });
   return { status: r.status, stdout: r.stdout ?? "", stderr: r.stderr ?? "" };

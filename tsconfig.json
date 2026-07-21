@@ -8,5 +8,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["*.ts", "hooks/*.ts"]
+  "include": ["*.ts", "hooks/*.ts", "tools/*.ts"]
 }
