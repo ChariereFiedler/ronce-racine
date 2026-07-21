@@ -1,32 +1,23 @@
 # Anti-drift CI gate for the generic Claude config (rules + skills + hooks + agents).
 # Include it in the .gitlab-ci.yml of the repo that adopts Ronce Racine.
-# Compares the installed artifacts (lockfile .claude/.ronce-racine.json) against the canonical source.
+# Compares the installed artifacts (lockfile .claude/.ronce-racine.json) against
+# the published package the lockfile names.
 #
-# Soft by default: `--strict` makes the job fail, but `allow_failure: true` keeps it
-# non-blocking (shown as a yellow warning). For a STRICT blocking gate:
-# remove the `allow_failure: true` line.
+# Soft by default: `--strict` makes the job fail, but `allow_failure: true` keeps
+# it non-blocking (yellow warning). For a STRICT blocking gate, remove that line.
 
 claude-config:drift:
   stage: test
   image: node:22-alpine
-  variables:
-    # Clone URL of the canonical source (Ronce Racine).
-    CLAUDE_RULES_REPO: "https://github.com/ChariereFiedler/ronce-racine.git"
   allow_failure: true            # ← soft: warns without blocking. Remove to block.
-  before_script:
-    - apk add --no-cache git
-    - git clone "$CLAUDE_RULES_REPO" /tmp/ronce-racine
-    # Pin the canonical checkout to the SHA recorded in the lockfile at install
-    # time, so drift is measured against a FIXED target - cloning the default
-    # branch HEAD would flag every downstream repo the moment canonical evolves.
-    - REF=$(node -e "try{process.stdout.write((require('./.claude/.ronce-racine.json').source)||'')}catch(e){}")
-    - if [ -n "$REF" ] && [ "$REF" != "local" ]; then git -C /tmp/ronce-racine checkout -q "$REF"; fi
   script:
-    - npx -y tsx /tmp/ronce-racine/install.ts check . --strict
+    # The lockfile records the version installed, so the check runs against
+    # exactly that one: a newer release cannot flag this repo on its own.
+    - VERSION=$(node -e "try{process.stdout.write(require('./.claude/.ronce-racine.json').source.version||'latest')}catch(e){process.stdout.write('latest')}")
+    - npx -y ronce-racine@"$VERSION" check . --strict
   rules:
     - changes:
         - ".claude/**"
 
 # Rules-only variant (based on the .adopted manifest):
-#   script: npx -y tsx /tmp/ronce-racine/install.ts check . --strict
 #   rules: { changes: [".claude/rules/shared/**"] }

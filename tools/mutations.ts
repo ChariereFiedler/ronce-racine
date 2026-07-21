@@ -120,6 +120,27 @@ const MUTATIONS: Mutation[] = [
     replace: "process.exit(0)",
     test: "skills/refactoring-shared-component-api/scripts/sweep-call-sites.test.ts",
   },
+  {
+    name: "installer: canonicalHash ignores file contents",
+    file: "install.ts",
+    find: "      h.update(readFileSync(canon));",
+    replace: "      /* mutated */;",
+    test: "tests/installer.test.ts",
+  },
+  {
+    name: "installer: legacy lockfile treated as stale",
+    file: "install.ts",
+    find: 'if (typeof s === "string") return false;',
+    replace: 'if (typeof s === "string") return true;',
+    test: "tests/installer.test.ts",
+  },
+  {
+    name: "installer: staleness compares the wrong token set after detach",
+    file: "install.ts",
+    find: "isStale(lock.source, lock.installed)",
+    replace: "isStale(lock.source, checked)",
+    test: "tests/installer.test.ts",
+  },
 ];
 
 // This harness edits tracked files in place. Two concurrent runs corrupt each
@@ -127,8 +148,18 @@ const MUTATIONS: Mutation[] = [
 // missing and calls the table stale. Refuse to start rather than mislead.
 const LOCK = join(ROOT, ".mutations.lock");
 if (existsSync(LOCK)) {
-  console.error(`✗ another mutation run holds ${LOCK}.\n  If no run is active, delete the file and retry.`);
-  process.exit(2);
+  // The lock records its owner's pid, so a lock left behind by a killed run
+  // clears itself. Telling a human to "delete it if no run is active" invites
+  // deleting it while one IS active, which is the race the lock exists to stop.
+  const owner = Number(readFileSync(LOCK, "utf8").trim());
+  let alive = false;
+  try { process.kill(owner, 0); alive = true; } catch { alive = false; }
+  if (alive) {
+    console.error(`✗ mutation run ${owner} is already in progress. Wait for it to finish.`);
+    process.exit(2);
+  }
+  console.error(`- clearing a stale lock from dead process ${owner}`);
+  rmSync(LOCK, { force: true });
 }
 writeFileSync(LOCK, `${process.pid}\n`);
 const releaseLock = (): void => { try { rmSync(LOCK, { force: true }); } catch { /* best effort */ } };

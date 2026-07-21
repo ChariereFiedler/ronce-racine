@@ -2,40 +2,40 @@
 
 ## Option A - Smart installer (recommended)
 
-`install.ts` detects the project's stack (frontend/backend/tests/SQL/migrations/CI/infra/git) and proposes the relevant artifacts, with a reason for each.
+`ronce-racine` detects the project's stack (frontend/backend/tests/SQL/migrations/CI/infra/git) and proposes the relevant artifacts, with a reason for each.
 
 ```bash
 # 1. Proposal (read-only) - nothing is written
-npx tsx /path/to/ronce-racine/install.ts plan .
+npx ronce-racine plan .
 
 # 2. Install the recommended ones (add --all to include optionals: audits, etc.)
-npx tsx /path/to/ronce-racine/install.ts install . --all
+npx ronce-racine install . --all
 ```
 
 The installer copies into `.claude/`:
-- `rules/shared/` + the `.adopted` manifest (rules) - drift is watchable via `install.ts check .`
+- `rules/shared/` + the `.adopted` manifest (rules) - drift is watchable via `ronce-racine check .`
 - `skills/<name>/` (relevant skills), `hooks/`, `agents/`
 
 It merges the hook wirings into `.claude/settings.json` (writes a `settings.json.bak` backup, deep-merges by event + matcher, idempotent, preserves unrelated settings). Check the diff (`git diff`, `git status`), then commit - `.claude/` travels via git → teammates + CI agents.
 
-Update later: rerun `install.ts install .` (idempotent). For rules only, use `install.ts install . --rules-only` (same lockfile-based drift as everything else).
+Update later: rerun `ronce-racine install .` (idempotent). For rules only, use `ronce-racine install . --rules-only` (same lockfile-based drift as everything else).
 
 ### Anti-drift (lockfile)
 
-`install.ts` writes `.claude/.ronce-racine.json`: what is managed + the canonical SHA at install time.
+`ronce-racine` writes `.claude/.ronce-racine.json`: what is managed + the package version and a content hash at install time.
 
 ```bash
-npx tsx /path/ronce-racine/install.ts check .            # soft: warns (drift + staleness)
-npx tsx /path/ronce-racine/install.ts check . --strict   # exit 1 on drift (blocking gate)
+npx ronce-racine check .            # soft: warns (drift + staleness)
+npx ronce-racine check . --strict   # exit 1 on drift (blocking gate)
 ```
 
 - **Drift**: a managed artifact was modified locally → reported (`~file`, `-missing`, `+added`).
-- **Assumed customization**: `install.ts detach . skill:detection-sweep` takes the item out of control (it becomes "yours").
+- **Assumed customization**: `ronce-racine detach . skill:detection-sweep` takes the item out of control (it becomes "yours").
 - **Staleness**: the canonical version has moved on since install → "rerun install" warning.
 
 CI gate: the [`templates/anti-drift.gitlab-ci.yml`](../templates/anti-drift.gitlab-ci.yml) snippet (soft via `allow_failure`, blocking by removing that line).
 
-> The sections below describe the **rules-only approach** (rules and nothing else), still driven by `install.ts`.
+> The sections below describe the **rules-only approach** (rules and nothing else), still driven by `ronce-racine`.
 
 ## 1. Declare the adopted rules
 
@@ -53,7 +53,7 @@ Only list the rules for which you want the **generic canonical** version. A rule
 ## 2. Synchronize
 
 ```bash
-npx tsx /path/to/ronce-racine/install.ts install . --rules-only
+npx ronce-racine install . --rules-only
 ```
 
 The adopted files are copied into `.claude/rules/shared/` and tracked in the lockfile (same drift mechanism as everything else). Check the diff (`git diff`), then commit:
@@ -67,7 +67,7 @@ git commit -m "chore(rules): adopt the generic canonical rules (ronce-racine)"
 
 Add the job from [`templates/anti-drift.gitlab-ci.yml`](../templates/anti-drift.gitlab-ci.yml) to the repo's `.gitlab-ci.yml`. It fails if an adopted rule has diverged from the canonical version.
 
-Prerequisite: the runner must be able to clone `ronce-racine` (the job clones it). If you prefer no network dependency in CI, the committed files already freeze the content - the gate only adds drift **detection**.
+Prerequisite: the runner must be able to reach the npm registry (the job runs `npx ronce-racine@<version> check`). If you prefer no network dependency in CI, the committed files already freeze the content - the gate only adds drift **detection**.
 
 ## 4. Update later
 
@@ -75,6 +75,6 @@ When the canonical version evolves:
 
 ```bash
 cd <repo>
-npx tsx /path/to/ronce-racine/install.ts install . --rules-only
+npx ronce-racine install . --rules-only
 git add .claude/rules/shared && git commit -m "chore(rules): resync canonical rules"
 ```

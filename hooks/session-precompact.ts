@@ -18,7 +18,7 @@
  * @last-reviewed 2026-07-10
  */
 import { readFileSync } from 'node:fs'
-import { persistMemo } from './session-writer.js'
+import { persistMemo } from './session-writer.ts'
 
 const REPO_ROOT = process.env.CLAUDE_PROJECT_DIR ?? process.cwd()
 

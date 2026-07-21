@@ -7,6 +7,18 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Individual artifacts (rules, skills, hooks) also carry their own `version` in
 their frontmatter; this file tracks the toolkit as a whole.
 
+## [0.5.0] - 2026-07-21
+
+Adoption stops requiring a clone.
+
+### Changed
+- **Adoption no longer needs a clone**: `npx ronce-racine install .`. The
+  lockfile records the package version and a content hash instead of a git
+  SHA, so `check` detects a canonical source that changed under the same
+  version number. Lockfiles written by the clone-era installer keep working.
+- The anti-drift CI template drops the pinned clone for a single
+  `npx ronce-racine@<version> check . --strict`.
+
 ## [0.4.0] - 2026-07-21
 
 ### Changed

@@ -16,7 +16,7 @@
  * @last-reviewed 2026-06-25
  */
 import { readFileSync, existsSync } from 'node:fs'
-import { sessionPathFor, currentBranch } from './session-writer.js'
+import { sessionPathFor, currentBranch } from './session-writer.ts'
 
 const REPO_ROOT = process.env.CLAUDE_PROJECT_DIR ?? process.cwd()
 

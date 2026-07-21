@@ -74,7 +74,8 @@ export function gitCommit(repo: string, msg: string, allowEmpty = false): void {
   spawnSync("git", ["-c", "user.email=t@t.dev", "-c", "user.name=t", "commit", "-q", "-m", msg, ...(allowEmpty ? ["--allow-empty"] : [])], { cwd: repo });
 }
 
-export interface Lock { source: string; installed: string[]; detached: string[]; }
+export type LockSource = string | { package: string; version: string; contentHash: string };
+export interface Lock { source: LockSource; installed: string[]; detached: string[]; }
 export function readLock(repo: string): Lock {
   return JSON.parse(readFileSync(join(repo, ".claude/.ronce-racine.json"), "utf8"));
 }

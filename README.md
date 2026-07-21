@@ -21,8 +21,8 @@ Copy-pasted `.claude/` config **rots**: every repo drifts, and nobody remembers 
 
 ## Requirements
 
-- **Node ≥ 18** with `tsx` (invoked as `npx tsx …`). Required both for the installer and, in the target repo, for any installed **hooks** (they run via `npx tsx`).
-- **rules / skills / agents are plain Markdown** and need no toolchain. Hooks are optional: skip them on a repo where you don't want a Node dependency.
+- **Node ≥ 18**. The installer runs via `npx ronce-racine`, no clone needed; the target repo needs **only Node**, because hooks ship pre-built (`dist/hooks/*.js`).
+- **rules / skills / agents are plain Markdown** and need no toolchain at all.
 
 ## The name
 
@@ -39,15 +39,15 @@ flowchart LR
     R1["repo A<br/>.claude/rules/shared/*"]
     R2["repo B<br/>.claude/rules/shared/*"]
     C -- "symlink (personal, all machines)" --> G
-    C -- "install.ts install --rules-only (real files, git)" --> R1
-    C -- "install.ts install --rules-only" --> R2
+    C -- "ronce-racine install --rules-only (real files, git)" --> R1
+    C -- "ronce-racine install --rules-only" --> R2
     G -. "all your projects, interactive" .-> R1
 ```
 
 | Layer | Mechanism | Scope |
 |--------|-----------|--------|
 | **Global (personal)** | `~/.claude/rules/shared` → symlink to `rules/` | All your machines, all your projects, interactive. Not versioned per project. |
-| **Per-repo (team / CI)** | `install.ts install <repo> --rules-only` copies real files into `<repo>/.claude/rules/shared/` | Travels via git → teammates + headless/CI agents |
+| **Per-repo (team / CI)** | `ronce-racine install <repo> --rules-only` copies real files into `<repo>/.claude/rules/shared/` | Travels via git → teammates + headless/CI agents |
 
 The two coexist: an adopted repo loads its project copy (which takes precedence) **and** the global layer; identical content → no effect. Detail → [`docs/architecture.md`](docs/architecture.md).
 
@@ -69,6 +69,58 @@ The two coexist: an adopted repo loads its project copy (which takes precedence)
 | `ui-states-complete.md` | components (tsx/jsx/vue/svelte) | loading/error/empty/success all handled and distinguishable |
 
 Each rule also carries `version` + `metadata.last-reviewed` (parity with the skills), validated by `npm test`.
+
+## What a day looks like
+
+Skills are not invoked by name from a menu: their `description` carries trigger
+phrases, and the agent picks the right one from what you ask. Below is what
+actually fires, in order, on three common jobs. Nothing here is a special
+command - it is plain English, in either language.
+
+### Starting on a repo (once)
+
+```bash
+npx ronce-racine plan    .          # read-only: what fits this repo, and why
+npx ronce-racine install .          # copies into .claude/, wires the hooks
+git add .claude && git commit       # the config travels with the repo
+```
+
+`plan` reads the repo's signals (stack, tests, SQL, CI, infra) and proposes
+only what they justify: a Go service with no frontend gets neither the UI rules
+nor the frontend skills. Add the [anti-drift CI job](templates/anti-drift.gitlab-ci.yml)
+and the config can no longer rot silently.
+
+### Implementing a feature
+
+| You say | What runs | What you get |
+|---|---|---|
+| *"model the billing domain"* | `domain-modeling-design` | aggregates, invariants and their placement, written down, **no code yet** |
+| *"implement it"* | `ddd-backend-implementation` or `frontend-fullstack-implementation` | layered implementation; the frontend one refuses to ship without loading/error/empty/success states |
+| *"write tests for it"* | `writing-robust-tests` | tests you have **seen fail** before they pass, no hard waits, no fragile locators |
+| *"does it actually work?"* | `validating-features-end-to-end` | the feature exercised for real, evidence pasted, not "the unit tests are green" |
+| *"is it really ready?"* | `adversarial-feature-challenge` | at least two personas attack it; zero flaws found means a bad challenge, not a perfect feature |
+| *"commit this"* | `commit-readiness-review` | staged diff scanned for secrets, debug leftovers and disabled tests before anything is written |
+
+### Fixing a bug
+
+| You say | What runs | What you get |
+|---|---|---|
+| *"this is broken: …"* | `bug-triage-structured` | reproduction, root cause with `file:line`, then an argued fix-now-or-ticket decision |
+| *(the scope already had 2+ recent fixes)* | `recurring-bug-root-cause` | it stops treating the symptom: a blocking guardrail, so the class cannot come back |
+| *"I'm not fixing it now"* | `bug-ticket-root-cause` | a ticket carrying the cause and a red-then-green confirmation test, not just the symptom |
+
+The triage step now runs `git log --grep="fix(<scope>)"` rather than trusting
+memory, because evaluation runs showed agents skipping the recurrence check.
+
+### Auditing an existing project
+
+```
+"audit industrialisation"      -> 8 domain audits in parallel, consolidated report,
+                                  214 questions, 0-4 maturity scoring
+"audit sécurité"               -> one domain only
+```
+
+Heavyweight and opt-in: reach for it on a periodic review, not day to day.
 
 ## Available skills (`skills/`)
 
@@ -95,7 +147,7 @@ Generalized (project-agnostic) versions of the heavy workflows. The project vari
 
 Some skills embed detection `scripts/` (read-only) and `reference/` files loaded on demand (progressive disclosure of the audit grids). Validation: `npm test` (the `tools/skills.ts` harness).
 
-Distribution: the **smart installer** (`install.ts`, see below) copies the relevant skills into `<repo>/.claude/skills/` and watches their drift. Manually: copy the desired folder into `~/.claude/skills/` (global) or `<repo>/.claude/skills/` (per-repo). `install.ts` is the single CLI for all families (rules/skills/hooks/agents); for rules only, use `install.ts install <repo> --rules-only`.
+Distribution: the **smart installer** (`ronce-racine`, see below) copies the relevant skills into `<repo>/.claude/skills/` and watches their drift. Manually: copy the desired folder into `~/.claude/skills/` (global) or `<repo>/.claude/skills/` (per-repo). `ronce-racine` is the single CLI for all families (rules/skills/hooks/agents); for rules only, use `ronce-racine install <repo> --rules-only`.
 
 ## Available scripts (`scripts/`)
 
@@ -107,16 +159,16 @@ Executable detection scripts (TypeScript, `tsx`, read-only). Referenceable from 
 
 ## Quickstart
 
+> The package is not on npm yet: the commands below are the adoption path as of
+> the next release. Until then, clone the repo and run `npx tsx install.ts plan .`
+> from it (see [`docs/developing.md`](docs/developing.md)).
+
 ```bash
-# 1. Get Ronce Racine
-git clone https://github.com/ChariereFiedler/ronce-racine.git
-cd ronce-racine && npm install
+# 1. Propose an adapted install for your project (read-only)
+npx ronce-racine plan .
 
-# 2. Propose an adapted install for your project (read-only)
-npx tsx install.ts plan /path/to/your-repo
-
-# 3. Apply it, then review the diff before committing
-npx tsx install.ts install /path/to/your-repo
+# 2. Apply it, then review the diff before committing
+npx ronce-racine install .
 ```
 
 ![Propose, install, then catch a local edit with the drift gate](assets/demo.gif)
@@ -124,7 +176,7 @@ npx tsx install.ts install /path/to/your-repo
 The same run as text, on a full-stack repo (`plan` is read-only, nothing is written):
 
 ```console
-$ npx tsx install.ts plan ./my-app
+$ npx ronce-racine plan ./my-app
 Analysis of ./my-app
 Signals: git (.git/), ci (CI config), infra (Docker/infra), frontend (frontend
 dependencies), backend (Node backend dependencies), tests (E2E deps), code (sources detected)
@@ -166,11 +218,11 @@ The installer runs code on your machine and wires hooks into your `settings.json
 
 ### Smart installer (recommended)
 
-`install.ts` scans the target project (stack, tests, SQL, migrations, CI, infra, git) and **proposes** the relevant rules/skills/hooks/agents, then installs on confirmation. Full procedure → [`docs/adopting-a-repo.md`](docs/adopting-a-repo.md).
+`ronce-racine` scans the target project (stack, tests, SQL, migrations, CI, infra, git) and **proposes** the relevant rules/skills/hooks/agents, then installs on confirmation. Full procedure → [`docs/adopting-a-repo.md`](docs/adopting-a-repo.md).
 
 ```bash
-npx tsx /path/to/ronce-racine/install.ts plan    <repo>          # proposes (read-only)
-npx tsx /path/to/ronce-racine/install.ts install <repo> [--all]  # applies (--all = + optionals)
+npx ronce-racine plan    <repo>          # proposes (read-only)
+npx ronce-racine install <repo> [--all]  # applies (--all = + optionals)
 ```
 
 Copies rules (+ the `.adopted` manifest), skills, hooks and agents into `<repo>/.claude/`, and **merges the hook wirings into `<repo>/.claude/settings.json`** (deep-merge by event/matcher, idempotent, backs up an existing file to `settings.json.bak`, preserves unrelated settings). Check the diff, then commit.
@@ -178,7 +230,7 @@ Copies rules (+ the `.adopted` manifest), skills, hooks and agents into `<repo>/
 ### Rules only
 
 ```bash
-npx tsx /path/to/ronce-racine/install.ts install <repo> --rules-only   # rules + lockfile only
+npx ronce-racine install <repo> --rules-only   # rules + lockfile only
 ```
 
 Then wire the anti-drift CI gate → [`templates/anti-drift.gitlab-ci.yml`](templates/anti-drift.gitlab-ci.yml).
@@ -195,11 +247,11 @@ ln -s /path/to/ronce-racine/rules ~/.claude/rules/shared
 ## CLI
 
 ```bash
-npx tsx install.ts plan    <repo>              # proposes an install adapted to the repo's stack
-npx tsx install.ts install <repo> [--all]     # installs rules+skills+hooks+agents (--all = + optionals)
-npx tsx install.ts install <repo> --rules-only# installs only the rules
-npx tsx install.ts check   <repo> [--strict]  # drift vs canonical (soft, or blocking)
-npx tsx install.ts detach  <repo> <token>     # excludes a customized artifact from control
+npx ronce-racine plan    <repo>              # proposes an install adapted to the repo's stack
+npx ronce-racine install <repo> [--all]     # installs rules+skills+hooks+agents (--all = + optionals)
+npx ronce-racine install <repo> --rules-only# installs only the rules
+npx ronce-racine check   <repo> [--strict]  # drift vs canonical (soft, or blocking)
+npx ronce-racine detach  <repo> <token>     # excludes a customized artifact from control
 npm test                        # validates artifacts (structure + routing + versioning) AND runs behavioral tests
 npm run skills:list             # lists the version + category of each skill
 npm run rules:validate          # validates the versioning of the rules

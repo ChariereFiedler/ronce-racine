@@ -6,6 +6,10 @@ How to work **on the toolkit itself**. To adopt it in a project instead, see
 
 ## Setup
 
+This clone is the **contributor** path, for working on the toolkit itself. It
+is no longer the documented way to *adopt* Ronce Racine in a project - that
+path is `npx ronce-racine`, see [adopting-a-repo.md](adopting-a-repo.md).
+
 ```bash
 git clone https://github.com/ChariereFiedler/ronce-racine.git
 cd ronce-racine && npm ci
@@ -15,6 +19,12 @@ Node >= 18 and nothing else. The toolkit has **no runtime dependency**: the
 three devDependencies are TypeScript, `tsx` and Node's type definitions.
 Everything else is Node builtins, on purpose - a config toolkit that drags a
 dependency tree into your repo would defeat its own point.
+
+If you `npm link` this clone into a test repo, that repo's `ronce-racine`
+resolves to your local build instead of the published package, so `check`
+will report staleness against your (uncommitted, unpublished) local changes -
+that is expected, not a bug. Run `npm unlink ronce-racine` in the test repo to
+restore the published resolution.
 
 ## Repository map
 
@@ -27,6 +37,15 @@ dependency tree into your repo would defeat its own point.
 | `playground/` | fixture generator: throwaway repos to run the installer and the evals against |
 | `templates/` | what a CONSUMER copies into their repo (`.adopted.example`, anti-drift CI) |
 | `docs/templates/` | what a CONTRIBUTOR copies to author an artifact |
+
+One build step, run automatically by `npm install` (`prepare`):
+`tools/build.ts` compiles `hooks/*.ts` into `dist/hooks/*.mjs` (`.mjs` so a
+target repo without `"type": "module"` in its `package.json` doesn't get a
+Node `MODULE_TYPELESS_PACKAGE_JSON` warning on every hook fire) and
+`install.ts` into `dist/install.js`. Hooks must never be compiled at run time: measured on
+a hook that fires on every prompt, `npx tsx` costs 527 ms, node's own type
+stripping 99 ms, and built JS 34 ms. Building once also means an adopting
+repo needs Node and nothing else.
 
 The four harnesses under `tools/`:
 

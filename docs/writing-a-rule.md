@@ -40,4 +40,4 @@ Ready-to-copy skeleton: [`templates/rule.template.md`](templates/rule.template.m
 ## After adding / modifying
 
 1. Update the rules table in the [README](../README.md).
-2. Re-sync the repos that adopt the rule (`install.ts install <repo> --rules-only`), or let their CI gate report the drift.
+2. Re-sync the repos that adopt the rule (`npx ronce-racine install <repo> --rules-only`), or let their CI gate report the drift.

@@ -6,7 +6,8 @@
     "types": ["node"],
     "strict": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["*.ts", "hooks/*.ts", "tools/*.ts"]
 }

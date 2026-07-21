@@ -14,28 +14,32 @@
  *   agents  → <repo>/.claude/agents/
  * and prints the settings.json snippet to wire up the hooks.
  */
-import { readFileSync, existsSync, readdirSync, mkdirSync, writeFileSync, cpSync, type Dirent } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-import { execSync } from "node:child_process";
+import { readFileSync, existsSync, readdirSync, mkdirSync, writeFileSync, cpSync, realpathSync, type Dirent } from "node:fs";
+import { join, dirname, basename } from "node:path";
+import { fileURLToPath } from "node:url";
 import { emitKeypressEvents } from "node:readline";
+import { createHash } from "node:crypto";
 
-const SELF = dirname(fileURLToPath(import.meta.url));
+const HERE = dirname(fileURLToPath(import.meta.url));
+// The CLI runs as install.ts from the repo root, and as dist/install.js once
+// built for npm. Artifacts always live at the root, so climb out of dist/.
+const SELF = basename(HERE) === "dist" ? join(HERE, "..") : HERE;
+/** How the user invoked this CLI: `install.ts` from a clone, `ronce-racine` from the package. */
+const INVOCATION = basename(HERE) === "dist" ? "ronce-racine" : "install.ts";
 const LOCKFILE = ".claude/.ronce-racine.json";
+// Hooks ship BUILT (dist/hooks/*.mjs), never as TypeScript. Compiling them at
+// run time cost ~490 ms on every prompt and forced tsx onto the target repo;
+// built JS runs in 34 ms on plain node. Build: tools/build.ts.
+const BUILT_HOOKS = join(SELF, "dist", "hooks");
+const shippedHookName = (f: string): string => f.replace(/\.ts$/, ".mjs");
+
+/** A lockfile written before the npm switch carries a bare git SHA. */
+type LockSource = string | { package: string; version: string; contentHash: string };
 
 interface Lock {
-  source: string; // SHA of the canonical source at install time
+  source: LockSource;
   installed: string[]; // "kind:name" tokens
   detached: string[]; // tokens excluded from drift control (customized)
-}
-
-/** Current SHA of the ronce-racine canonical source (to detect staleness). */
-function sourceSha(): string {
-  try {
-    return execSync("git rev-parse HEAD", { cwd: SELF, encoding: "utf8" }).trim();
-  } catch {
-    return "local";
-  }
 }
 
 /** Resolves canonical + target for a "kind:name" token. */
@@ -46,7 +50,63 @@ function tokenPaths(token: string, repo: string): { canon: string; inst: string;
   if (kind === "agent") return { canon: join(SELF, "agents", name), inst: join(repo, ".claude/agents", name), isDir: false };
   if (kind === "script") return { canon: join(SELF, "scripts", name), inst: join(repo, ".claude/scripts", name), isDir: false };
   // kind === "hook": one token per individual file
-  return { canon: join(SELF, "hooks", name), inst: join(repo, ".claude/hooks", name), isDir: false };
+  return { canon: join(BUILT_HOOKS, shippedHookName(name)), inst: join(repo, ".claude/hooks", shippedHookName(name)), isDir: false };
+}
+
+/**
+ * Fingerprint of the canonical content behind a set of tokens. The lockfile
+ * records it next to the package version: with the version alone, `check`
+ * compares "0.4.0" to "0.4.0" and reports nothing even when the package
+ * content changed under the same number.
+ * A missing canonical file (e.g. a hook token before `dist/` is built) is
+ * folded in as an explicit absence marker rather than silently skipped, so
+ * an unbuilt checkout cannot hash the same as a built one.
+ */
+export function canonicalHash(tokens: string[]): string {
+  const h = createHash("sha256");
+  for (const token of [...tokens].sort()) {
+    const { canon, isDir } = tokenPaths(token, "");
+    h.update(token);
+    if (!existsSync(canon)) { h.update("\0absent"); continue; }
+    if (isDir) {
+      for (const rel of listFiles(canon).filter((f) => !f.endsWith(".test.ts") && f !== "eval.yaml" && f !== "README.md")) {
+        h.update(rel);
+        h.update(readFileSync(join(canon, rel)));
+      }
+    } else {
+      h.update(readFileSync(canon));
+    }
+  }
+  return `sha256-${h.digest("hex")}`;
+}
+
+/** Version of the package this CLI belongs to. */
+function selfVersion(): string {
+  try {
+    return (JSON.parse(readFileSync(join(SELF, "package.json"), "utf8")) as { version?: string }).version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
+
+export function describeSource(s: LockSource): string {
+  return typeof s === "string" ? `clone ${s.slice(0, 8)}` : `${s.package}@${s.version}`;
+}
+
+/** A clone-era lockfile has no version to compare, so it is never stale. */
+export function isStale(s: LockSource, tokens: string[]): boolean {
+  if (typeof s === "string") return false;
+  return s.version !== selfVersion() || s.contentHash !== canonicalHash(tokens);
+}
+
+/** Names which part actually drifted, so the message is truthful and actionable. */
+function staleMessage(s: LockSource, repo: string): string {
+  const reinstall = `re-run 'ronce-racine install ${repo}'`;
+  if (typeof s !== "string" && s.version !== selfVersion()) {
+    return `↑ stale: installed from ${describeSource(s)}, now running ${selfVersion()} - ${reinstall}.`;
+  }
+  const ver = typeof s === "string" ? describeSource(s) : s.version;
+  return `↑ stale: same version (${ver}) but the canonical content changed - ${reinstall}.`;
 }
 
 function listFiles(root: string): string[] {
@@ -292,7 +352,8 @@ function doPlan(repo: string): void {
   console.log(`Signals: ${[...signals].map((s) => `${s} (${evidence[s]})`).join(", ") || "none"}`);
   printGroup("✓ Recommended (installed by default):", picked);
   printGroup("• Optional (add with --all):", optional);
-  console.log(`\n→ To install: npx tsx ${join(SELF, "install.ts")} install ${repo}` + `   (add --all for the optional ones)`);
+  const invocation = basename(HERE) === "dist" ? `node ${join(HERE, "install.js")}` : `npx tsx ${join(SELF, "install.ts")}`;
+  console.log(`\n→ To install: ${invocation} install ${repo}` + `   (add --all for the optional ones)`);
 }
 
 /**
@@ -324,7 +385,7 @@ function mergeHookSettings(dotclaude: string, wirings: HookWiring[]): { added: n
   const hooks = (settings.hooks ??= {});
   let added = 0;
   for (const w of wirings) {
-    const command = `npx tsx $CLAUDE_PROJECT_DIR/.claude/hooks/${w.commandFile}`;
+    const command = `node $CLAUDE_PROJECT_DIR/.claude/hooks/${shippedHookName(w.commandFile)}`;
     if (!Array.isArray(hooks[w.event])) {
       if (hooks[w.event] !== undefined) malformed = true;
       hooks[w.event] = [];
@@ -720,6 +781,10 @@ async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rules
   }
   if (!items.length) { console.log("No item selected - nothing installed."); return; }
   const dotclaude = join(repo, ".claude");
+  if (items.some((i) => i.kind === "hook") && !existsSync(BUILT_HOOKS)) {
+    console.error("Hooks are not built. Run 'npm install' (or 'npm run build') in the ronce-racine checkout first.");
+    process.exit(2);
+  }
 
   // Preserve deliberately customized (detached) items: never overwrite them on
   // re-install. They stay recorded as installed but their files are left as-is.
@@ -779,7 +844,7 @@ async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rules
       const hookDir = join(dotclaude, "hooks");
       mkdirSync(hookDir, { recursive: true });
       for (const fileName of i.files ?? [i.name]) {
-        copyToken(`hook:${fileName}`, join(SELF, "hooks", fileName), join(hookDir, fileName));
+        copyToken(`hook:${fileName}`, join(BUILT_HOOKS, shippedHookName(fileName)), join(hookDir, shippedHookName(fileName)));
         tokens.push(`hook:${fileName}`);
       }
       if (i.wiring) collectedWirings.push(...i.wiring);
@@ -791,24 +856,28 @@ async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rules
   if (nHooks > 0) {
     const hookDir = join(dotclaude, "hooks");
     mkdirSync(hookDir, { recursive: true });
-    const readmeSrc = join(SELF, "hooks", "README.md");
+    const readmeSrc = join(BUILT_HOOKS, "README.md");
     if (existsSync(readmeSrc)) cpSync(readmeSrc, join(hookDir, "README.md"));
   }
 
   if (adopted.length) {
     const manifest = join(dotclaude, "rules/shared/.adopted");
-    const header = "# Generic rules adopted (ronce-racine). Resync: install.ts install --rules-only .\n";
+    const header = `# Generic rules adopted (ronce-racine). Resync: ${INVOCATION} install --rules-only .\n`;
     writeFileSync(manifest, header + adopted.sort().join("\n") + "\n");
   }
 
   // Lockfile: preserves the existing detached list (deliberately customized items).
-  const lock: Lock = { source: sourceSha(), installed: tokens.sort(), detached: prevLock?.detached ?? [] };
+  const lock: Lock = {
+    source: { package: "ronce-racine", version: selfVersion(), contentHash: canonicalHash(tokens) },
+    installed: tokens.sort(),
+    detached: prevLock?.detached ?? [],
+  };
   writeFileSync(join(repo, LOCKFILE), JSON.stringify(lock, null, 2) + "\n");
 
   console.log(`Installed into ${dotclaude}: ${nRules} rules, ${nSkills} skills, ${nScripts} scripts, ${nAgents} agents${nHooks > 0 ? `, ${nHooks} hook(s)` : ""}.`);
   if (nPreserved > 0) console.log(`Preserved ${nPreserved} detached (customized) item(s) - left untouched.`);
   if (nBackedUp > 0) console.log(`⚠ Backed up ${nBackedUp} pre-existing item(s) to *.pre-install.bak - review before deleting (or 'detach' them to keep your version).`);
-  console.log(`Lockfile: ${LOCKFILE} (source ${lock.source.slice(0, 8)}) - drift via 'install.ts check .'`);
+  console.log(`Lockfile: ${LOCKFILE} (${describeSource(lock.source)}) - drift via 'ronce-racine check .'`);
   if (adopted.length) console.log(`Rules manifest: .claude/rules/shared/.adopted (${adopted.length} rules)`);
   if (collectedWirings.length > 0) {
     const settingsPath = join(dotclaude, "settings.json");
@@ -825,7 +894,7 @@ async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rules
 function doCheck(repo: string, strict: boolean): void {
   const lock = readLock(repo);
   if (!lock) {
-    console.error(`No lockfile (${LOCKFILE}) - run 'install.ts install ${repo}' first.`);
+    console.error(`No lockfile (${LOCKFILE}) - run '${INVOCATION} install ${repo}' first.`);
     process.exit(2);
   }
   const checked = lock.installed.filter((t) => !lock.detached.includes(t));
@@ -836,15 +905,17 @@ function doCheck(repo: string, strict: boolean): void {
   for (const { t, d } of drift) console.log(`⚠ drift ${t}: ${d}`);
   if (lock.detached.length) console.log(`(${lock.detached.length} detached item(s) ignored: ${lock.detached.join(", ")})`);
 
-  const current = sourceSha();
-  const stale = lock.source !== "local" && current !== "local" && lock.source !== current;
-  if (stale) console.log(`↑ stale: installed from ${lock.source.slice(0, 8)}, canonical at ${current.slice(0, 8)} - re-run 'install.ts install ${repo}'.`);
+  // The stored hash covers the FULL installed set (see doInstall), so detaching
+  // items must not change the comparison basis - compare against lock.installed,
+  // not the detach-filtered `checked` list, or staleness would never clear.
+  const stale = isStale(lock.source, lock.installed);
+  if (stale) console.log(staleMessage(lock.source, repo));
 
   if (!drift.length) {
     console.log(`✓ ${checked.length} artifacts match the canonical source${stale ? " (but stale)" : ""}.`);
     return;
   }
-  console.log(`\n${drift.length} drifted artifact(s). To make a customization official: 'install.ts detach ${repo} <token>'. To resync: 'install.ts install ${repo}'.`);
+  console.log(`\n${drift.length} drifted artifact(s). To make a customization official: '${INVOCATION} detach ${repo} <token>'. To resync: '${INVOCATION} install ${repo}'.`);
   if (strict) process.exit(1);
 }
 
@@ -875,12 +946,22 @@ function pickTokens(rest: string[]): string[] {
 }
 
 // Only run the CLI when launched directly (the module stays importable in tests).
-const isMain = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
+// Compares REAL paths: npm/npx install `bin` as a symlink, so process.argv[1]
+// stays the symlink path while import.meta.url is already resolved - a direct
+// string comparison never matches through that symlink and the CLI silently
+// no-ops (exit 0, nothing printed).
+const isMain = (() => {
+  try {
+    return realpathSync(process.argv[1] ?? "") === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+})();
 if (isMain) {
   const [cmd, repo, ...rest] = process.argv.slice(2);
   const COMMANDS = ["plan", "install", "check", "detach"];
   if (!repo || !COMMANDS.includes(cmd)) {
-    console.error("usage: install.ts <plan|install|check|detach> <repo> [--all|--yes|--rules-only|--strict|<token...>]");
+    console.error(`usage: ${INVOCATION} <plan|install|check|detach> <repo> [--all|--yes|--rules-only|--strict|<token...>]`);
     process.exit(2);
   }
   if (!existsSync(repo)) {

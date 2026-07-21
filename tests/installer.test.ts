@@ -6,8 +6,9 @@
 import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import {
-  test, assert, contains, absent, cli, freshRepo, readLock, initWork, finish, WORK,
+  test, assert, contains, absent, cli, freshRepo, readLock, initWork, finish, WORK, ROOT,
 } from "./helpers.js";
+import { canonicalHash } from "../install.js";
 
 initWork();
 
@@ -26,7 +27,7 @@ test("install writes files + a valid lockfile", () => {
   const lock = readLock(repo);
   assert(lock.installed.length > 0, "lockfile should list installed tokens");
   assert(Array.isArray(lock.detached) && lock.detached.length === 0, "detached should start empty");
-  assert(typeof lock.source === "string" && lock.source.length > 0, "lockfile needs a source");
+  assert(typeof lock.source === "object" && lock.source !== null, "lockfile needs a source");
   assert(existsSync(join(repo, ".claude/rules/shared/.adopted")), ".adopted manifest should exist");
 });
 
@@ -58,6 +59,37 @@ test("check is clean right after install", () => {
   const r = cli(["install.ts", "check", repo]);
   assert(r.status === 0, `check exit ${r.status}`);
   contains(r.stdout, "match the canonical", "check should report a clean state");
+});
+
+test("a fresh lockfile records package, version and content hash", () => {
+  const repo = freshRepo("lock-shape");
+  cli(["install.ts", "install", repo, "--yes"]);
+  const src = readLock(repo).source as { package: string; version: string; contentHash: string };
+  assert(typeof src === "object", `source must be an object, got ${JSON.stringify(src)}`);
+  assert(src.package === "ronce-racine", "package name recorded");
+  assert(/^\d+\.\d+\.\d+$/.test(src.version), `version must be semver, got ${src.version}`);
+  assert(/^sha256-[0-9a-f]{64}$/.test(src.contentHash), "content hash recorded");
+});
+
+test("check reports staleness when the recorded hash no longer matches", () => {
+  const repo = freshRepo("lock-stale");
+  cli(["install.ts", "install", repo, "--yes"]);
+  const lock = readLock(repo) as { source: { contentHash: string } } & Record<string, unknown>;
+  lock.source.contentHash = "sha256-" + "0".repeat(64);
+  writeFileSync(join(repo, ".claude/.ronce-racine.json"), JSON.stringify(lock, null, 2));
+  const r = cli(["install.ts", "check", repo]);
+  contains(r.stdout, "stale", "a changed content hash must be reported as stale");
+});
+
+test("check still accepts a legacy lockfile whose source is a bare SHA", () => {
+  const repo = freshRepo("lock-legacy");
+  cli(["install.ts", "install", repo, "--yes"]);
+  const lock = readLock(repo) as Record<string, unknown>;
+  lock.source = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0";
+  writeFileSync(join(repo, ".claude/.ronce-racine.json"), JSON.stringify(lock, null, 2));
+  const r = cli(["install.ts", "check", repo]);
+  assert(r.status === 0, `a legacy lockfile must still check cleanly: ${r.stderr}`);
+  absent(r.stdout, "stale", "a clone-era lockfile has no version to compare");
 });
 
 test("check detects a modified artifact (soft warns, --strict fails)", () => {
@@ -108,6 +140,23 @@ test("check does not crash when a canonical file was removed upstream", () => {
   contains(r.stdout, "canonical-removed", "removed canonical should be reported, not thrown");
 });
 
+test("detaching an artifact must not make check falsely report staleness (regression)", () => {
+  const repo = freshRepo("detach-no-false-stale");
+  cli(["install.ts", "install", repo, "--yes"]);
+
+  const clean = cli(["install.ts", "check", repo]);
+  assert(clean.status === 0, `check exit ${clean.status}: ${clean.stderr}`);
+  absent(clean.stdout, "stale", "a fresh install must not be reported stale");
+
+  const ruleTok = readLock(repo).installed.find((t) => t.startsWith("rule:"))!;
+  const det = cli(["install.ts", "detach", repo, ruleTok]);
+  assert(det.status === 0, `detach exit ${det.status}: ${det.stderr}`);
+
+  const afterDetach = cli(["install.ts", "check", repo]);
+  assert(afterDetach.status === 0, `check exit ${afterDetach.status}: ${afterDetach.stderr}`);
+  absent(afterDetach.stdout, "stale", "detaching a token must not shrink the token set used for the stored hash comparison");
+});
+
 test("install merges hooks into an existing settings.json (backup + preserve + idempotent)", () => {
   const repo = freshRepo("settings");
   const dc = join(repo, ".claude");
@@ -123,7 +172,7 @@ test("install merges hooks into an existing settings.json (backup + preserve + i
   const s1 = JSON.parse(readFileSync(sp, "utf8"));
   assert(s1.customKey === "keep me", "unrelated user setting must be preserved");
   contains(JSON.stringify(s1.hooks), "echo bye", "pre-existing hook must be preserved");
-  contains(JSON.stringify(s1.hooks), "skill-reminder.ts", "the new hook must be wired");
+  contains(JSON.stringify(s1.hooks), "skill-reminder.mjs", "the new hook must be wired");
   assert(existsSync(sp + ".bak"), "an existing settings.json must be backed up before merge");
   const count1 = (JSON.stringify(s1.hooks).match(/\.claude\/hooks\//g) ?? []).length;
 
@@ -168,7 +217,7 @@ test("install survives a settings.json whose hooks section has a bogus shape", (
   assert(existsSync(sp + ".bak"), "original settings.json must be backed up");
   const s = JSON.parse(readFileSync(sp, "utf8"));
   assert(s.customKey === "keep me", "unrelated user setting must survive");
-  contains(JSON.stringify(s.hooks), "skill-reminder.ts", "hooks must be wired after rebuild");
+  contains(JSON.stringify(s.hooks), "skill-reminder.mjs", "hooks must be wired after rebuild");
 });
 
 test("install survives a malformed (non-JSON) settings.json", () => {
@@ -182,7 +231,32 @@ test("install survives a malformed (non-JSON) settings.json", () => {
   assert(r.status === 0, `install must not crash on malformed JSON (exit ${r.status}): ${r.stderr}`);
   contains(r.stdout, "was not valid JSON", "install should report the malformed file");
   assert(existsSync(sp + ".bak"), "malformed original must be backed up");
-  contains(JSON.stringify(JSON.parse(readFileSync(sp, "utf8")).hooks), "skill-reminder.ts", "hooks must be wired");
+  contains(JSON.stringify(JSON.parse(readFileSync(sp, "utf8")).hooks), "skill-reminder.mjs", "hooks must be wired");
+});
+
+test("hooks ship built, run on plain node, and stay drift-clean", () => {
+  // skill-reminder fires on every prompt: 527 ms via npx tsx, 34 ms as built
+  // JS on plain node. Compiling at run time is not an option, and a target
+  // repo must not need tsx at all.
+  const repo = freshRepo("hook-build");
+  const r = cli(["install.ts", "install", repo, "--yes"]);
+  assert(r.status === 0, `install exit ${r.status}: ${r.stderr}`);
+
+  const hookDir = join(repo, ".claude/hooks");
+  const shipped = readdirSync(hookDir).filter((f) => f.endsWith(".ts") || f.endsWith(".js") || f.endsWith(".mjs"));
+  assert(shipped.length > 0, "at least one hook must be installed");
+  assert(shipped.every((f) => f.endsWith(".js") || f.endsWith(".mjs")), `hooks must ship as JS, got ${shipped.join(", ")}`);
+  assert(!shipped.some((f) => f.endsWith(".ts")), `hooks must never ship as TypeScript, got ${shipped.join(", ")}`);
+
+  const cmd = JSON.parse(readFileSync(join(repo, ".claude/settings.json"), "utf8"))
+    .hooks.UserPromptSubmit[0].hooks[0].command as string;
+  assert(cmd.startsWith("node "), `hooks must run on plain node, got ${cmd}`);
+  absent(cmd, "tsx", "a target repo must not need tsx to run hooks");
+  contains(cmd, ".mjs", "the wiring must point at the built file");
+
+  // A built artifact still has to be drift-controlled against its source.
+  const check = cli(["install.ts", "check", repo]);
+  contains(check.stdout, "match the canonical", `a fresh install must be clean: ${check.stdout}`);
 });
 
 test("install --rules-only installs rules only (no skills/hooks/settings)", () => {
@@ -212,11 +286,11 @@ test("check: exit 2 without a lockfile", () => {
   assert(r.status === 2, `check without lockfile must exit 2 (got ${r.status})`);
 });
 
-test("check reports staleness when the canonical source moved on", () => {
+test("check reports staleness when the recorded version no longer matches", () => {
   const repo = freshRepo("stale");
   cli(["install.ts", "install", repo]);
-  const lock = readLock(repo);
-  (lock as { source: string }).source = "0000000000000000000000000000000000000000";
+  const lock = readLock(repo) as { source: { version: string } } & Record<string, unknown>;
+  lock.source.version = "0.0.0-old";
   writeFileSync(join(repo, ".claude/.ronce-racine.json"), JSON.stringify(lock, null, 2));
   const r = cli(["install.ts", "check", repo]);
   assert(r.status === 0, `stale check exit ${r.status}`);
@@ -335,6 +409,43 @@ test("CLI errors: unknown command and missing repo both exit 2", () => {
   assert(r1.status === 2, `unknown command must exit 2 (got ${r1.status})`);
   const r2 = cli(["install.ts", "plan", join(WORK, "does-not-exist")]);
   assert(r2.status === 2, `missing repo must exit 2 (got ${r2.status})`);
+});
+
+test("canonicalHash is stable, order-independent, and content-sensitive", () => {
+  const a = canonicalHash(["rule:commits.md", "rule:minimal-code.md"]);
+  const b = canonicalHash(["rule:minimal-code.md", "rule:commits.md"]);
+  assert(a === b, "the hash must not depend on token order");
+  assert(/^sha256-[0-9a-f]{64}$/.test(a), `unexpected shape: ${a}`);
+  const c = canonicalHash(["rule:commits.md"]);
+  assert(c !== a, "a different token set must hash differently");
+});
+
+test("canonicalHash reacts to file content, not just token names", () => {
+  const ruleTokens = ["rule:commits.md"];
+  const ruleFile = join(ROOT, "rules/commits.md");
+  const originalRule = readFileSync(ruleFile, "utf8");
+  try {
+    const before = canonicalHash(ruleTokens);
+    writeFileSync(ruleFile, `${originalRule}\n// mutated for test\n`);
+    const afterEdit = canonicalHash(ruleTokens);
+    writeFileSync(ruleFile, originalRule);
+    assert(afterEdit !== before, "editing the canonical file content must change the hash");
+  } finally {
+    writeFileSync(ruleFile, originalRule);
+  }
+
+  const skillTokens = ["skill:detection-sweep"];
+  const readmeFile = join(ROOT, "skills/detection-sweep/README.md");
+  const originalReadme = readFileSync(readmeFile, "utf8");
+  try {
+    const before = canonicalHash(skillTokens);
+    writeFileSync(readmeFile, `${originalReadme}\n// mutated for test\n`);
+    const afterEdit = canonicalHash(skillTokens);
+    writeFileSync(readmeFile, originalReadme);
+    assert(afterEdit === before, "editing an excluded file (README.md) must not change the hash");
+  } finally {
+    writeFileSync(readmeFile, originalReadme);
+  }
 });
 
 finish("installer");

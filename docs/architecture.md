@@ -20,8 +20,8 @@ flowchart TB
         A[".claude/rules/shared/ (real committed files)"]
     end
     R -->|"ln -s"| S
-    R -->|"install.ts install --rules-only"| A
-    A -->|"install.ts check (CI gate)"| A
+    R -->|"ronce-racine install --rules-only"| A
+    A -->|"ronce-racine check (CI gate)"| A
 ```
 
 ### Global layer (personal) - `~/.claude/rules/`
@@ -36,11 +36,11 @@ flowchart TB
 
 For teammates and **headless/CI agents** to see the rules, you need **real committed files** in the repo. A symlink pointing outside the repo (`~/lab/...`) does not travel via git: it would point nowhere after a clone.
 
-`install.ts install --rules-only` copies the **adopted** rules (declared in `.adopted`) from the canonical source into `.claude/rules/shared/`. `install.ts check` is the anti-drift gate (exit 1 on `--strict` if an adopted rule has diverged).
+`ronce-racine install --rules-only` copies the **adopted** rules (declared in `.adopted`) from the canonical source into `.claude/rules/shared/`. `ronce-racine check` is the anti-drift gate (exit 1 on `--strict` if an adopted rule has diverged).
 
 ## The `.adopted` manifest
 
-A repo does not necessarily adopt every rule, and may want to **keep an enriched version** of a rule (e.g. `secure-logging` with its project identifiers and its CI lint). The `.claude/rules/shared/.adopted` file (written by `install.ts` for rules) explicitly lists the rules managed by the canonical source (one per line). Rules **not listed are left intact** by install/check.
+A repo does not necessarily adopt every rule, and may want to **keep an enriched version** of a rule (e.g. `secure-logging` with its project identifiers and its CI lint). The `.claude/rules/shared/.adopted` file (written by `ronce-racine` for rules) explicitly lists the rules managed by the canonical source (one per line). Rules **not listed are left intact** by install/check.
 
 Splitting rule: the **generic** part of a rule lives here (the *principle*); the **tooled/named** part (script paths, crate names, ast-grep gates) stays in a project rule `rules/<project>/`.
 
@@ -50,7 +50,7 @@ In an adopted repo, the rule exists twice in context (global + project), with id
 
 ## Beyond rules: skills, hooks, agents
 
-The same drift problem applies to **skills** (on-demand workflows), **hooks** (settings.json scripts) and **agents** (subagents). `install.ts` is the single CLI and covers all **4 families** (rules included, via `--rules-only` when you want rules and nothing else).
+The same drift problem applies to **skills** (on-demand workflows), **hooks** (settings.json scripts) and **agents** (subagents). `ronce-racine` is the single CLI and covers all **4 families** (rules included, via `--rules-only` when you want rules and nothing else).
 
 ```mermaid
 flowchart TB
@@ -61,14 +61,14 @@ flowchart TB
         T["rules/shared · skills/<name> · hooks · agents"]
         L[".ronce-racine.json (lockfile)"]
     end
-    C -->|"install.ts plan (detects the stack → proposes)"| C
-    C -->|"install.ts install (copies + writes the lockfile)"| T
-    T -->|"install.ts check (drift + staleness)"| L
+    C -->|"ronce-racine plan (detects the stack → proposes)"| C
+    C -->|"ronce-racine install (copies + writes the lockfile)"| T
+    T -->|"ronce-racine check (drift + staleness)"| L
 ```
 
 - **`plan`** scans the target repo (frontend/backend/tests/sql/migrations/ci/infra/git) and only proposes the relevant artifacts - since the metadata of installed skills loads in every session, we don't install everything.
-- **`install`** copies to the right place (`rules/shared/` + `.adopted`, `skills/<name>/`, `hooks/`, `agents/`) and writes the **lockfile** `.claude/.ronce-racine.json`: `{ source: <canonical SHA>, installed: [tokens], detached: [] }`.
-- **`check`** compares each managed artifact to the canonical version (byte-for-byte; recursive for skills) → **drift**; and compares the SHA → **staleness**. Soft by default (warns), `--strict` to block.
+- **`install`** copies to the right place (`rules/shared/` + `.adopted`, `skills/<name>/`, `hooks/`, `agents/`) and writes the **lockfile** `.claude/.ronce-racine.json`: `{ source: { package, version, contentHash }, installed: [tokens], detached: [] }`.
+- **`check`** compares each managed artifact to the canonical version (byte-for-byte; recursive for skills) → **drift**; and compares the version + content hash → **staleness**. Soft by default (warns), `--strict` to block.
 - **`detach`** takes a deliberately customized artifact out of control (≈ the role of `.adopted` for rules, but per item).
 
 ### Versioning & validation

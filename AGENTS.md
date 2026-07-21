@@ -17,12 +17,12 @@ Canonical source of **generic Claude Code config** (project-agnostic), installab
 ## Using this repo on another project
 
 ```bash
-npx tsx install.ts plan    <repo>          # detects the stack, PROPOSES (read-only)
-npx tsx install.ts install <repo> [--all]  # copies relevant rules/skills/hooks/agents + lockfile
-npx tsx install.ts check   <repo> [--strict]  # drift vs canonical (soft, or blocking)
-npx tsx install.ts detach  <repo> <kind:name> # excludes a customized artifact from control
+npx ronce-racine plan    <repo>          # detects the stack, PROPOSES (read-only)
+npx ronce-racine install <repo> [--all]  # copies relevant rules/skills/hooks/agents + lockfile
+npx ronce-racine check   <repo> [--strict]  # drift vs canonical (soft, or blocking)
+npx ronce-racine detach  <repo> <kind:name> # excludes a customized artifact from control
 ```
-Detail: `docs/adopting-a-repo.md`. The lockfile `<repo>/.claude/.ronce-racine.json` tracks what is managed + the source SHA.
+Detail: `docs/adopting-a-repo.md`. The lockfile `<repo>/.claude/.ronce-racine.json` tracks what is managed + the source package version and content hash.
 
 ## Adding / modifying a hook
 
