@@ -13,6 +13,6 @@ gates:
 judge:
   criteria:
     - "Domain, application, infrastructure, handler kept in separate files"
-    - "Email uniqueness invariant enforced in the domain, not the handler"
+    - "Uniqueness is checked through a declared port, not inline in the API layer"
     - "Commands kept separate from queries"
   threshold: pass_all

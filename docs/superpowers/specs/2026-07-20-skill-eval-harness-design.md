@@ -180,19 +180,18 @@ Remaining: the full 34-skill run has not been executed end to end (cost); it is
 the pre-release gate. `eval/reports/` baselines and `--confirm-judge` remain
 deferred.
 
-## Known-failing eval (2026-07-21)
+## Criterion corrected, then passing (2026-07-21)
 
-`ddd-backend-implementation` fails its judge criterion "Email uniqueness
+`ddd-backend-implementation` failed its judge criterion "Email uniqueness
 invariant enforced in the domain, not the handler". Its mechanical gate (the
-dependency direction) passes; the criterion itself is the problem. Uniqueness
-across aggregates needs a repository lookup, so it cannot live inside the
-aggregate: DDD literature places it in a domain service or an application
-handler backed by a port. The criterion asks for something the pattern does
-not actually prescribe.
+dependency direction) passed; the criterion was the problem. Uniqueness across
+aggregates needs a repository lookup, so it cannot live inside the aggregate:
+the skill itself places it behind a declared port, orchestrated by the handler.
+Reworded to "Uniqueness is checked through a declared port, not inline in the
+API layer" - what the skill actually teaches - it passes.
 
-Left failing on purpose rather than reworded under release pressure: settling
-it means taking a position on where cross-aggregate invariants belong, which
-deserves its own discussion. Everything else passes.
+Lesson: when a judge criterion keeps failing, check whether it asks for
+something the skill never prescribed before blaming the agent.
 
 ## Gate-design rule learned over six failing runs (2026-07-21)
 

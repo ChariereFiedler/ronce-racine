@@ -119,7 +119,9 @@ npx tsx install.ts plan /path/to/your-repo
 npx tsx install.ts install /path/to/your-repo
 ```
 
-What `plan` looks like on a full-stack repo (real output, read-only, nothing is written):
+![Propose, install, then catch a local edit with the drift gate](assets/demo.gif)
+
+The same run as text, on a full-stack repo (`plan` is read-only, nothing is written):
 
 ```console
 $ npx tsx install.ts plan ./my-app

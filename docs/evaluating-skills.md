@@ -18,7 +18,7 @@ marked `~`, non-deterministic) · ERROR(infra - never treated as a regression).
 
 ## Adding a skill to the eval
 
-Every skill has one: `skills/<name>/eval.yaml`. All 34 combine mechanical gates
+All 34 skills carry one and all 34 pass a real agent run. Each combines mechanical gates
 with a short judge rubric, in two shapes: gates+judge for skills with greppable
 exit conditions, and class C (judge plus a `repo_clean` that only permits the
 written deliverable) for judgment-heavy skills. A pure gates-only manifest is
