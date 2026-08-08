@@ -22,7 +22,7 @@ test("sweep finds exactly the planted defects (1 per detector)", () => {
   const r = skillScript("detection-sweep/scripts/sweep.ts", [FLAWED], ROOT);
   assert(r.status === 0, `sweep exit ${r.status}`);
   for (const row of ["TODO/FIXME/HACK", "Debug statements", "Hardcoded waits", "Disabled tests", "Swallowed errors / unwrap", "Secret patterns"]) {
-    assert(new RegExp(`${row.replace(/[/()]/g, (c) => "\\" + c)}\\s+1\\b`).test(r.stdout), `"${row}" must count exactly 1: ${r.stdout.slice(0, 400)}`);
+    assert(new RegExp(`${row.replace(/[/()]/g, (c) => `\\${c}`)}\\s+1\\b`).test(r.stdout), `"${row}" must count exactly 1: ${r.stdout.slice(0, 400)}`);
   }
 });
 

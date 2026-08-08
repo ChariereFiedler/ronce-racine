@@ -1,15 +1,15 @@
 ---
 name: validating-features-end-to-end
 description: Use when a feature is just implemented and tests pass, before closing a ticket or announcing it done - "is it good?", "does it work?", "ready to close the ticket?", "c'est bon ?", "est-ce que ça marche ?", "je peux fermer le ticket ?", green unit tests as only evidence.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: feature
 ---
 
 # Functional validation of a feature - evidence before verdict
 
-> If the current repo has a dedicated validation skill (e.g. acme-app → `feature-functional-validation`), it wins.
+> If the current repo has a dedicated validation skill, it wins.
 
 ## This skill vs. others
 
@@ -86,5 +86,7 @@ If a gap: **do not close the ticket** - document it in the tracker and return to
 - Bug found: `superpowers:systematic-debugging`, ticket via the repo's bug skill
 
 ## Changelog
+
+- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
 
 - 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

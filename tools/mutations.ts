@@ -8,8 +8,24 @@
  *
  *   npm run test:mutation      (wired into CI; ~1 min, spawns real test files)
  *
+ * Why this coexists with Stryker (`npm run test:mutation:inprocess`) rather than
+ * being replaced by it: Stryker instruments the code in memory, so it only sees
+ * modules a test imports directly. Most of this suite is behavioral and spawns
+ * the real hooks and the real CLI as subprocesses, which read the ORIGINAL file
+ * from disk and ignore the instrumentation entirely. Measured on 2026-07-21:
+ * every subprocess-tested file scored 0% with all its mutants reported as
+ * uncovered, while `tools/eval.ts`, which the tests import, scored 79%.
+ *
+ * This harness mutates on disk, so it works where Stryker structurally cannot.
+ * The two are complementary: Stryker for the imported modules, this one for the
+ * subprocess-tested ones.
+ *
  * Companion of the writing-robust-tests skill (§5 "the test can fail") applied
  * to this repo's own harness.
+ *
+ * The table below quotes source lines verbatim, `${...}` placeholders included,
+ * which is why biome.json turns off noTemplateCurlyInString for this file: here
+ * a literal placeholder is the point, not a mistake.
  */
 import { readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -25,30 +41,114 @@ const MUTATIONS: Mutation[] = [
   {
     name: "installer: first-install backup disabled",
     file: "install.ts",
-    find: 'cpSync(dst, dst + ".pre-install.bak", { recursive: true });',
-    replace: "/* mutated */;",
+    find: "      copyPath(dst, backup);",
+    replace: "      /* mutated */;",
     test: "tests/installer.test.ts",
   },
   {
     name: "installer: .test.ts distribution filter removed",
     file: "install.ts",
-    find: '{ recursive: true, filter: (s) => !s.endsWith(".test.ts") && !s.endsWith("eval.yaml") && !s.endsWith("README.md") }',
-    replace: "{ recursive: true }",
+    find: 'recursive ? (s: string) => !s.endsWith(".test.ts") && !s.endsWith("eval.yaml") && !s.endsWith("README.md") : undefined',
+    replace: "undefined",
     test: "tests/installer.test.ts",
   },
   {
     name: "installer: bogus hooks-shape guard removed",
-    file: "install.ts",
+    file: "src/settings.ts",
     find: "    malformed = true;\n    delete settings.hooks;",
     replace: "    /* mutated */",
     test: "tests/installer.test.ts",
   },
   {
     name: "selector: group toggle inverted",
-    file: "install.ts",
-    find: "group.forEach((i) => (allOn ? state.checked.delete(i) : state.checked.add(i)));",
-    replace: "group.forEach((i) => (allOn ? state.checked.add(i) : state.checked.delete(i)));",
+    file: "src/selector.ts",
+    find: "      if (allOn) state.checked.delete(i);\n      else state.checked.add(i);",
+    replace: "      if (allOn) state.checked.add(i);\n      else state.checked.delete(i);",
     test: "tests/selector.test.ts",
+  },
+  {
+    name: "routing: a case no longer has to beat its declared neighbours",
+    file: "tools/routing-cases.ts",
+    find: "    const lost = c.against.filter((rival) => !(mine > score(rival)));",
+    replace: "    const lost = c.against.filter((rival) => !(mine >= score(rival)));",
+    test: "tests/routing.test.ts",
+  },
+  {
+    name: "installer: a later run overwrites the backup holding the user's work",
+    file: "install.ts",
+    find: "    if (!installedBefore.has(token) && existsSync(dst) && !existsSync(backup)) {",
+    replace: "    if (!installedBefore.has(token) && existsSync(dst)) {",
+    test: "tests/installer.test.ts",
+  },
+  {
+    name: "installer: symlinks followed, a dangling one aborts the install",
+    file: "src/lock.ts",
+    find: "  const stats = lstatSync(src);",
+    replace: "  const stats = statSync(src);",
+    test: "tests/installer.test.ts",
+  },
+  {
+    name: "installer: hook wiring failure swallowed, lockfile written anyway",
+    file: "install.ts",
+    find: "    const { added, backedUp, malformed } = mergeHookSettings(dotclaude, collectedWirings);",
+    replace: "    let added = 0, backedUp = false, malformed = false;\n    try { ({ added, backedUp, malformed } = mergeHookSettings(dotclaude, collectedWirings)); } catch { /* mutated */ }",
+    test: "tests/installer.test.ts",
+  },
+  {
+    name: "installer: back to cpSync, which breaks on non-ASCII Windows paths",
+    file: "src/lock.ts",
+    find: "  copyFileSync(src, dst);",
+    replace: "  cpSync(src, dst);",
+    test: "tests/installer.test.ts",
+  },
+  {
+    name: "uninstall: lockfile tokens trusted, so a traversal token deletes outside the repo",
+    file: "src/lock.ts",
+    find: "  if (!isValidToken(token)) throw new Error(`refusing to resolve a malformed token: ${JSON.stringify(token)}`);",
+    replace: "",
+    test: "tests/installer.test.ts",
+  },
+  {
+    name: "uninstall: a locally modified artifact is deleted instead of backed up",
+    file: "src/uninstall.ts",
+    find: "      if (compareToken(token, repo) !== null) {",
+    replace: "      if (false) {",
+    test: "tests/installer.test.ts",
+  },
+  {
+    name: "uninstall: unwires a detached hook, leaving it on disk but never firing",
+    file: "install.ts",
+    find: "  const hookFiles = removable.filter((t) => t.startsWith(\"hook:\")).map((t) => t.slice(\"hook:\".length));",
+    replace: "  const hookFiles = lock.installed.filter((t) => t.startsWith(\"hook:\")).map((t) => t.slice(\"hook:\".length));",
+    test: "tests/installer.test.ts",
+  },
+  {
+    name: "uninstall: unwires every hook it finds, including the user's own",
+    file: "src/uninstall.ts",
+    find: "    return command.includes(\".claude\") && ours.has(file);",
+    replace: "    return command.includes(\".claude\") && file.endsWith(\".mjs\");",
+    test: "tests/installer.test.ts",
+  },
+  {
+    name: "uninstall: deletes detached items the user customized on purpose",
+    file: "src/uninstall.ts",
+    find: "    if (skip.has(token)) { result.preserved.push(token); continue; }",
+    replace: "",
+    test: "tests/installer.test.ts",
+  },
+  {
+    name: "uninstall: drops the pre-install backup instead of restoring it",
+    file: "src/uninstall.ts",
+    find: "      renameSync(backup, inst);",
+    replace: "      rmSync(backup, { force: true });",
+    test: "tests/installer.test.ts",
+  },
+  {
+    name: "selector: cursor no longer wraps, it runs off the list",
+    file: "src/selector.ts",
+    find: "else if (k === \"down\" || k === \"j\") state.cursor = (state.cursor + 1) % state.flat.length;",
+    replace: "else if (k === \"down\" || k === \"j\") state.cursor = state.cursor + 1;",
+    test: "tests/properties.test.ts",
   },
   {
     name: "eval: repo_clean modification detection disabled",
@@ -70,6 +170,20 @@ const MUTATIONS: Mutation[] = [
     find: '/([\\w-]+):\\s*("(?:[^"\\\\]|\\\\.)*"|[^,}]+)/g',
     replace: "/([\\w-]+):\\s*([^,]+)/g",
     test: "tests/eval.test.ts",
+  },
+  {
+    name: "readme-freshness: blocks the push instead of failing open",
+    file: "hooks/readme-freshness.ts",
+    find: "  if (run.error || run.status !== 0) return",
+    replace: "  if (run.error || run.status !== 0) { emit('deny', 'README check unavailable'); return }",
+    test: "tests/hooks.test.ts",
+  },
+  {
+    name: "readme-freshness: fires on a --dry-run, which pushes nothing",
+    file: "hooks/readme-freshness.ts",
+    find: "  if (/--dry-run\\b/.test(cmd)) return false",
+    replace: "  /* mutated */",
+    test: "tests/hooks.test.ts",
   },
   {
     name: "worktree-env-setup: broken-symlink repair disabled",
@@ -122,14 +236,14 @@ const MUTATIONS: Mutation[] = [
   },
   {
     name: "installer: canonicalHash ignores file contents",
-    file: "install.ts",
+    file: "src/lock.ts",
     find: "      h.update(readFileSync(canon));",
     replace: "      /* mutated */;",
     test: "tests/installer.test.ts",
   },
   {
     name: "installer: legacy lockfile treated as stale",
-    file: "install.ts",
+    file: "src/lock.ts",
     find: 'if (typeof s === "string") return false;',
     replace: 'if (typeof s === "string") return true;',
     test: "tests/installer.test.ts",
@@ -209,7 +323,7 @@ for (const m of MUTATIONS) {
   // exercise the built artifact. Mutating the source without rebuilding leaves
   // the test reading the previous, correct output: the mutation survives and
   // the harness reports a Liar test that is really a stale-build artifact.
-  const isBuildInput = m.file.startsWith("hooks/") || m.file === "install.ts";
+  const isBuildInput = m.file.startsWith("hooks/") || m.file.startsWith("src/") || m.file === "install.ts";
   try {
     if (isBuildInput) spawnSync(TSX, [join(ROOT, "tools", "build.ts")], { cwd: ROOT, encoding: "utf8" });
     const r = spawnSync(TSX, [join(ROOT, m.test)], { cwd: ROOT, encoding: "utf8" });

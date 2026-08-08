@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "vitest": { "configFile": "vitest.config.ts" },
+  "reporters": ["clear-text", "progress", "html"],
+  "coverageAnalysis": "perTest",
+  "_comment": "Only modules the tests import IN-PROCESS. Stryker instruments code in memory, so a test that spawns a subprocess runs the original file from disk and every mutant is reported as uncovered. The subprocess-tested code (the other hooks, the skill scripts) is covered by tools/mutations.ts instead, which mutates on disk. See docs and the plan for why both harnesses coexist.",
+  "mutate": [
+    "hooks/session-writer.ts",
+    "hooks/truncate-bash-output.ts",
+    "tools/eval.ts",
+    "install.ts",
+    "src/settings.ts",
+    "src/selector.ts",
+    "src/uninstall.ts",
+    "src/lock.ts",
+    "src/detect.ts"
+  ],
+  "thresholds": { "high": 80, "low": 60, "break": 0 },
+  "tempDirName": ".stryker-tmp",
+  "timeoutMS": 60000
+}

@@ -1,15 +1,15 @@
 ---
 name: frontend-fullstack-implementation
 description: Use when implementing a frontend feature end-to-end - "implement the frontend for X", "add the X page", "implémente le frontend pour X", "ajoute la page X", structuring types/state/logic/UI layers, adding data-testid attributes, or avoiding subscription leaks. Use for any new screen or interactive component once the spec exists.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: frontend
 ---
 
 # Frontend feature implementation - strict layer separation
 
-> If the current repo has a specific implementation skill (e.g. acme-app → `feature-implementation-vue-nuxt`), it wins - it knows the stack, the paths, the fetch helpers and the project commands.
+> If the current repo has a specific implementation skill, it wins - it knows the stack, the paths, the fetch helpers and the project commands.
 
 ## This skill vs. others
 
@@ -130,4 +130,6 @@ npm run lint
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) - initial version, generalized from acme-app's Vue/Nuxt/Pinia workflow (stack coupling removed)
+- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
+
+- 1.0.0 (2026-06-19) - initial version, generalized from a project-specific Vue/Nuxt/Pinia workflow (stack coupling removed)

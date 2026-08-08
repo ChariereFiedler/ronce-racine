@@ -1,15 +1,15 @@
 ---
 name: database-schema-evolution
 description: Use when renaming or reshaping tables/columns, when a schema migration is risky, when a schema change touches many usages across the code, or when a zero-downtime migration is required - "migrate this schema", "migre ce schéma", "rename this column", "renomme cette colonne", "zero-downtime migration".
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: process
 ---
 
 # Database Schema Evolution - evolve a schema with no breakage or downtime
 
-> If the current repo has a project-specific migration skill (e.g. acme-app → `bulk-db-migration`), it wins - it knows the SQL engine, the migration tool, the commands and the project's CI gates.
+> If the current repo has a project-specific migration skill, it wins - it knows the SQL engine, the migration tool, the commands and the project's CI gates.
 
 ## This skill vs. others
 
@@ -104,4 +104,6 @@ A missing box = do not apply in production.
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) - initial version; provider-agnostic generalization of `bulk-db-migration` (acme-app) into a zero-downtime expand-contract protocol
+- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
+
+- 1.0.0 (2026-06-19) - initial version; provider-agnostic generalization of a project-specific `bulk-db-migration` workflow into a zero-downtime expand-contract protocol

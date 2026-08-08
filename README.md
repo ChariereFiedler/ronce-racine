@@ -5,282 +5,288 @@
 [![npm](https://img.shields.io/npm/v/ronce-racine)](https://www.npmjs.com/package/ronce-racine)
 [![license](https://img.shields.io/npm/l/ronce-racine)](LICENSE)
 
-Canonical source of **generic [Claude Code](https://claude.com/claude-code) config** (project-agnostic), installable in any repository. It provides a layer of *always-on* disciplines and *on-demand* workflows that spreads into every project:
-
-- **`rules/`**: *always-on* rules, injected by file type (`paths:`)
-- **`skills/`**: *on-demand* workflows, invoked as needed (versioned, validated by a harness)
-- **`hooks/`**: reusable Claude Code hooks to wire into `settings.json`
-- **`agents/`**: generic subagent definitions to copy into `<repo>/.claude/agents/`
-- **`scripts/`**: executable detection scripts (TypeScript via `tsx`, read-only)
-
-An artifact lives here **only if it is truly generic**: no coupling to a project (no specific crate, script, path, or identifier name, no imposed tracker). Project-specific variants stay on the project side (`<repo>/.claude/rules/<project>/`, `<repo>/.claude/skills/`). The doc's examples use fictional project names (`acme-app`, `beta-app`).
-
-> Admission criteria → [`docs/writing-a-rule.md`](docs/writing-a-rule.md) (rules) · [`docs/writing-a-skill.md`](docs/writing-a-skill.md) (skills)
-> An agent (LLM) that operates on this repo or installs it elsewhere → [`AGENTS.md`](AGENTS.md)
-
-## Why Ronce Racine, not copy-paste?
-
-Copy-pasted `.claude/` config **rots**: every repo drifts, and nobody remembers which rule came from where. Ronce Racine keeps **one canonical source** installed into many repos, with a **lockfile + anti-drift CI gate** so they never silently diverge, plus a smart installer that proposes only what fits each project's stack. That is what plain copy-paste and hand-rolled per-repo config don't give you: **fleet-wide consistency you can enforce in CI**, while any repo can still `detach` an artifact to customize it.
-
-## Requirements
-
-- **Node ≥ 18** in the target repo. The installer runs via `npx ronce-racine`,
-  no clone needed, and hooks ship pre-built (`.mjs`) so they run on plain
-  `node` with no TypeScript runtime.
-- **rules / skills / agents are plain Markdown** and need no toolchain at all.
-- **`tsx` only if you install a detection script.** The optional `scripts/*.ts`
-  (secret scan, project sweep, call-site audit) ship as TypeScript and are run
-  on demand with `npx tsx`. Skip them and Node alone is enough.
-
-## The name
-
-*Ronce Racine* means "bramble root" in English. A bramble roots deeply and spreads everywhere, unkillable: the exact image of a layer of *always-on* disciplines that takes root in every project and refuses to die, with just enough thorns to remind you it says "discipline". The two words are singular, joined in the style of the ecosystem the project comes from.
-
-> *In English:* **Ronce Racine** is French for "bramble root", a plant that roots deep and spreads everywhere, unkillable. A fitting name for a layer of engineering discipline meant to take hold in every repository.
-
-## Two distribution layers
-
-```mermaid
-flowchart LR
-    C["ronce-racine<br/>(rules/*.md)"]
-    G["~/.claude/rules/shared<br/>(symlink)"]
-    R1["repo A<br/>.claude/rules/shared/*"]
-    R2["repo B<br/>.claude/rules/shared/*"]
-    C -- "symlink (personal, all machines)" --> G
-    C -- "ronce-racine install --rules-only (real files, git)" --> R1
-    C -- "ronce-racine install --rules-only" --> R2
-    G -. "all your projects, interactive" .-> R1
-```
-
-| Layer | Mechanism | Scope |
-|--------|-----------|--------|
-| **Global (personal)** | `~/.claude/rules/shared` → symlink to `rules/` | All your machines, all your projects, interactive. Not versioned per project. |
-| **Per-repo (team / CI)** | `ronce-racine install <repo> --rules-only` copies real files into `<repo>/.claude/rules/shared/` | Travels via git → teammates + headless/CI agents |
-
-The two coexist: an adopted repo loads its project copy (which takes precedence) **and** the global layer; identical content → no effect. Detail → [`docs/architecture.md`](docs/architecture.md).
-
-## Available rules (`rules/`)
-
-| File | Scope (`paths`) | Purpose |
-|---------|------------------|-------|
-| `minimal-code.md` | code (rs/ts/tsx/vue/py/go) | YAGNI + readability > brevity guardrail |
-| `commits.md` | always active | commit message format |
-| `test-discipline.md` | `*.spec.ts` / `*.test.ts` | test discipline (generic core) |
-| `secure-logging.md` | `*.rs` / `*.ts` | GDPR: never log sensitive data |
-| `detection-gap-protocol.md` | `docs/postmortems/**` | a P0 found by a user = a detection failure |
-| `sql-migrations-discipline.md` | `**/migrations/**` | immutable, idempotent, expand-contract migrations |
-| `pre-commit-secret-detection.md` | always active | no secret committed (gitleaks + grep fallback) |
-| `subscription-cleanup.md` | front-end code (ts/tsx/js/vue) | explicit teardown of subscriptions/listeners/timers |
-| `error-handling-discipline.md` | code (ts/py/go/rs/php/java) | no swallowed error, no panic/unwrap on fallible |
-| `clean-architecture-deps.md` | code (ts/py/go/rs/php/java) | dependencies toward the domain, no logic in the handler |
-| `no-raw-sql-interpolation.md` | code (ts/py/go/rs/php/java) | parameterized queries, never SQL interpolation |
-| `ui-states-complete.md` | components (tsx/jsx/vue/svelte) | loading/error/empty/success all handled and distinguishable |
-| `doc-code-parity.md` | Markdown (README, docs/) | documented commands are run before commit; behavior changes sweep the docs |
-
-Each rule also carries `version` + `metadata.last-reviewed` (parity with the skills), validated by `npm test`.
-
-## What a day looks like
-
-Skills are not invoked by name from a menu: their `description` carries trigger
-phrases, and the agent picks the right one from what you ask. Below is what
-actually fires, in order, on three common jobs. Nothing here is a special
-command - it is plain English, in either language.
-
-### Starting on a repo (once)
+**A personal [Claude Code](https://claude.com/claude-code) config, packaged so it
+installs into any repository and stays up to date there.**
 
 ```bash
-npx ronce-racine plan    .          # read-only: what fits this repo, and why
-npx ronce-racine install .          # copies into .claude/, wires the hooks
-git add .claude && git commit       # the config travels with the repo
+npx ronce-racine plan .      # read-only: what fits this repo, and why
 ```
 
-`plan` reads the repo's signals (stack, tests, SQL, CI, infra) and proposes
-only what they justify: a Go service with no frontend gets neither the UI rules
-nor the frontend skills. Add the [anti-drift CI job](templates/anti-drift.gitlab-ci.yml)
-and the config can no longer rot silently.
+It is a set of habits I use every day, written down once and shipped by a CLI:
 
-### Implementing a feature
+- **13 rules**, always on, injected by file type. The standing constraints an
+  agent should never need to be reminded of.
+- **36 skills**, on demand. Procedures the agent loads when what you asked for
+  matches, from modeling a domain to triaging a bug.
+- **6 hooks** (9 scripts), wired into `settings.json` for you. Small automatic
+  behaviors on Claude Code events.
+- **2 agents** and **1 detection script**, for the jobs that deserve their own
+  context.
 
-| You say | What runs | What you get |
-|---|---|---|
-| *"model the billing domain"* | `domain-modeling-design` | aggregates, invariants and their placement, written down, **no code yet** |
-| *"implement it"* | `ddd-backend-implementation` or `frontend-fullstack-implementation` | layered implementation; the frontend one refuses to ship without loading/error/empty/success states |
-| *"write tests for it"* | `writing-robust-tests` | tests you have **seen fail** before they pass, no hard waits, no fragile locators |
-| *"does it actually work?"* | `validating-features-end-to-end` | the feature exercised for real, evidence pasted, not "the unit tests are green" |
-| *"is it really ready?"* | `adversarial-feature-challenge` | at least two personas attack it; zero flaws found means a bad challenge, not a perfect feature |
-| *"commit this"* | `commit-readiness-review` | staged diff scanned for secrets, debug leftovers and disabled tests before anything is written |
+Not a framework and not a team product. One person's working setup, made
+installable so twelve repositories cannot quietly become twelve different
+configurations.
 
-### Fixing a bug
+If you work across several repositories and keep telling Claude the same things,
+this should save you the repeating. If you are looking for a team standard to
+adopt wholesale, this is not one: take the parts you agree with.
 
-| You say | What runs | What you get |
-|---|---|---|
-| *"this is broken: …"* | `bug-triage-structured` | reproduction, root cause with `file:line`, then an argued fix-now-or-ticket decision |
-| *(the scope already had 2+ recent fixes)* | `recurring-bug-root-cause` | it stops treating the symptom: a blocking guardrail, so the class cannot come back |
-| *"I'm not fixing it now"* | `bug-ticket-root-cause` | a ticket carrying the cause and a red-then-green confirmation test, not just the symptom |
+[Quickstart](#quickstart) · [What you get](#what-you-get) · [How it is proven](#why-you-should-not-trust-the-tables-above) · [Staying in sync](#staying-in-sync) · [Install options](#install-options) · [Contributing](CONTRIBUTING.md)
 
-The triage step now runs `git log --grep="fix(<scope>)"` rather than trusting
-memory, because evaluation runs showed agents skipping the recurrence check.
+## Why it is packaged at all
 
-### Auditing an existing project
+Copy-pasted `.claude/` config rots. You write a good rule in one project, paste
+it into the next two, improve it in the third, and six months later no two
+repositories agree. Nobody remembers which version came from where, and the CI
+agent works from a config nobody has read since the day it landed.
 
-```
-"audit industrialisation"      -> 8 domain audits in parallel, consolidated report,
-                                  214 questions, 0-4 maturity scoring
-"audit sécurité"               -> one domain only
-```
-
-Heavyweight and opt-in: reach for it on a periodic review, not day to day.
-
-## Available skills (`skills/`)
-
-Generalized (project-agnostic) versions of the heavy workflows. The project variants (coupled to a tracker, a stack, scripts) stay in the relevant repo. Each skill carries a semver `version` + `metadata` in its frontmatter and follows the standard contract (see [`docs/writing-a-skill.md`](docs/writing-a-skill.md)).
-
-**Daily drivers**: the discipline skills you reach for during normal development:
-
-| Family | Skills |
-|---------|--------|
-| Tests & quality | `writing-robust-tests` · `comprehensive-test-strategy` · `adversarial-feature-challenge` · `validating-features-end-to-end` · `commit-readiness-review` · `detection-sweep` |
-| Design & implementation | `domain-modeling-design` · `ddd-backend-implementation` · `api-contract-versioning` · `database-schema-evolution` |
-| Frontend | `frontend-spec-call-site-audit` · `frontend-fullstack-implementation` · `refactoring-shared-component-api` · `design-system-component-lifecycle` · `visual-regression-check` |
-| Bugs / recurrence | `bug-triage-structured` · `bug-ticket-root-cause` · `recurring-bug-root-cause` |
-| Ops & review | `merge-request-review` · `ci-pipeline-orchestration` · `production-incident-diagnostic` |
-| Process | `recording-decisions` · `qa-session-intake` · `daily-workflow-optimization` |
-
-**Advanced: industrialization audit (opt-in)**: a heavyweight maturity-assessment suite for periodic reviews, not day-to-day use. Install it only if you run engineering audits:
-
-| Orchestrator | Domain audits |
-|---------|--------|
-| `audit-industrialisation` (runs the domains + consolidates) → `audit-report` | `audit-architecture` · `audit-ci-cd` · `audit-compliance` · `audit-observability` · `audit-performance-frontend` · `audit-quality` · `audit-security` · `audit-testing` |
-
-> Deliberately excluded: `git-workflow`, `jira-bug` (coupled to a specific project: dedicated branch hierarchy and Jira tracker).
-
-Some skills embed detection `scripts/` (read-only) and `reference/` files loaded on demand (progressive disclosure of the audit grids). Validation: `npm test` (the `tools/skills.ts` harness).
-
-Distribution: the **smart installer** (`ronce-racine`, see below) copies the relevant skills into `<repo>/.claude/skills/` and watches their drift. Manually: copy the desired folder into `~/.claude/skills/` (global) or `<repo>/.claude/skills/` (per-repo). `ronce-racine` is the single CLI for all families (rules/skills/hooks/agents); for rules only, use `ronce-racine install <repo> --rules-only`.
-
-## Available scripts (`scripts/`)
-
-Executable detection scripts (TypeScript, `tsx`, read-only). Referenceable from a skill via `scripts/<file>`.
-
-| File | Scope | Purpose |
-|---------|--------|-------|
-| `subscription-leak-scan.ts` | frontend (staged git diff) | subscription/listener/timer leaks |
+So the config is a package: an installer that proposes only what a project's
+stack justifies, a lockfile so a repository that drifts says so, and `detach`
+for the artifacts you customized on purpose.
 
 ## Quickstart
 
 ```bash
-# 1. Propose an adapted install for your project (read-only)
-npx ronce-racine plan .
-
-# 2. Apply it, then review the diff before committing
-npx ronce-racine install .
+npx ronce-racine plan .      # 1. read-only: what fits this repo, and why
+npx ronce-racine install .   # 2. apply, then review the diff before committing
 ```
 
 ![Propose, install, then catch a local edit with the drift gate](assets/demo.gif)
 
-The same run as text, on a full-stack repo (`plan` is read-only, nothing is written):
+Nothing is written by `plan`. Here is a real run on a full-stack repository,
+abridged:
 
 ```console
 $ npx ronce-racine plan ./my-app
 Analysis of ./my-app
-Signals: git (.git/), ci (CI config), infra (Docker/infra), frontend (frontend
-dependencies), backend (Node backend dependencies), tests (E2E deps), code (sources detected)
+Signals: git (.git/), ci (CI config), infra (Docker/infra), frontend (frontend dependencies), backend (Node backend dependencies), tests (E2E deps), code (sources detected)
 
 ✓ Recommended (installed by default):
-  Rules (9) :
+  Rules (10) :
     • minimal-code - YAGNI + readability, any code project
-    • commits - commit message format
     • secure-logging - GDPR: never log sensitive data
-    • pre-commit-secret-detection - no committed secrets
-    • test-discipline - tests detected
     • subscription-cleanup - frontend: subscription teardown
     • clean-architecture-deps - backend: dependency direction
-    … 2 more
-  Skills (21) :
-    • commit-readiness-review - self-review before commit
-    • detection-sweep - project detection sweep
-    • recurring-bug-root-cause - recurring bug → root cause
-    • ci-pipeline-orchestration - CI detected: check/diagnose/retry
-    … 17 more
+    [... 6 more]
+  Skills (23) :
+    • recording-decisions - record non-obvious choices
+    • commit-readiness-review - self-review before commit (+ scripts/precommit-scan.ts)
+    • bug-triage-structured - full triage of a bug
+    [... 20 more]
   Scripts (1) :
     • subscription-leak-scan.ts - detects subscriptions/listeners/timers without teardown
   Hooks (3) :
     • skill-reminder.ts - suggests the relevant skills for the prompt
-    • bash-npm-silent.ts - silences npm install/ci (less noise)
-    • truncate-output.ts - caps verbose output (cargo/git/docker…)
+    [... 2 more]
   Agents (2) :
     • code-reviewer - diff review agent
     • qa-tester - E2E testing agent
+
+• Optional (add with --all):
+  Rules (1) :
+    • detection-gap-protocol - P0 found by user = detection failure
+  Skills (12) :
+    • audit-industrialisation - maturity audit orchestrator
+    [... 11 more]
+  Hooks (3) :
+    • readme-freshness.ts - re-reads the README against what a push changes
+    [... 2 more]
 ```
 
-Each artifact is proposed because a signal justified it: a Go repo with no frontend gets
-neither `subscription-cleanup` nor the frontend skills. Try it on throwaway repos with
+(The `[... n more]` lines mark where this transcript is abridged; a real run
+prints every entry, then the exact install command to copy.)
+
+Then `git add .claude && git commit`: the config travels with the repository, so
+your teammates and your CI agent work from the same one you do.
+
+> The installer runs code on your machine and wires hooks into your
+> `settings.json`. [`SECURITY.md`](SECURITY.md) says exactly what runs and when.
+> Worth two minutes before you install anything, here or anywhere else.
+
+**Requirements**: Node 18 or later in the target repo, and nothing else. Hooks
+ship pre-built, rules and skills are plain Markdown. Only the optional detection
+scripts need `npx tsx`.
+
+## What you get
+
+### Rules: the constraints that are always on
+
+Rules are injected automatically based on the files in play, so they cost you
+nothing to remember. Each one exists because forgetting it produced a real
+defect.
+
+| Rule | Applies to | What it prevents |
+|---|---|---|
+| `commits.md` | always | commit messages that nobody can scan six months later |
+| `pre-commit-secret-detection.md` | always | a key or token reaching a commit, where a revert no longer saves you |
+| `minimal-code.md` | code (rs/ts/tsx/vue/py/go) | speculative code, and its opposite: unreadable one-liners written to save a line |
+| `error-handling-discipline.md` | code (ts/js/vue/py/go/rs/php/java) | swallowed errors, and a `panic`/`unwrap` on a fallible path |
+| `doc-code-parity.md` | `README.md`, `docs/**` | a documented command that no longer matches the code, which the reader trusts anyway |
+| `clean-architecture-deps.md` | code (ts/py/go/rs/php/java) | business logic leaking into handlers, dependencies pointing away from the domain |
+| `no-raw-sql-interpolation.md` | code (ts/js/py/go/rs/php/java) | a query built by string concatenation, which is an injection |
+| `sql-migrations-discipline.md` | `**/migrations/**` | a migration edited after it shipped, or one that cannot be replayed |
+| `secure-logging.md` | `*.rs`, `*.ts` | an email, IP or token in the logs, which is a GDPR problem |
+| `subscription-cleanup.md` | frontend (ts/tsx/js/jsx/vue) | subscriptions, listeners and timers with no teardown, and the leaks they cause |
+| `ui-states-complete.md` | components (tsx/jsx/vue/svelte) | a screen that handles the happy path and shows nothing while loading or failing |
+| `test-discipline.md` | `*.spec.ts`, `*.test.ts` | tests that pass without ever having been seen to fail |
+| `detection-gap-protocol.md` | `docs/postmortems/**` | treating a P0 found by a user as a bug rather than as a detection failure |
+
+### Skills: the procedures, loaded on demand
+
+There is nothing to type. Each skill's description carries trigger phrases, and
+the agent loads the one that matches what you asked for, in English or in
+French. Five that show the character of the set:
+
+| You say | What runs | What you get |
+|---|---|---|
+| *"this is broken: ..."* | `bug-triage-structured` | a reproduction, the root cause with `file:line`, then an argued fix-now-or-open-a-ticket decision |
+| *"commit this"* | `commit-readiness-review` | the staged diff scanned for secrets, debug leftovers and disabled tests before anything is written |
+| *"is it really ready?"* | `adversarial-feature-challenge` | the feature attacked from several personas; zero flaws found means a bad challenge, not a perfect feature |
+| *"three names for the same thing here"* | `domain-glossary` | one name per concept in a `GLOSSARY.md`, the rejected synonyms recorded so a search for the wrong word still lands right |
+| *"why is this slow?"* | `performance-profiling` | the noise floor measured before anything else, then a profile, with "inconclusive" as a valid answer |
+
+The full set, grouped by intention:
+
+| Group | Skills | For example |
+|---|---|---|
+| Designing, before code | 5 | `domain-modeling-design`, `comprehensive-test-strategy` |
+| Implementing | 6 | `ddd-backend-implementation`, `api-contract-versioning` |
+| Testing and validating | 4 | `writing-robust-tests`, `visual-regression-check` |
+| Fixing a bug | 5 | `bug-triage-structured`, `production-incident-diagnostic` |
+| Reviewing and shipping | 4 | `merge-request-review`, `ci-pipeline-orchestration` |
+| Sweeping and auditing | 12 | `detection-sweep`, and the opt-in `audit-*` family |
+
+What each one is for, in full: [`docs/catalog.md`](docs/catalog.md).
+
+
+### Hooks: the small automatic behaviors
+
+| Hook | Event | Why it is there |
+|---|---|---|
+| `skill-reminder.ts` | `UserPromptSubmit` | surfaces the skills matching your prompt, so a relevant one is not missed. Self-maintained, silent when nothing matches |
+| `bash-npm-silent.ts` | `PreToolUse` / `Bash` | appends `--silent` to setup `npm install` / `npm ci`, which otherwise burn context on noise |
+| `truncate-output.ts` (+ `truncate-bash-output.ts`) | `PreToolUse` / `Bash` | caps verbose command output past a threshold, always preserving it on error |
+| `session-writer` + `session-inject` + `session-precompact` | `Stop` / `SessionStart(compact)` / `PreCompact` | a per-branch session memo: persists the context at session end and re-injects it after a compaction |
+| `worktree-env-setup.ts` | `SessionStart` | symlinks the main repo's `.env` into the current worktree, so a worktree session is not born broken |
+| `readme-freshness.ts` | `PreToolUse` / `Bash` | before a `git push`, has Claude re-read the README against the diff and report the claims it contradicts. Opt-in, warns without blocking |
+
+Every hook fails open: it runs on every session of every repository that
+installed it, so an error ends in a silent `exit 0` rather than blocking you.
+The two to scrutinize before installing (`worktree-env-setup` symlinks your
+`.env`, the session-memo trio writes to disk) are documented in
+[`SECURITY.md`](SECURITY.md).
+
+### Agents and scripts
+
+- `code-reviewer`: architecture, reliability and correctness review of a diff.
+  Read-only, and it ends on an actionable verdict.
+- `qa-tester`: runs and writes E2E tests, favoring stable locators over timing
+  hacks.
+- `subscription-leak-scan.ts`: scans a staged frontend diff for subscriptions,
+  listeners and timers with no teardown.
+
+A project-specific agent or skill, coupled to your stack and your tracker, takes
+precedence over its generic version here. Every generic skill says so up front.
+
+## Why you should not trust the tables above
+
+A skill nobody can trigger does not exist, and prose cannot be unit-tested. So
+two things are mechanical here rather than hoped for.
+
+**Routing is linted.** Ten realistic sentences must reach the right skill ahead
+of the ones it is confusable with. When that lint was introduced, five of the
+ten failed, which is what a catalog looks like before anyone checks it.
+
+**Every skill is evaluated against a real agent run.** Each carries an
+`eval.yaml`: a fixture, a realistic prompt, gates derived from its own exit
+conditions, and a judge for what stays subjective. It regularly says no.
+
+What that costs and what else it caught:
+[`docs/quality-bar.md`](docs/quality-bar.md).
+
+## Staying in sync
+
+```bash
+npx ronce-racine check <repo>            # drift vs the canonical source
+npx ronce-racine check <repo> --strict   # same, but fails CI
+npx ronce-racine detach <repo> <token>   # exempt an artifact you customized on purpose
+```
+
+The lockfile records what was installed, `check --strict` turns drift into a
+failing job, and `detach` keeps a deliberate local customization from having to
+lie to the gate. Drop in the
+[anti-drift CI job](templates/anti-drift.gitlab-ci.yml) and the config can no
+longer rot silently.
+
+Mechanics (the `settings.json` merge, the two distribution layers, the lockfile
+states): [`docs/distribution-model.md`](docs/distribution-model.md) ·
+[`docs/architecture.md`](docs/architecture.md).
+
+## Install options
+
+### The CLI (recommended)
+
+```bash
+npx ronce-racine plan    <repo>              # proposes, read-only
+npx ronce-racine install <repo> [--all]      # applies (--all = + optionals)
+npx ronce-racine install <repo> --rules-only # rules + lockfile only
+npx ronce-racine check   <repo> [--strict]   # drift vs canonical (warns, or fails CI)
+npx ronce-racine detach  <repo> <token>      # exempt a customized artifact from control
+npx ronce-racine uninstall <repo> [--dry-run] # remove what it installed, nothing else
+```
+
+It copies into `<repo>/.claude/` and merges the hook wirings into
+`settings.json` without disturbing what is already there. Full procedure:
+[`docs/adopting-a-repo.md`](docs/adopting-a-repo.md).
+
+Changed your mind? `uninstall` reverses it, driven by the lockfile so it removes
+what it installed and nothing else:
+
+```bash
+npx ronce-racine uninstall <repo> --dry-run   # what would go
+npx ronce-racine uninstall <repo>             # remove it
+```
+
+It unwires its own hooks from `settings.json` and leaves the rest of that file
+alone, keeps anything you `detach`ed, and gives you back any file it overwrote
+on the way in.
+
+Try it against throwaway repositories first with
 [`playground/setup.ts`](playground/README.md).
 
-The installer runs code on your machine and wires hooks into your `settings.json`. Read [`SECURITY.md`](SECURITY.md) first to know exactly what runs and when.
-
-## Adopting in a repo
-
-### Smart installer (recommended)
-
-`ronce-racine` scans the target project (stack, tests, SQL, migrations, CI, infra, git) and **proposes** the relevant rules/skills/hooks/agents, then installs on confirmation. Full procedure → [`docs/adopting-a-repo.md`](docs/adopting-a-repo.md).
+### Or as a Claude Code plugin
 
 ```bash
-npx ronce-racine plan    <repo>          # proposes (read-only)
-npx ronce-racine install <repo> [--all]  # applies (--all = + optionals)
+/plugin marketplace add ChariereFiedler/ronce-racine
+/plugin install ronce-racine@ronce-racine
 ```
 
-Copies rules (+ the `.adopted` manifest), skills, hooks and agents into `<repo>/.claude/`, and **merges the hook wirings into `<repo>/.claude/settings.json`** (deep-merge by event/matcher, idempotent, backs up an existing file to `settings.json.bak`, preserves unrelated settings). Check the diff, then commit.
+The skills and the agents, subscribed rather than copied: they update when you
+update the plugin, and nothing lands in your repository. The rules, the hooks
+and the drift control are deliberately not in it, because always-on context and
+code that runs on your machine belong in a reviewed diff. Reasoning:
+[`docs/distribution-model.md`](docs/distribution-model.md).
 
-### Rules only
+## Contributing
 
-```bash
-npx ronce-racine install <repo> --rules-only   # rules + lockfile only
-```
+An artifact lives here only if it is truly generic: no crate, script, path or
+identifier tied to a project, no imposed tracker, no imposed stack. If a
+workflow is useful but coupled, split it: the generic protocol here, the tooled
+specifics in your own repository.
 
-Then wire the anti-drift CI gate → [`templates/anti-drift.gitlab-ci.yml`](templates/anti-drift.gitlab-ci.yml).
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for the bar and the workflow ·
+[`docs/writing-a-rule.md`](docs/writing-a-rule.md) ·
+[`docs/writing-a-skill.md`](docs/writing-a-skill.md) ·
+[`docs/evaluating-skills.md`](docs/evaluating-skills.md) ·
+[`docs/developing.md`](docs/developing.md) for working on the toolkit itself ·
+[`docs/decisions.md`](docs/decisions.md) for why things are the way they are ·
+[`AGENTS.md`](AGENTS.md) if you *are* the agent reading this.
 
-## Global setup (once per machine)
+## The name
 
-```bash
-# Symlink the canonical rules folder as your global shared layer.
-# Remove any individual rule file previously copied to ~/.claude/rules/ that
-# would otherwise duplicate the symlinked set (e.g. an old minimal-code.md).
-ln -s /path/to/ronce-racine/rules ~/.claude/rules/shared
-```
+*Ronce Racine* is French for "bramble root", a plant that roots deep, spreads
+everywhere and refuses to die. A fitting name for a layer of engineering
+discipline meant to take hold in every repository, with just enough thorns to
+remind you it says "discipline".
 
-## CLI
-
-```bash
-npx ronce-racine plan    <repo>              # proposes an install adapted to the repo's stack
-npx ronce-racine install <repo> [--all]     # installs rules+skills+hooks+agents (--all = + optionals)
-npx ronce-racine install <repo> --rules-only# installs only the rules
-npx ronce-racine check   <repo> [--strict]  # drift vs canonical (soft, or blocking)
-npx ronce-racine detach  <repo> <token>     # excludes a customized artifact from control
-npm test                        # validates artifacts (structure + routing + versioning) AND runs behavioral tests
-npm run skills:list             # lists the version + category of each skill
-npm run rules:validate          # validates the versioning of the rules
-```
-
-## Hooks (`hooks/`)
-
-Generic Claude Code hooks (detail → [`hooks/README.md`](hooks/README.md)). The installer offers them à la carte and **merges the selected ones into `<repo>/.claude/settings.json`** for you (idempotent, with a backup).
-
-| Hook | Event | Role |
-|------|-----------|------|
-| `skill-reminder.ts` | `UserPromptSubmit` | Suggests the relevant skills based on the prompt (self-maintained, silent when there is no match) |
-| `bash-npm-silent.ts` | `PreToolUse / Bash` | Appends `--silent` to setup `npm install` / `npm ci` to reduce context noise |
-| `truncate-output.ts` (+ helper `truncate-bash-output.ts`) | `PreToolUse / Bash` | Truncates verbose output beyond a threshold; always preserves the output on error |
-| `session-writer` + `session-inject` + `session-precompact` | `Stop` / `SessionStart(compact)` / `PreCompact` | Session-memo trio: persists the context at session end, re-injects it after compaction |
-| `worktree-env-setup.ts` | `SessionStart` | Symlinks the main repo's `.env` into the current worktree (idempotent, fail-open) |
-
-All scripts/hooks are TypeScript (run via `tsx`), no `.sh`. These hooks run **automatically** on Claude Code lifecycle events once wired. See [`SECURITY.md`](SECURITY.md) for exactly what each one does and the two to scrutinize (`worktree-env-setup.ts` symlinks your `.env`; the session-memo hooks write to disk).
-
-## Agents (`agents/`)
-
-Generic subagent definitions (project-agnostic), to copy into `<repo>/.claude/agents/`:
-
-- `code-reviewer`: architecture/reliability/correctness review of a diff, read-only, actionable verdict.
-- `qa-tester`: running/writing E2E tests (stable locators, zero hard waits).
-
-A project agent (coupled to the stack, the credentials, the tracker) takes precedence over its generic version.
+MIT licensed. Built by [Cedric Chariere Fiedler](https://github.com/ChariereFiedler).

@@ -9,6 +9,18 @@ initWork();
 
 let cli: string;
 
+/**
+ * Two manifests now carry a version: package.json for npm, plugin.json for the
+ * Claude Code marketplace. A plugin pinned to a version string only updates for
+ * users when that string changes, so a release that bumps one and forgets the
+ * other ships an update nobody receives.
+ */
+test("the plugin manifest and package.json agree on the version", () => {
+  const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as { version: string };
+  const plugin = JSON.parse(readFileSync(join(ROOT, ".claude-plugin/plugin.json"), "utf8")) as { version: string };
+  assert(plugin.version === pkg.version, `plugin.json is ${plugin.version}, package.json is ${pkg.version}`);
+});
+
 test("build produces an executable CLI that runs on plain node", () => {
   rmSync(join(ROOT, "dist"), { recursive: true, force: true });
   const b = spawnSync(TSX, [join(ROOT, "tools/build.ts")], { cwd: ROOT, encoding: "utf8" });

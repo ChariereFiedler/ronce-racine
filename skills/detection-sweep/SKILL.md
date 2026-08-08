@@ -1,15 +1,15 @@
 ---
 name: detection-sweep
 description: Use when asked to check the whole project and report problems - "check the whole project", "detect the problems", "run a sweep", "vérifie tout le projet", "détecte les problèmes", "lance un sweep", periodic health check of a codebase, before a release audit.
-version: 1.0.2
+version: 1.0.4
 metadata:
-  last-reviewed: 2026-07-20
+  last-reviewed: 2026-08-08
   category: audit
 ---
 
 # Detection Sweep - detect, ticket, fix nothing
 
-> If the current repo has a specific sweep skill (e.g. acme-app → `test-sweep`), it wins - it knows the project's blocks and tracker.
+> If the current repo has a specific sweep skill, it wins - it knows the project's blocks and tracker.
 
 ## This skill vs. others
 
@@ -85,6 +85,10 @@ Workflow directives for the sweep as a whole (state them when invoking the skill
 - `scripts/sweep.ts [path]` - read-only detection sweep (`npx tsx scripts/sweep.ts`); its only argument is the path to scan. Detects: flagged debt (TODO/FIXME, lint suppressions), debug leftovers, fragile/disabled tests, swallowed errors, potential secrets, large files. Produces a report to triage (1 ticket per cause, not per occurrence).
 
 ## Changelog
+
+- 1.0.4 (2026-08-08) - dropped the fictional example projects from the precedence note
+
+- 1.0.3 (2026-08-08) - sweep.ts iterates instead of returning a value from forEach
 
 - 1.0.2 (2026-07-20) - co-located test procedure for sweep.ts (scripts/sweep.test.ts)
 

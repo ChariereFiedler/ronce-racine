@@ -1,15 +1,15 @@
 ---
 name: adversarial-feature-challenge
 description: Use when a feature is "done" and needs adversarial stress-testing before shipping - "is it really ready", "est-ce vraiment prêt", "find the bugs", "trouve les bugs", "red team", before closing a ticket whose only validation is the golden path passing.
-version: 1.1.0
+version: 1.1.1
 metadata:
-  last-reviewed: 2026-07-21
+  last-reviewed: 2026-08-08
   category: feature
 ---
 
 # Adversarial feature challenge
 
-> If the current repo has a specific challenge skill (e.g. acme-app → `feature-challenge`), it wins.
+> If the current repo has a specific challenge skill, it wins.
 
 ## This skill vs. others
 
@@ -90,6 +90,8 @@ metadata:
 - [ ] Verdict set: blocking / improvement required / green-light
 
 ## Changelog
+
+- 1.1.1 (2026-08-08) - dropped the fictional example projects from the precedence note
 
 - 1.1.0 (2026-07-21) - persona switch made explicit and countable; eval runs showed agents stopping after one
 

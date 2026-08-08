@@ -1,15 +1,15 @@
 ---
 name: merge-request-review
 description: Use when reviewing a merge/pull request or a branch diff before merge - "review this MR", "review this PR", "validate this branch diff", "review cette MR", "review cette PR", "valide ce diff de branche", before integrating someone else's work into the mainline.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: process
 ---
 
 # Merge Request Review - reviewing a change before integration
 
-> If the current repo has a specific review skill (e.g. acme-app → `mr-review`), it wins - it knows the forge, the tracker, the API commands and the project's optional auto-merge.
+> If the current repo has a specific review skill, it wins - it knows the forge, the tracker, the API commands and the project's optional auto-merge.
 
 ## This skill vs. others
 
@@ -73,5 +73,7 @@ If there is a conflict with the target: rebase/merge the target into the source,
 As long as a blocking point remains, do not approve.
 
 ## Changelog
+
+- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
 
 - 1.0.0 (2026-06-19) - initial version, derived from an MR review workflow; forge/tracker/auto-merge coupling removed

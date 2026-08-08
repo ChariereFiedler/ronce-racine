@@ -1,6 +1,20 @@
 # Decision log - Ronce Racine
 
-Non-obvious decisions of the project. Never modify an entry: add one that supersedes it.
+Non-obvious decisions of the project. Never modify an entry: add one that supersedes it. Entries are in chronological order, oldest first, so a new one is appended at the end.
+
+## 2026-06-25 - Repo name: "Ronce Racine"
+
+**Context**: the repo (canonical source of the generic Claude config) needs a name in the same evocative vein as the rest of the ecosystem, replacing the working name `claude-rules`.
+
+**Options**: explored several registers (garden/plant, forge/workshop, runic). Convergence on the **root** theme (the buried source from which everything else grows), then adjective+noun short-lists. Final proposal chosen, coming from the user.
+
+**Decision**: **Ronce Racine** (slug `ronce-racine`).
+Rationale: memorable alliteration; the meaning fits the repo - a bramble (*ronce*) roots (*racine*) and spreads everywhere, unkillable, like a layer of always-on disciplines distributed into every project, with a thorny side that says "discipline". A two-nouns-joined form, both words singular.
+
+**Consequences**: the **actual rename** (local folder, git remote, occurrences of `claude-rules` in README/AGENTS/docs/`package.json`) is a separate operation. The internal name `claude-rules` stays valid until the rename is done.
+
+**Status**: Accepted (name locked) · rename to implement.
+
 
 ## 2026-07-10 - Product decisions from the outside-in review
 
@@ -15,6 +29,7 @@ Non-obvious decisions of the project. Never modify an entry: add one that supers
 **Consequences**: changes to `install.ts` (`--rules-only`, settings.json merge) are covered by new deterministic tests in `tests.ts`. `rules.ts` deprecated. Docs (README, adopting-a-repo, architecture, AGENTS) updated to the single-CLI story.
 
 **Status**: Accepted · implementation in progress.
+
 
 ## 2026-07-10 - OSS strategy: the whole repo, public GitHub, MIT
 
@@ -38,18 +53,6 @@ To reassess if: the genericity scope changes, or an infra constraint requires ke
 
 **Status**: Accepted (strategy locked) · preparation in progress.
 
-## 2026-06-25 - Repo name: "Ronce Racine"
-
-**Context**: the repo (canonical source of the generic Claude config) needs a name in the same evocative vein as the rest of the ecosystem, replacing the working name `claude-rules`.
-
-**Options**: explored several registers (garden/plant, forge/workshop, runic). Convergence on the **root** theme (the buried source from which everything else grows), then adjective+noun short-lists. Final proposal chosen, coming from the user.
-
-**Decision**: **Ronce Racine** (slug `ronce-racine`).
-Rationale: memorable alliteration; the meaning fits the repo - a bramble (*ronce*) roots (*racine*) and spreads everywhere, unkillable, like a layer of always-on disciplines distributed into every project, with a thorny side that says "discipline". A two-nouns-joined form, both words singular.
-
-**Consequences**: the **actual rename** (local folder, git remote, occurrences of `claude-rules` in README/AGENTS/docs/`package.json`) is a separate operation. The internal name `claude-rules` stays valid until the rename is done.
-
-**Status**: Accepted (name locked) · rename to implement.
 
 ## 2026-07-20 - Rename completed; public release via an orphan branch
 
@@ -61,6 +64,7 @@ Rationale: memorable alliteration; the meaning fits the repo - a bramble (*ronce
 
 **Status**: Done.
 
+
 ## 2026-07-21 - Public releases are linear, not orphan-per-release
 
 **Context**: the 2026-07-20 entry established publishing from an orphan branch to keep the private work history out of the public repository. Applying that literally to the second release would have meant a second unrelated-history orphan, forcing a force-push over the published v0.1.0 and breaking every existing clone.
@@ -70,3 +74,17 @@ Rationale: memorable alliteration; the meaning fits the repo - a bramble (*ronce
 **Consequences**: no force-push, existing clones pull normally, `git log` on the public repo reads as one commit per release. The squash is deliberate: public history granularity is the release, not the work commit.
 
 **Status**: Done (v0.2.0 published this way).
+
+## 2026-08-08 - The 2026-07-10 decisions have shipped
+
+**Context**: the two 2026-07-10 entries still read "implementation in progress" and "preparation in progress", which is no longer what the tree says. Their entries stay untouched; this one records where they landed, so a reader stops treating them as open work.
+
+**State at v0.6.0**, each point checkable in the tree:
+- **One CLI**: `rules.ts` is gone; `install.ts` carries `--rules-only`, and drift for every family goes through the single lockfile `.claude/.ronce-racine.json`.
+- **settings.json merge**: implemented in `src/settings.ts` (deep merge by event and matcher, idempotent, `.bak` backup), covered by `tests/installer.test.ts`.
+- **Audit scoring in one place**: `skills/audit-report/reference/scoring-model.md`, referenced rather than restated by `audit-industrialisation`.
+- **OSS blockers**: MIT `LICENSE`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md` and public GitHub Actions CI are in place; the private project names are gone from the artifacts (`acme-app` / `beta-app` in the examples); the repository is English-only, with `tools/skills.ts templates` failing on French in a contributor template.
+
+**Consequences**: the open items from those entries are the ones not listed here, chiefly the reassessment of whether the audit suite deserves its own release cadence.
+
+**Status**: Done.

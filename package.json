@@ -1,6 +1,6 @@
 {
   "name": "ronce-racine",
-  "version": "0.5.3",
+  "version": "0.7.0",
   "type": "module",
   "description": "Ronce Racine - generic Claude Code config (always-on rules + on-demand skills) with a distribution CLI",
   "license": "MIT",
@@ -17,6 +17,7 @@
     "scripts/",
     "templates/",
     "docs/",
+    "!docs/chardon/",
     "!docs/superpowers/",
     "AGENTS.md"
   ],
@@ -40,18 +41,30 @@
   "scripts": {
     "build": "tsx tools/build.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx tools/skills.ts validate && tsx tools/skills.ts triggers && tsx tools/skills.ts rules && tsx tools/skills.ts scripts && tsx tools/skills.ts hooks && tsx tools/skills.ts templates && tsx tools/skills.ts docs && tsx tools/tests.ts",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "verify": "npm run typecheck && npm run lint && npm test",
+    "test": "tsx tools/skills.ts validate && tsx tools/skills.ts triggers && tsx tools/skills.ts routing && tsx tools/skills.ts rules && tsx tools/skills.ts scripts && tsx tools/skills.ts hooks && tsx tools/skills.ts agents && tsx tools/skills.ts templates && tsx tools/skills.ts docs && vitest run",
     "test:mutation": "tsx tools/mutations.ts",
     "eval:dry": "tsx playground/setup.ts >/dev/null && tsx tools/eval.ts run --dry-run",
     "skills:list": "tsx tools/skills.ts list",
     "skills:triggers": "tsx tools/skills.ts triggers",
     "rules:validate": "tsx tools/skills.ts rules",
     "prepare": "tsx tools/build.ts",
-    "prepublishOnly": "tsx tools/build.ts && npm test"
+    "prepublishOnly": "tsx tools/build.ts && npm test",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "test:mutation:inprocess": "stryker run"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.7",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
     "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "fast-check": "^4.9.0",
     "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.10"
   }
 }

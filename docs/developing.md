@@ -16,9 +16,11 @@ cd ronce-racine && npm ci
 ```
 
 Node >= 18 and nothing else. The toolkit has **no runtime dependency**: the
-three devDependencies are TypeScript, `tsx` and Node's type definitions.
-Everything else is Node builtins, on purpose - a config toolkit that drags a
-dependency tree into your repo would defeat its own point.
+devDependencies are the toolchain only - TypeScript, `tsx`, Node's type
+definitions, and the test/lint tooling (Vitest with its v8 coverage provider,
+Stryker, Biome). Everything the shipped code executes is a Node builtin, on
+purpose - a config toolkit that drags a dependency tree into your repo would
+defeat its own point.
 
 If you `npm link` this clone into a test repo, that repo's `ronce-racine`
 resolves to your local build instead of the published package, so `check`
@@ -30,48 +32,83 @@ restore the published resolution.
 
 | Path | What it is |
 |---|---|
-| `install.ts` | the only user-facing CLI (`plan`/`install`/`check`/`detach`), and the `bin` target |
+| `install.ts` | the only user-facing CLI (`plan`/`install`/`check`/`detach`/`uninstall`), and the `bin` target |
+| `src/` | what the CLI is made of: `paths`, `lock`, `catalog`, `detect`, `settings`, `selector` |
 | `tools/` | internal harnesses, never distributed |
 | `skills/` `rules/` `hooks/` `agents/` `scripts/` | the artifacts themselves, the actual product |
-| `tests/` | behavioral tests by domain (installer, hooks, selector, fixtures, eval) |
+| `tests/` | behavioral tests by domain (installer, hooks, selector, build, fixtures, eval, routing, properties) |
 | `playground/` | fixture generator: throwaway repos to run the installer and the evals against |
-| `templates/` | what a CONSUMER copies into their repo (`.adopted.example`, anti-drift CI) |
+| `templates/` | what a CONSUMER copies into their repo (the anti-drift CI job) |
 | `docs/templates/` | what a CONTRIBUTOR copies to author an artifact |
 
 One build step, run automatically by `npm install` (`prepare`):
 `tools/build.ts` compiles `hooks/*.ts` into `dist/hooks/*.mjs` (`.mjs` so a
 target repo without `"type": "module"` in its `package.json` doesn't get a
-Node `MODULE_TYPELESS_PACKAGE_JSON` warning on every hook fire) and
-`install.ts` into `dist/install.js`. Hooks must never be compiled at run time: measured on
+Node `MODULE_TYPELESS_PACKAGE_JSON` warning on every hook fire), and the CLI
+into `dist/install.js` + `dist/src/*.js` (the entrypoint imports its modules as
+`./src/<name>.js`, so the built copies must sit under `dist/src`).
+Hooks must never be compiled at run time: measured on
 a hook that fires on every prompt, `npx tsx` costs 527 ms, node's own type
-stripping 99 ms, and built JS 34 ms. Building once also means an adopting
+stripping 99 ms, and built JS 38 ms. Building once also means an adopting
 repo needs Node and nothing else.
 
-The four harnesses under `tools/`:
+The three harnesses under `tools/`:
 
-- `skills.ts` - static contract: frontmatter, semver, sections, links, trigger routing
-- `tests.ts` - discovers and runs every `*.test.ts`
+- `skills.ts` - static contract: frontmatter, semver, sections, links, trigger routing,
+  disambiguation between neighbouring skills (`routing`, cases in `routing-cases.ts`),
+  agent contract (`agents`), documented claims against the installer (`docs`)
 - `mutations.ts` - breaks the code on purpose and requires the tests to notice
 - `eval.ts` - plays a skill through a real agent and verdicts the result
 
-## The four commands
+The behavioral tests themselves run on **Vitest** (`tests/*.test.ts` plus the
+per-skill detection scripts), serially: they spawn the real CLI and the real
+hooks against shared state, so a parallel run makes them race.
+
+## The commands
 
 ```bash
-npm test              # contract + behavioral tests
-npm run typecheck
+npm run verify        # typecheck + lint + test, the one to run before a PR
+npm test              # contract harness + behavioral tests (Vitest)
+npm run typecheck     # tsc --noEmit
+npm run lint          # biome check . (--write to fix)
+npm run coverage      # v8 coverage of the modules the tests IMPORT
 npm run test:mutation # every declared mutation must turn its tests red
+npm run test:mutation:inprocess   # Stryker, over the imported modules
 npm run eval:dry      # every eval.yaml parses and names an existing fixture
 ```
 
-All four run in CI, on Node 18 and 22. What each one actually protects:
+## What each gate actually protects
 
-- **`npm test`** proves the artifacts respect their contract and the tooling
-  behaves. It does NOT prove a skill still works: prose is not lintable.
-- **`npm run test:mutation`** protects the tests themselves. A test that stays
-  green on deliberately broken code is worse than no test, because it grants
-  confidence it has not earned.
-- **`npm run eval:dry`** protects the eval manifests without spending a token.
-- Real agent evals cost API tokens and are never in CI - see below.
+The suite is deliberately layered, because no single one of these covers this
+codebase - half of it only exists as a subprocess in someone else's repo.
+
+| Gate | Protects | Blind to |
+|---|---|---|
+| `npm test` (contract) | frontmatter, semver, routing, doc claims | whether the prose skill still works - prose is not lintable |
+| `npm test` (behavioral) | the installer, the hooks and the CLI as really executed | the artifacts' content |
+| `npm run lint` | the band between "it typechecks" and "the tests pass" | anything the rule set does not encode |
+| `npm run coverage` | the **imported** layer, gated on `tools/eval.ts` | everything spawned as a subprocess, i.e. most of it |
+| `npm run test:mutation` | the tests themselves, on disk, subprocesses included | code no mutation entry names |
+| `npm run test:mutation:inprocess` | the same, for imported modules Stryker can instrument | subprocess-tested files (they score 0% by construction) |
+| `npm run eval:dry` | the eval manifests, without spending a token | whether a skill actually performs |
+| a real eval run | whether a skill performs, judged by an agent | costs tokens, never in CI |
+
+Two consequences worth internalizing:
+
+- **The global coverage number is meaningless here** (~22% of statements) and
+  is not gated; the only threshold in `vitest.config.ts` is on `tools/eval.ts`.
+  The behavioral tests read the original file from disk through a subprocess,
+  which in-process instrumentation cannot see. `npm run test:mutation` is what
+  measures that code, and it must stay at 100% killed.
+- **A test that stays green on deliberately broken code is worse than no
+  test**, because it grants confidence it has not earned. That is the whole
+  reason the mutation table exists; add an entry with every behavioral test.
+
+CI runs these as parallel jobs (validate on Node 18 and 22, coverage, mutation,
+plugin manifests, CodeQL, gitleaks), so a failure names itself instead of hiding
+behind a four-minute serial run. The plugin job is the only one that leaves the
+house: it runs `claude plugin validate --strict`, an external reader of the
+frontmatter our own lenient parser accepts too easily.
 
 ## The playground
 
@@ -80,17 +117,17 @@ npx tsx playground/setup.ts                       # (re)create playground/fixtur
 npx tsx install.ts plan playground/fixtures/fullstack-ci
 ```
 
-Nine throwaway git repos with distinct stacks. Five carry **planted defects and
+Ten throwaway git repos with distinct stacks. Six carry **planted defects and
 an `EXPECTED.md` ground truth** (`flawed-app`, `buggy-app`, `shipped-feature`,
-`design-system`, `audit-target`), so a detector that stops detecting gets
-caught by a test rather than by a user. `playground/fixtures/` is gitignored
+`design-system`, `audit-target`, `mixed-vocabulary`), so a detector that stops
+detecting gets caught by a test rather than by a user. `playground/fixtures/` is gitignored
 and rebuilt from scratch on every run.
 
 ## Running a real evaluation
 
 ```bash
 npx tsx tools/eval.ts run --only detection-sweep   # one skill, real agent, real cost
-npx tsx tools/eval.ts run                          # all 34, before a release
+npx tsx tools/eval.ts run                          # all 36, before a release
 ```
 
 Needs the `claude` CLI on PATH (or `EVAL_CLAUDE_BIN`). Full guide:
@@ -100,8 +137,8 @@ Needs the `claude` CLI on PATH (or `EVAL_CLAUDE_BIN`). Full guide:
 
 | Type | Guide | Also required |
 |---|---|---|
-| Rule | [writing-a-rule.md](writing-a-rule.md) | `docs/rules/<name>.md`, entry in the README table |
-| Skill | [writing-a-skill.md](writing-a-skill.md) | `README.md` + `eval.yaml` in the skill folder (neither is distributed) |
+| Rule | [writing-a-rule.md](writing-a-rule.md) | `docs/rules/<name>.md` (gated: same version, links its artifact), entry in the README table |
+| Skill | [writing-a-skill.md](writing-a-skill.md) | `README.md` + `eval.yaml` in the skill folder (neither is distributed), an entry in `CATALOG` (`src/catalog.ts`, gated by `tests/installer.test.ts`) and in the README table |
 | Hook | see below | `@version` and `@last-reviewed` in the file header |
 | Agent | copy an existing `agents/*.md` | entry in the README table |
 | Script | belongs to a skill (`skills/<name>/scripts/`) | a co-located `*.test.ts` and a mutation entry |
@@ -141,3 +178,6 @@ Commits follow `type(scope): description`, first line <= 72 characters.
 Everything user-facing is in English, US spelling. Non-obvious decisions get an
 append-only entry in [decisions.md](decisions.md) at the moment they are made -
 never edit an old entry, add one that supersedes it.
+
+Running several agents or branches on this repository at once without letting
+them share a working tree: [git-worktrees.md](git-worktrees.md).

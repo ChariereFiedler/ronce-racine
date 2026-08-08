@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Use when reviewing code for correctness, architecture, reliability and clean boundaries - reviewing a diff/MR/PR, a new feature, or auditing an existing module before merge. Read-only: it reports findings, it does not edit.
+description: "Use when reviewing code for correctness, architecture, reliability and clean boundaries - reviewing a diff/MR/PR, a new feature, or auditing an existing module before merge. Read-only: it reports findings, it does not edit."
 tools: Read, Grep, Glob, Bash
 ---
 

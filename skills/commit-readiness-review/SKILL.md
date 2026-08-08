@@ -1,15 +1,15 @@
 ---
 name: commit-readiness-review
 description: Use before any Claude-initiated git commit - "ready to commit", "commit that", "quick commit", "prêt à commit", "commit ça", "vite un commit", time pressure to ship, diff containing test/debug leftovers or touching multiple stacks.
-version: 1.0.1
+version: 1.0.3
 metadata:
-  last-reviewed: 2026-07-20
+  last-reviewed: 2026-08-08
   category: process
 ---
 
 # Commit Readiness Review - self-review before committing
 
-> If the current repo has a project-specific pre-commit skill (e.g. acme-app → `pre-commit-self-review`), it wins - it knows the exact commands.
+> If the current repo has a project-specific pre-commit skill, it wins - it knows the exact commands.
 
 ## This skill vs. others
 
@@ -76,6 +76,10 @@ A missing box = no commit.
 - `scripts/precommit-scan.ts` - scans the staged diff (`npx tsx scripts/precommit-scan.ts`): secrets via gitleaks or regex fallback, sensitive files, debug leftovers. Read-only, exit 1 on a secret/sensitive file. Wireable as a hook (see `hooks/`).
 
 ## Changelog
+
+- 1.0.3 (2026-08-08) - dropped the fictional example projects from the precedence note
+
+- 1.0.2 (2026-08-08) - precommit-scan.ts iterates instead of returning a value from forEach
 
 - 1.0.1 (2026-07-20) - co-located test procedure for precommit-scan.ts (scripts/precommit-scan.test.ts)
 

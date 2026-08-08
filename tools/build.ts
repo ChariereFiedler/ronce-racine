@@ -44,9 +44,18 @@ export function transpile(source: string): string {
 
 const CLI_SRC = join(ROOT, "install.ts");
 const CLI_OUT = join(ROOT, "dist", "install.js");
+const CLI_MODULES = join(ROOT, "src");
+const CLI_MODULES_OUT = join(ROOT, "dist", "src");
 
 /** The CLI ships built so `npx ronce-racine` needs no TypeScript runtime. */
 function buildCli(): void {
+  // The entrypoint imports its modules as "./src/<name>.js", so the built copies
+  // must sit under dist/src for the same specifiers to resolve after the build.
+  rmSync(CLI_MODULES_OUT, { recursive: true, force: true });
+  mkdirSync(CLI_MODULES_OUT, { recursive: true });
+  for (const f of readdirSync(CLI_MODULES).filter((f) => f.endsWith(".ts"))) {
+    writeFileSync(join(CLI_MODULES_OUT, f.replace(/\.ts$/, ".js")), transpile(readFileSync(join(CLI_MODULES, f), "utf8")));
+  }
   const js = transpile(readFileSync(CLI_SRC, "utf8"));
   // The source shebang runs it through tsx; the built one must be plain node.
   const withShebang = js.replace(/^#!.*\n/, "");

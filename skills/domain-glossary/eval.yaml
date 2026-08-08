@@ -1,0 +1,19 @@
+fixture: mixed-vocabulary
+prompt: >
+  The naming in this project is inconsistent. Build the domain glossary.
+gates:
+  - file_exists: "GLOSSARY.md"
+  # The three synonyms must all appear: the rejected ones are what makes a
+  # search for the wrong word land on the right entry.
+  - grep_min: { pattern: "Customer|customer", count: 1, in: "GLOSSARY.md" }
+  - grep_min: { pattern: "users|user", count: 1, in: "GLOSSARY.md" }
+  - grep_min: { pattern: "members|member", count: 1, in: "GLOSSARY.md" }
+  - grep_min: { pattern: "Order|order", count: 1, in: "GLOSSARY.md" }
+judge:
+  criteria:
+    - "Resolves the three synonyms to a single chosen name"
+    - "Lists the rejected names rather than dropping them"
+    - "Separates the two meanings of Order"
+    - "Anchors entries to code that exists in the fixture"
+    - "Does not invent domain terms absent from the codebase"
+  threshold: pass_all

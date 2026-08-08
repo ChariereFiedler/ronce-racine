@@ -30,11 +30,9 @@ export interface EvalManifest {
 const unquote = (s: string): string => {
   const trimmed = s.trim();
   if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
-    let result = trimmed.slice(1, -1);
-    // Unescape YAML escape sequences in double-quoted strings
-    result = result.replace(/\\\\/g, '\\');
-    result = result.replace(/\\"/g, '"');
-    return result;
+    // One pass, not two: unescaping `\\` first turns `\\"` into `\"`, which the
+    // second pass then reads as an escaped quote and unescapes AGAIN.
+    return trimmed.slice(1, -1).replace(/\\(["\\])/g, "$1");
   }
   return trimmed;
 };
@@ -70,18 +68,23 @@ export function parseEvalManifest(skill: string, raw: string): EvalManifest {
     if (section === "prompt" && /^ {2,}\S/.test(line)) { promptLines.push(line.trim()); continue; }
     if (section === "prompt") section = "";
 
-    let m;
-    if ((m = /^fixture:\s*(\S+)\s*$/.exec(line))) fixture = m[1];
+    const fixtureLine = /^fixture:\s*(\S+)\s*$/.exec(line);
+    const gateLine = section === "gates" ? /^ {2}- ([\w-]+):\s*(.+)$/.exec(line) : null;
+    const criterionLine = section === "criteria" ? /^ {4}- (.+)$/.exec(line) : null;
+    const inJudge = section === "judge" || section === "criteria";
+    const thresholdLine = inJudge ? /^ {2}threshold:\s*(\S+)\s*$/.exec(line) : null;
+
+    if (fixtureLine) fixture = fixtureLine[1];
     else if (/^prompt:\s*>\s*$/.test(line)) section = "prompt";
     else if (/^gates:\s*$/.test(line)) section = "gates";
     else if (/^judge:\s*$/.test(line)) section = "judge";
-    else if (section === "gates" && (m = /^ {2}- ([\w-]+):\s*(.+)$/.exec(line))) {
-      if (!GATE_KINDS.includes(m[1])) fail(`unknown gate "${m[1]}" (allowed: ${GATE_KINDS.join(", ")})`);
-      gates.push(parseGateValue(m[1], m[2]));
+    else if (gateLine) {
+      const [, kind, value] = gateLine;
+      if (!GATE_KINDS.includes(kind)) fail(`unknown gate "${kind}" (allowed: ${GATE_KINDS.join(", ")})`);
+      gates.push(parseGateValue(kind, value));
     } else if (section === "judge" && /^ {2}criteria:\s*$/.test(line)) section = "criteria";
-    else if (section === "criteria" && (m = /^ {4}- (.+)$/.exec(line))) criteria.push(unquote(m[1]));
-    else if ((section === "judge" || section === "criteria") && (m = /^ {2}threshold:\s*(\S+)\s*$/.exec(line)))
-      threshold = m[1] === "pass_all" ? "pass_all" : Number(m[1]);
+    else if (criterionLine) criteria.push(unquote(criterionLine[1]));
+    else if (thresholdLine) threshold = thresholdLine[1] === "pass_all" ? "pass_all" : Number(thresholdLine[1]);
     else fail(`unparseable line: ${JSON.stringify(line)}`);
   }
 
@@ -138,7 +141,7 @@ function grepHits(ctx: GateContext, pattern: string, sub?: string): number {
   const re = new RegExp(pattern);
   let hits = 0;
   for (const [rel, content] of snapshotRepo(ctx.repoDir)) {
-    if (sub && !rel.startsWith(sub.replace(/\/$/, "") + "/") && rel !== sub) continue;
+    if (sub && !rel.startsWith(`${sub.replace(/\/$/, "")}/`) && rel !== sub) continue;
     for (const line of content.split("\n")) if (re.test(line)) hits++;
   }
   return hits;
@@ -185,7 +188,7 @@ export function applyGate(gate: EvalGate, ctx: GateContext): string | null {
       // one for skills whose deliverables cannot be named upfront (one ticket per
       // finding, one migration per change).
       const allowed = (rel: string): boolean => except.some((e) =>
-        e.endsWith("*") ? rel.startsWith(e.slice(0, -1)) : rel === e || rel.startsWith(e.replace(/\/$/, "") + "/"));
+        e.endsWith("*") ? rel.startsWith(e.slice(0, -1)) : rel === e || rel.startsWith(`${e.replace(/\/$/, "")}/`));
       const now = snapshotRepo(ctx.repoDir);
       const dirty: string[] = [];
       for (const [rel, content] of now) {
@@ -358,7 +361,7 @@ if (isMain) {
   const claudeBin = process.env.EVAL_CLAUDE_BIN ?? "claude";
   const results = manifests.map((m) => {
     const r = runOne(m, { claudeBin, timeoutMs: 15 * 60_000 });
-    console.log(`${r.verdict.padEnd(10)} ${r.skill}${r.details.length ? "  " + r.details.join(" | ") : ""}`);
+    console.log(`${r.verdict.padEnd(10)} ${r.skill}${r.details.length ? `  ${r.details.join(" | ")}` : ""}`);
     return r;
   });
   const errs = results.filter((r) => r.verdict === "ERROR").length;

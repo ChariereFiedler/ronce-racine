@@ -8,15 +8,24 @@
 # 1. Proposal (read-only) - nothing is written
 npx ronce-racine plan .
 
-# 2. Install the recommended ones (add --all to include optionals: audits, etc.)
-npx ronce-racine install . --all
+# 2. Install: an interactive selector opens, pre-checked with the recommendations
+npx ronce-racine install .
 ```
 
-The installer copies into `.claude/`:
-- `rules/shared/` + the `.adopted` manifest (rules) - drift is watchable via `ronce-racine check .`
-- `skills/<name>/` (relevant skills), `hooks/`, `agents/`
+`install` is interactive when it runs on a TTY: the selector lists the recommended artifacts (pre-checked) plus the optional ones (unchecked), and you confirm or amend the selection. Three flags skip or widen that step:
 
-It merges the hook wirings into `.claude/settings.json` (writes a `settings.json.bak` backup, deep-merges by event + matcher, idempotent, preserves unrelated settings). Check the diff (`git diff`, `git status`), then commit - `.claude/` travels via git → teammates + CI agents.
+| Flag | Effect |
+|---|---|
+| `--yes` (`-y`) | no prompt: installs the pre-checked set (also the behavior when stdin is not a TTY, e.g. in CI) |
+| `--all` | pre-checks the optional artifacts too (audits, etc.), still through the selector unless combined with `--yes` |
+| `--pick <token...>` | installs exactly these `kind:name` tokens (`skill:detection-sweep`, `rule:commits.md`) and nothing else |
+| `--rules-only` | restricts the whole run to rules |
+
+The installer copies into `.claude/`:
+- `rules/shared/` + the generated `.adopted` manifest - drift is watchable via `ronce-racine check .`
+- `skills/<name>/` (relevant skills), `scripts/`, `hooks/`, `agents/`
+
+It merges the hook wirings into `.claude/settings.json` (deep-merges by event + matcher, idempotent, preserves unrelated settings, and backs an existing file up to `settings.json.bak` before rewriting it). A pre-existing artifact the installer has never managed is copied to `<file>.pre-install.bak` before being overwritten, so a hand-written skill or rule of yours is never lost silently. Check the diff (`git diff`, `git status`), then commit - `.claude/` travels via git → teammates + CI agents.
 
 Update later: rerun `ronce-racine install .` (idempotent). For rules only, use `ronce-racine install . --rules-only` (same lockfile-based drift as everything else).
 
@@ -30,36 +39,33 @@ npx ronce-racine check . --strict   # exit 1 on drift (blocking gate)
 ```
 
 - **Drift**: a managed artifact was modified locally → reported (`~file`, `-missing`, `+added`).
-- **Assumed customization**: `ronce-racine detach . skill:detection-sweep` takes the item out of control (it becomes "yours").
+- **Assumed customization**: `ronce-racine detach . skill:detection-sweep` takes the item out of control (it becomes "yours"). The token is the one recorded in the lockfile, so rules carry their extension (`rule:commits.md`).
+- **Backing out**: `ronce-racine uninstall .` removes what the lockfile records and unwires its own hooks, keeping detached items and restoring any `*.pre-install.bak`. Preview it with `--dry-run`. See [`distribution-model.md`](distribution-model.md#removing-an-installation).
 - **Staleness**: the canonical version has moved on since install → "rerun install" warning.
 
 CI gate: the [`templates/anti-drift.gitlab-ci.yml`](../templates/anti-drift.gitlab-ci.yml) snippet (soft via `allow_failure`, blocking by removing that line).
 
 > The sections below describe the **rules-only approach** (rules and nothing else), still driven by `ronce-racine`.
 
-## 1. Declare the adopted rules
+## 1. Choose the adopted rules
 
-Create `<repo>/.claude/rules/shared/.adopted` (template: [`templates/.adopted.example`](../templates/.adopted.example)):
-
-```
-# Generic rules managed by the Ronce Racine canonical source.
-minimal-code.md
-commits.md
-test-discipline.md
-```
-
-Only list the rules for which you want the **generic canonical** version. A rule you want to **enrich locally** (e.g. `secure-logging` with the project's identifiers and lint): do not list it, and keep your version in `.claude/rules/shared/` or `rules/<project>/`.
-
-## 2. Synchronize
+Selection happens at install time, not in a hand-written file:
 
 ```bash
-npx ronce-racine install . --rules-only
+npx ronce-racine install . --rules-only              # selector, pre-checked with the detected stack
+npx ronce-racine install . --rules-only --pick rule:minimal-code.md rule:commits.md
 ```
 
-The adopted files are copied into `.claude/rules/shared/` and tracked in the lockfile (same drift mechanism as everything else). Check the diff (`git diff`), then commit:
+`.claude/rules/shared/.adopted` is **written by the installer** as a record of what it adopted; editing it changes nothing, and the next install rewrites it. What is actually managed lives in the lockfile.
+
+Only adopt the rules for which you want the **generic canonical** version. A rule you want to **enrich locally** (e.g. `secure-logging` with the project's identifiers and lint): leave it out of the selection, and keep your version in `.claude/rules/shared/` or `rules/<project>/`. A rule the installer never wrote is never touched by `install` or `check`; one you customized after adopting it is what `detach` is for.
+
+## 2. Commit
+
+The adopted files land in `.claude/rules/shared/` and are tracked in the lockfile (same drift mechanism as everything else). Check the diff (`git diff`), then commit:
 
 ```bash
-git add .claude/rules/shared
+git add .claude/rules/shared .claude/.ronce-racine.json
 git commit -m "chore(rules): adopt the generic canonical rules (ronce-racine)"
 ```
 
@@ -75,6 +81,7 @@ When the canonical version evolves:
 
 ```bash
 cd <repo>
-npx ronce-racine install . --rules-only
-git add .claude/rules/shared && git commit -m "chore(rules): resync canonical rules"
+npx ronce-racine install . --rules-only --yes
+git add .claude/rules/shared .claude/.ronce-racine.json
+git commit -m "chore(rules): resync canonical rules"
 ```

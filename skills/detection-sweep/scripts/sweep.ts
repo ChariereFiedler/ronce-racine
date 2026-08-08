@@ -70,11 +70,11 @@ section("Potential secrets (check)");
 row("Secret patterns", /AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|sk_live_|glpat-|ghp_/);
 
 section(`Large files (> ${BIG_FILE_LINES} lines)`);
-files
+const bigFiles = files
   .map(({ f, lines }) => ({ f, n: lines.length }))
   .filter(({ n }) => n > BIG_FILE_LINES)
   .sort((a, b) => b.n - a.n)
-  .slice(0, 15)
-  .forEach(({ f, n }) => console.log(`${String(n).padStart(6)}  ${f}`));
+  .slice(0, 15);
+for (const { f, n } of bigFiles) console.log(`${String(n).padStart(6)}  ${f}`);
 
 console.log("\n→ Triage these signals: 1 ticket per root cause, not 1 per occurrence (see the detection-sweep skill).");

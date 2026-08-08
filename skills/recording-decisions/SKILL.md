@@ -1,15 +1,15 @@
 ---
 name: recording-decisions
 description: Use when a non-trivial technical choice is made during a session - "let's go with X", "on choisit X", "we'll pick", "on part sur", "decision made", "décision prise", a counter-intuitive approach adopted, an external constraint accepted, a workaround whose reason will be forgotten.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: process
 ---
 
 # Recording Decisions - capture non-obvious choices
 
-> If the current repo has an equivalent skill (e.g. acme-app → `record-decision`), it wins - it knows where the decision log lives.
+> If the current repo has an equivalent skill, it wins - it knows where the decision log lives.
 
 ## This skill vs. others
 
@@ -80,5 +80,7 @@ Two distinct regression vectors → two protections:
 - If the repo has a `docs/adr/` directory, follow its existing numbering and template rather than these.
 
 ## Changelog
+
+- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
 
 - 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

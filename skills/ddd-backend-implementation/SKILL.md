@@ -1,15 +1,15 @@
 ---
 name: ddd-backend-implementation
 description: Use when implementing a backend feature in DDD layers, deciding where business logic / validation / I-O belongs during implementation, respecting the dependency direction toward the domain, or splitting commands from queries (CQRS). Use AFTER the model is designed, DURING implementation - "implement this backend feature", "implémente cette feature backend", "code these DDD layers", "implémente les couches DDD".
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: feature
 ---
 
 # DDD Backend Implementation - build a feature layer by layer
 
-> If the current repo has a specific implementation skill (e.g. acme-app → `feature-implementation-rust-axum`), it wins - it knows the stack, the paths and the project commands.
+> If the current repo has a specific implementation skill, it wins - it knows the stack, the paths and the project commands.
 
 ## This skill vs. others
 
@@ -91,5 +91,7 @@ Implement in this order, never the reverse, never a short-circuit. Test each lay
 - No generic script: the commands (fmt, lint, test, build) depend on the project, to be read from its manifest / CI config.
 
 ## Changelog
+
+- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
 
 - 1.0.0 (2026-06-19) - initial generic version extracted from a project workflow, decoupled from any stack and any tracker

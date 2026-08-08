@@ -10,6 +10,7 @@
  */
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
+import { ROUTING_CASES, routingFailures } from "./routing-cases.ts";
 import { fileURLToPath } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -40,9 +41,10 @@ function parseFrontmatter(raw: string): { fm: Frontmatter; body: string } {
   let inMeta = false;
   for (const line of head.split("\n")) {
     if (!line.trim()) continue;
-    const nested = /^  (\S[^:]*?):\s*(.*)$/.exec(line);
+    const nested = /^ {2}(\S[^:]*?):\s*(.*)$/.exec(line);
     if (inMeta && nested) {
-      (fm.metadata ??= {})[nested[1] as "category"] = nested[2].trim();
+      fm.metadata ??= {};
+      fm.metadata[nested[1] as "category"] = nested[2].trim();
       continue;
     }
     const top = /^(\S[^:]*?):\s*(.*)$/.exec(line);
@@ -64,11 +66,32 @@ function referencedPaths(body: string): string[] {
   return [...new Set(body.match(re) ?? [])].filter((p) => !p.includes("<"));
 }
 
+/**
+ * A ": " inside an unquoted scalar makes the whole frontmatter invalid YAML.
+ * Claude Code does not fail loudly on it: the artifact loads with EMPTY
+ * metadata, so a skill silently stops routing and an agent loses its tool
+ * list. `claude plugin validate` caught exactly that on agents/code-reviewer.md
+ * ("Read-only: it reports findings"), which this repo's own parser - lenient,
+ * line-based - had been reading happily for months.
+ */
+function unquotedColonProblems(raw: string, label: string): string[] {
+  const head = raw.startsWith("---\n") ? raw.slice(4).split("\n---")[0] : "";
+  const errs: string[] = [];
+  for (const line of head.split("\n")) {
+    const m = /^([\w-]+):\s+(.*)$/.exec(line);
+    if (m && !/^["'].*["']$/.test(m[2]) && m[2].includes(": "))
+      errs.push(`${label}: frontmatter "${m[1]}" holds an unquoted ": " - invalid YAML`);
+  }
+  return errs;
+}
+
 function validateSkill(dir: string): string[] {
   const errs: string[] = [];
   const skillPath = join(SKILLS, dir, "SKILL.md");
   if (!existsSync(skillPath)) return [`${dir}: SKILL.md missing`];
-  const { fm, body } = parseFrontmatter(readFileSync(skillPath, "utf8"));
+  const rawSkill = readFileSync(skillPath, "utf8");
+  const { fm, body } = parseFrontmatter(rawSkill);
+  errs.push(...unquotedColonProblems(rawSkill, dir));
 
   if (fm.name !== dir) errs.push(`${dir}: name "${fm.name}" ≠ folder name`);
   if (!fm.description) errs.push(`${dir}: description missing`);
@@ -249,6 +272,50 @@ function scriptsCheck(): void {
   console.log(`✓ ${files.length} script${s} present`);
 }
 
+/**
+ * Disambiguation lint: each case in routing-cases.ts must rank its expected
+ * skill FIRST, ahead of the neighbours it was written to separate it from.
+ * Where `triggers` asks "is this skill findable", this asks "is it the one
+ * found" - the question a 36-skill surface actually fails.
+ */
+function disambiguationCheck(): void {
+  const skills = skillDirs().map((dir) => ({
+    dir,
+    description: parseFrontmatter(readFileSync(join(SKILLS, dir, "SKILL.md"), "utf8")).fm.description ?? "",
+  }));
+  const fails = routingFailures(ROUTING_CASES, skills);
+  if (fails.length) {
+    console.error(`✗ ${fails.length} routing case(s) land on the wrong skill:\n  ${fails.join("\n  ")}`);
+    process.exit(1);
+  }
+  console.log(`✓ ${ROUTING_CASES.length} disambiguation cases route to the right skill, ahead of their neighbours`);
+}
+
+/**
+ * Agents were the one artifact family nothing validated, and it showed: a
+ * description holding an unquoted "Read-only: " made agents/code-reviewer.md
+ * load with no metadata at all - no name, no description, no tool list - which
+ * only `claude plugin validate` noticed. Same contract as the rest now.
+ */
+function agentsCheck(): void {
+  const dir = join(ROOT, "agents");
+  const files = readdirSync(dir).filter((f) => f.endsWith(".md")).sort();
+  const errors = files.flatMap((file) => {
+    const raw = readFileSync(join(dir, file), "utf8");
+    const { fm } = parseFrontmatter(raw);
+    const errs: string[] = unquotedColonProblems(raw, file);
+    if (fm.name !== file.replace(/\.md$/, "")) errs.push(`${file}: name "${fm.name}" ≠ file name`);
+    if (!fm.description) errs.push(`${file}: description missing`);
+    else if (!/use when\b/i.test(fm.description)) errs.push(`${file}: description without a "Use when" trigger`);
+    return errs;
+  });
+  if (errors.length) {
+    console.error(`✗ ${errors.length} agent problem(s):\n  ${errors.join("\n  ")}`);
+    process.exit(1);
+  }
+  console.log(`✓ ${files.length} agents conform`);
+}
+
 /** Validates rule versioning (parity with skills): semver version + last-reviewed. */
 function rulesCheck(): void {
   const files = readdirSync(RULES)
@@ -261,8 +328,9 @@ function rulesCheck(): void {
   const docFiles = existsSync(DOCS_RULES) ? readdirSync(DOCS_RULES).filter((f) => f.endsWith(".md")) : [];
 
   const errors = files.flatMap((file) => {
-    const { fm } = parseFrontmatter(readFileSync(join(RULES, file), "utf8"));
-    const errs: string[] = [];
+    const raw = readFileSync(join(RULES, file), "utf8");
+    const { fm } = parseFrontmatter(raw);
+    const errs: string[] = unquotedColonProblems(raw, file);
     if (!fm.version) errs.push(`${file}: version missing`);
     else if (!SEMVER.test(fm.version)) errs.push(`${file}: version "${fm.version}" not semver`);
     const reviewed = fm.metadata?.["last-reviewed"];
@@ -304,12 +372,7 @@ function templatesCheck(): void {
   const errors: string[] = [];
   for (const f of files) {
     const raw = readFileSync(join(dir, f), "utf8");
-    // A ": " inside an unquoted scalar makes the frontmatter invalid YAML.
-    for (const line of raw.split("\n---")[0].split("\n")) {
-      const m = /^([\w-]+):\s+(.*)$/.exec(line);
-      if (m && !/^["'].*["']$/.test(m[2]) && m[2].includes(": "))
-        errors.push(`${f}: frontmatter "${m[1]}" holds an unquoted ": " - invalid YAML`);
-    }
+    errors.push(...unquotedColonProblems(raw, f));
     // Accents alone missed "Quand MOI et pas X"; a few function words catch prose.
     if (/[éèêàçùôîïâûÉÈÀÇ]/.test(raw)) errors.push(`${f}: French characters (the repo is English-facing)`);
     const fr = raw.match(/\b(quand|pour|avec|dans|les|une|qui|sans|sortie|etape|principe)\b/gi);
@@ -339,7 +402,7 @@ function docsCheck(): void {
   const read = (rel: string): string => readFileSync(join(ROOT, rel), "utf8");
 
   // 1. Hook wiring shown in docs must match what the installer actually writes.
-  const installer = read("install.ts");
+  const installer = ["install.ts", "src/paths.ts", "src/settings.ts"].map(read).join("\n");
   const shipsMjs = /shippedHookName\s*=.*\.mjs/.test(installer);
   const runsNode = /`\$\{?runtime\}?|`node \$CLAUDE_PROJECT_DIR/.test(installer) || /command = `node /.test(installer);
   const hooksReadme = read("hooks/README.md");
@@ -408,7 +471,9 @@ else if (cmd === "triggers") triggersCheck();
 else if (cmd === "rules") rulesCheck();
 else if (cmd === "scripts") scriptsCheck();
 else if (cmd === "hooks") hooksCheck();
+else if (cmd === "agents") agentsCheck();
+else if (cmd === "routing") disambiguationCheck();
 else {
-  console.error("usage: skills.ts <validate|list|triggers|rules|scripts|hooks|templates|docs>");
+  console.error("usage: skills.ts <validate|list|triggers|rules|scripts|hooks|agents|templates|docs>");
   process.exit(2);
 }

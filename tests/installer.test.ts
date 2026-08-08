@@ -3,14 +3,52 @@
  * Behavioral tests of the installer (install.ts): plan/install/check/detach,
  * lockfile, drift, detached preservation, first-install guard, settings merge.
  */
-import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync, readdirSync, chmodSync, symlinkSync, readlinkSync } from "node:fs";
 import { join, dirname } from "node:path";
 import {
   test, assert, contains, absent, cli, freshRepo, readLock, initWork, finish, WORK, ROOT,
 } from "./helpers.js";
-import { canonicalHash } from "../install.js";
+import { canonicalHash, CATALOG, copyPath } from "../install.js";
 
 initWork();
+
+/**
+ * An artifact on disk but absent from CATALOG passes every other gate - it is
+ * well-formed, documented, and shipped in the package - while being
+ * installable by no command at all. Caught first on the performance-profiling
+ * skill, by a real eval run rather than by the suite; the skills-only version
+ * of this test then missed `doc-code-parity.md`, a rule with the same defect.
+ * Hence every family, in both directions.
+ */
+const FAMILIES: { kind: string; dir: string; entries: () => string[] }[] = [
+  { kind: "skill", dir: "skills", entries: () => readdirSync(join(ROOT, "skills"), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name) },
+  { kind: "rule", dir: "rules", entries: () => readdirSync(join(ROOT, "rules")).filter((f) => f.endsWith(".md")) },
+  { kind: "agent", dir: "agents", entries: () => readdirSync(join(ROOT, "agents")).filter((f) => f.endsWith(".md")) },
+  { kind: "script", dir: "scripts", entries: () => readdirSync(join(ROOT, "scripts")).filter((f) => f.endsWith(".ts")) },
+];
+
+test("every artifact on disk is offered by the installer", () => {
+  for (const family of FAMILIES) {
+    const listed = new Set(CATALOG.filter((i) => i.kind === family.kind).map((i) => i.name));
+    const onDisk = family.entries();
+    const missing = onDisk.filter((name) => !listed.has(name));
+    assert(missing.length === 0, `${family.dir}/ absent from the installer catalog: ${missing.join(", ")}`);
+    const orphans = [...listed].filter((name) => !onDisk.includes(name));
+    assert(orphans.length === 0, `catalog ${family.kind} entries with nothing on disk: ${orphans.join(", ")}`);
+  }
+});
+
+/** Hooks are the exception: one catalog entry can carry several files. */
+test("every hook on disk is offered by the installer", () => {
+  const listed = new Set(
+    CATALOG.filter((i) => i.kind === "hook").flatMap((i) => i.files ?? [i.name]),
+  );
+  const onDisk = readdirSync(join(ROOT, "hooks")).filter((f) => f.endsWith(".ts"));
+  const missing = onDisk.filter((name) => !listed.has(name));
+  assert(missing.length === 0, `hooks absent from the installer catalog: ${missing.join(", ")}`);
+  const orphans = [...listed].filter((name) => !onDisk.includes(name));
+  assert(orphans.length === 0, `catalog hook entries with nothing on disk: ${orphans.join(", ")}`);
+});
 
 test("plan is read-only (writes nothing into the target)", () => {
   const repo = freshRepo("plan");
@@ -74,8 +112,8 @@ test("a fresh lockfile records package, version and content hash", () => {
 test("check reports staleness when the recorded hash no longer matches", () => {
   const repo = freshRepo("lock-stale");
   cli(["install.ts", "install", repo, "--yes"]);
-  const lock = readLock(repo) as { source: { contentHash: string } } & Record<string, unknown>;
-  lock.source.contentHash = "sha256-" + "0".repeat(64);
+  const lock = readLock(repo) as unknown as { source: { contentHash: string } } & Record<string, unknown>;
+  lock.source.contentHash = `sha256-${"0".repeat(64)}`;
   writeFileSync(join(repo, ".claude/.ronce-racine.json"), JSON.stringify(lock, null, 2));
   const r = cli(["install.ts", "check", repo]);
   contains(r.stdout, "stale", "a changed content hash must be reported as stale");
@@ -84,7 +122,7 @@ test("check reports staleness when the recorded hash no longer matches", () => {
 test("check still accepts a legacy lockfile whose source is a bare SHA", () => {
   const repo = freshRepo("lock-legacy");
   cli(["install.ts", "install", repo, "--yes"]);
-  const lock = readLock(repo) as Record<string, unknown>;
+  const lock = readLock(repo) as unknown as Record<string, unknown>;
   lock.source = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0";
   writeFileSync(join(repo, ".claude/.ronce-racine.json"), JSON.stringify(lock, null, 2));
   const r = cli(["install.ts", "check", repo]);
@@ -98,7 +136,7 @@ test("check detects a modified artifact (soft warns, --strict fails)", () => {
   const lock = readLock(repo);
   const ruleTok = lock.installed.find((t) => t.startsWith("rule:"))!;
   const rulePath = join(repo, ".claude/rules/shared", ruleTok.slice("rule:".length));
-  writeFileSync(rulePath, readFileSync(rulePath, "utf8") + "\n# LOCAL EDIT\n");
+  writeFileSync(rulePath, `${readFileSync(rulePath, "utf8")}\n# LOCAL EDIT\n`);
 
   const soft = cli(["install.ts", "check", repo]);
   assert(soft.status === 0, "soft check should not fail the process");
@@ -173,7 +211,7 @@ test("install merges hooks into an existing settings.json (backup + preserve + i
   assert(s1.customKey === "keep me", "unrelated user setting must be preserved");
   contains(JSON.stringify(s1.hooks), "echo bye", "pre-existing hook must be preserved");
   contains(JSON.stringify(s1.hooks), "skill-reminder.mjs", "the new hook must be wired");
-  assert(existsSync(sp + ".bak"), "an existing settings.json must be backed up before merge");
+  assert(existsSync(`${sp}.bak`), "an existing settings.json must be backed up before merge");
   const count1 = (JSON.stringify(s1.hooks).match(/\.claude\/hooks\//g) ?? []).length;
 
   // Re-install: idempotent - no duplicate wiring.
@@ -195,8 +233,8 @@ test("FIRST install backs up a pre-existing artifact instead of clobbering it", 
   const r = cli(["install.ts", "install", repo]);
   assert(r.status === 0, `install exit ${r.status}: ${r.stderr}`);
   contains(r.stdout, "pre-install.bak", "install should report the backup");
-  assert(existsSync(rulePath + ".pre-install.bak"), "pre-existing file must be backed up");
-  assert(readFileSync(rulePath + ".pre-install.bak", "utf8") === HOMEMADE, "backup must hold the user's version");
+  assert(existsSync(`${rulePath}.pre-install.bak`), "pre-existing file must be backed up");
+  assert(readFileSync(`${rulePath}.pre-install.bak`, "utf8") === HOMEMADE, "backup must hold the user's version");
   absent(readFileSync(rulePath, "utf8"), "homemade", "canonical version must be installed in place");
 
   // Re-install: tokens are now tracked by the lockfile - no second backup pass.
@@ -214,7 +252,7 @@ test("install survives a settings.json whose hooks section has a bogus shape", (
   const r = cli(["install.ts", "install", repo]);
   assert(r.status === 0, `install must not crash on bogus hooks (exit ${r.status}): ${r.stderr}`);
   contains(r.stdout, "unexpected shape", "install should report the rebuilt hooks section");
-  assert(existsSync(sp + ".bak"), "original settings.json must be backed up");
+  assert(existsSync(`${sp}.bak`), "original settings.json must be backed up");
   const s = JSON.parse(readFileSync(sp, "utf8"));
   assert(s.customKey === "keep me", "unrelated user setting must survive");
   contains(JSON.stringify(s.hooks), "skill-reminder.mjs", "hooks must be wired after rebuild");
@@ -230,7 +268,7 @@ test("install survives a malformed (non-JSON) settings.json", () => {
   const r = cli(["install.ts", "install", repo]);
   assert(r.status === 0, `install must not crash on malformed JSON (exit ${r.status}): ${r.stderr}`);
   contains(r.stdout, "was not valid JSON", "install should report the malformed file");
-  assert(existsSync(sp + ".bak"), "malformed original must be backed up");
+  assert(existsSync(`${sp}.bak`), "malformed original must be backed up");
   contains(JSON.stringify(JSON.parse(readFileSync(sp, "utf8")).hooks), "skill-reminder.mjs", "hooks must be wired");
 });
 
@@ -289,7 +327,7 @@ test("check: exit 2 without a lockfile", () => {
 test("check reports staleness when the recorded version no longer matches", () => {
   const repo = freshRepo("stale");
   cli(["install.ts", "install", repo]);
-  const lock = readLock(repo) as { source: { version: string } } & Record<string, unknown>;
+  const lock = readLock(repo) as unknown as { source: { version: string } } & Record<string, unknown>;
   lock.source.version = "0.0.0-old";
   writeFileSync(join(repo, ".claude/.ronce-racine.json"), JSON.stringify(lock, null, 2));
   const r = cli(["install.ts", "check", repo]);
@@ -446,6 +484,311 @@ test("canonicalHash reacts to file content, not just token names", () => {
   } finally {
     writeFileSync(readmeFile, originalReadme);
   }
+});
+
+/**
+ * Regression, issue #1. On Windows, `fs.cpSync` onto an EXISTING destination
+ * fails when the absolute path holds a non-ASCII character (errno 0, syscall
+ * "unlink"); copying onto a fresh path works, so a first install looked fine
+ * and the wiring died. That platform cannot be reproduced from here, so what
+ * this file guards is the decision: no cpSync in the installer, and copyPath
+ * really overwriting - the two properties whose loss would bring the bug back.
+ */
+test("the installer copies without cpSync (issue #1)", () => {
+  // Every installer source, not just the entrypoint: copyPath lives in src/lock.ts,
+  // and a guard reading install.ts alone would pass while the bug came back.
+  const files = ["install.ts", ...readdirSync(join(ROOT, "src")).filter((f) => f.endsWith(".ts")).map((f) => join("src", f))];
+  for (const rel of files) {
+    const source = readFileSync(join(ROOT, rel), "utf8");
+    // The name still appears in copyPath's comment, explaining why it is avoided.
+    const imported = /import \{([^}]*)\} from "node:fs"/.exec(source)?.[1] ?? "";
+    assert(!/\bcpSync\b/.test(imported), `${rel} must not import cpSync: it breaks on non-ASCII Windows paths`);
+    assert(!/\bcpSync\(/.test(source), `${rel} must not call cpSync: it breaks on non-ASCII Windows paths`);
+  }
+});
+
+test("copyPath overwrites an existing file and an existing directory", () => {
+  const base = join(WORK, "copypath");
+  mkdirSync(join(base, "src", "nested"), { recursive: true });
+  writeFileSync(join(base, "src", "a.txt"), "new");
+  writeFileSync(join(base, "src", "nested", "b.test.ts"), "excluded");
+  writeFileSync(join(base, "src", "nested", "c.md"), "kept");
+
+  // File onto an existing file.
+  writeFileSync(join(base, "target.txt"), "old");
+  copyPath(join(base, "src", "a.txt"), join(base, "target.txt"));
+  assert(readFileSync(join(base, "target.txt"), "utf8") === "new", "copyPath must overwrite an existing file");
+
+  // Directory onto an existing directory, with the distribution filter.
+  mkdirSync(join(base, "dst"), { recursive: true });
+  writeFileSync(join(base, "dst", "a.txt"), "old");
+  copyPath(join(base, "src"), join(base, "dst"), (s) => !s.endsWith(".test.ts"));
+  assert(readFileSync(join(base, "dst", "a.txt"), "utf8") === "new", "copyPath must overwrite inside an existing directory");
+  assert(readFileSync(join(base, "dst", "nested", "c.md"), "utf8") === "kept", "copyPath must recurse into subdirectories");
+  assert(!existsSync(join(base, "dst", "nested", "b.test.ts")), "the filter must exclude what it rejects");
+});
+
+/**
+ * Second half of issue #1: the lockfile was written BEFORE the hooks were
+ * wired, so a crash during wiring left a repo recording a complete install.
+ * `check` then reported no drift while the hooks were absent - a half-install
+ * that stays silent for the life of the project.
+ */
+test("a failed hook wiring leaves no lockfile behind (issue #1)", () => {
+  if (process.getuid?.() === 0) return; // root ignores the read-only bit
+  const repo = freshRepo("wiring-failure");
+  const dotclaude = join(repo, ".claude");
+  mkdirSync(dotclaude, { recursive: true });
+  const settings = join(dotclaude, "settings.json");
+  writeFileSync(settings, "{}\n");
+  chmodSync(settings, 0o444); // wiring must fail on write
+
+  try {
+    const r = cli(["install.ts", "install", repo, "--yes"]);
+    assert(r.status !== 0, "an install whose hook wiring fails must not exit 0");
+    assert(!existsSync(join(repo, ".claude/.ronce-racine.json")), "a failed install must not record itself as complete");
+  } finally {
+    chmodSync(settings, 0o644);
+  }
+});
+
+/**
+ * The two findings of an external review of the issue #1 fix. Both come from
+ * the same root: ANY run that does not reach the lockfile - wiring throwing,
+ * Ctrl-C, a lockfile deleted by hand - leaves the repo looking untouched to the
+ * next run, while the destination already holds OUR content.
+ */
+test("a second install after a failed one does not destroy the first backup", () => {
+  if (process.getuid?.() === 0) return; // root ignores the read-only bit
+  const repo = freshRepo("backup-preserved");
+  const rulePath = join(repo, ".claude/rules/shared/commits.md");
+  mkdirSync(dirname(rulePath), { recursive: true });
+  const USER_WORK = "MY OWN VERSION\n";
+  writeFileSync(rulePath, USER_WORK);
+
+  // Run 1: wiring fails, so no lockfile is written - the invariant working.
+  const settings = join(repo, ".claude/settings.json");
+  writeFileSync(settings, "{}\n");
+  chmodSync(settings, 0o444);
+  cli(["install.ts", "install", repo, "--yes"]);
+  const backup = `${rulePath}.pre-install.bak`;
+  assert(readFileSync(backup, "utf8") === USER_WORK, "run 1 must back up the user's version");
+
+  // Run 2: the user retries. Without a lockfile the installer believes nothing
+  // was ever installed, and would back up its OWN content over the real backup.
+  chmodSync(settings, 0o644);
+  cli(["install.ts", "install", repo, "--yes"]);
+  assert(readFileSync(backup, "utf8") === USER_WORK, "run 2 must not overwrite the backup with canonical content");
+});
+
+test("a dangling symlink in the target does not abort the install", () => {
+  const repo = freshRepo("dangling-symlink");
+  // Code signals, so detection-sweep is actually part of the proposed set.
+  writeFileSync(join(repo, "package.json"), '{"name":"x"}\n');
+  mkdirSync(join(repo, "src"), { recursive: true });
+  writeFileSync(join(repo, "src/a.ts"), "export const a = 1\n");
+  const skillDir = join(repo, ".claude/skills/detection-sweep");
+  mkdirSync(skillDir, { recursive: true });
+  symlinkSync("/nowhere/missing.md", join(skillDir, "dangling.md"));
+
+  const r = cli(["install.ts", "install", repo, "--yes"]);
+  assert(r.status === 0, `a dangling symlink must not abort the install: ${r.stderr}`);
+  assert(existsSync(join(repo, ".claude/.ronce-racine.json")), "the install must complete");
+  // Recreated as a link, like cpSync without dereference - not followed.
+  const copied = join(repo, ".claude/skills/detection-sweep.pre-install.bak/dangling.md");
+  assert(readlinkSync(copied) === "/nowhere/missing.md", "the backup must preserve the link itself");
+});
+
+/**
+ * Uninstall. The risk is not "does it delete", it is "does it delete only what
+ * it put there": a target's .claude/ also holds the user's own hooks, settings
+ * and customized artifacts, and an uninstall that takes those with it is worse
+ * than no uninstall at all.
+ */
+test("uninstall removes the installed artifacts and the lockfile", () => {
+  const repo = freshRepo("uninstall");
+  cli(["install.ts", "install", repo, "--yes"]);
+  const lock = readLock(repo);
+  assert(lock.installed.length > 0, "precondition: something was installed");
+
+  const r = cli(["install.ts", "uninstall", repo]);
+  assert(r.status === 0, `uninstall exit ${r.status}: ${r.stderr}`);
+  assert(!existsSync(join(repo, ".claude/.ronce-racine.json")), "the lockfile must be gone");
+  for (const token of lock.installed) {
+    const [kind, name] = token.split(":");
+    const dir = { rule: "rules/shared", skill: "skills", agent: "agents", script: "scripts", hook: "hooks" }[kind]!;
+    const suffix = kind === "hook" ? name.replace(/\.ts$/, ".mjs") : name;
+    assert(!existsSync(join(repo, ".claude", dir, suffix)), `${token} must be removed`);
+  }
+});
+
+test("uninstall --dry-run writes nothing", () => {
+  const repo = freshRepo("uninstall-dry");
+  cli(["install.ts", "install", repo, "--yes"]);
+  const before = readFileSync(join(repo, ".claude/.ronce-racine.json"), "utf8");
+  const r = cli(["install.ts", "uninstall", repo, "--dry-run"]);
+  assert(r.status === 0, `dry-run exit ${r.status}: ${r.stderr}`);
+  contains(r.stdout, "Would remove", "dry-run should describe what it would do");
+  assert(readFileSync(join(repo, ".claude/.ronce-racine.json"), "utf8") === before, "dry-run must not touch the lockfile");
+  const lock = readLock(repo);
+  const rule = lock.installed.find((t) => t.startsWith("rule:"))!.slice("rule:".length);
+  assert(existsSync(join(repo, ".claude/rules/shared", rule)), "dry-run must not delete anything");
+});
+
+test("uninstall keeps a detached artifact and the user's own hook wiring", () => {
+  const repo = freshRepo("uninstall-preserve");
+  cli(["install.ts", "install", repo, "--yes"]);
+  const lock = readLock(repo);
+  const ruleTok = lock.installed.find((t) => t.startsWith("rule:"))!;
+  cli(["install.ts", "detach", repo, ruleTok]);
+
+  // A hook the user wired themselves, in the same settings.json and the same event.
+  const settingsPath = join(repo, ".claude/settings.json");
+  const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
+  settings.hooks.UserPromptSubmit ??= [];
+  settings.hooks.UserPromptSubmit.push({ hooks: [{ type: "command", command: "node $CLAUDE_PROJECT_DIR/.claude/hooks/mine.mjs" }] });
+  settings.permissions = { allow: ["Bash(ls:*)"] };
+  writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+
+  const r = cli(["install.ts", "uninstall", repo]);
+  assert(r.status === 0, `uninstall exit ${r.status}: ${r.stderr}`);
+  assert(existsSync(join(repo, ".claude/rules/shared", ruleTok.slice("rule:".length))), "a detached artifact must survive");
+
+  const after = JSON.parse(readFileSync(settingsPath, "utf8"));
+  const events = Object.values(after.hooks ?? {}) as { hooks?: { command: string }[] }[][];
+  const commands = events.flat().flatMap((e) => e.hooks ?? []).map((h) => h.command);
+  assert(commands.some((c: string) => c.endsWith("mine.mjs")), "the user's own hook wiring must survive");
+  assert(!commands.some((c: string) => c.endsWith("skill-reminder.mjs")), "the installed hooks must be unwired");
+  assert(after.permissions?.allow?.[0] === "Bash(ls:*)", "unrelated settings must survive");
+});
+
+test("uninstall restores the file the install backed up", () => {
+  const repo = freshRepo("uninstall-restore");
+  const USER_WORK = "# my own version\n";
+  const rulePath = join(repo, ".claude/rules/shared/commits.md");
+  mkdirSync(dirname(rulePath), { recursive: true });
+  writeFileSync(rulePath, USER_WORK);
+
+  cli(["install.ts", "install", repo, "--yes", "--pick", "rule:commits"]);
+  assert(readFileSync(rulePath, "utf8") !== USER_WORK, "precondition: the install overwrote the user's file");
+
+  cli(["install.ts", "uninstall", repo]);
+  assert(readFileSync(rulePath, "utf8") === USER_WORK, "uninstall must give the user's file back");
+  assert(!existsSync(`${rulePath}.pre-install.bak`), "the consumed backup must not be left behind");
+});
+
+/**
+ * The lockfile is a COMMITTED file in the target repo, so its tokens come from
+ * whatever branch is checked out. uninstall is the first command that deletes
+ * on their strength, which makes an unvalidated token a path traversal.
+ */
+test("uninstall refuses a lockfile holding a traversal token", () => {
+  const repo = freshRepo("uninstall-traversal");
+  cli(["install.ts", "install", repo, "--yes"]);
+  const victim = join(WORK, "victim.txt");
+  writeFileSync(victim, "do not delete me\n");
+  const lock = readLock(repo) as unknown as { installed: string[] } & Record<string, unknown>;
+  lock.installed.push("hook:../../../victim.txt");
+  writeFileSync(join(repo, ".claude/.ronce-racine.json"), JSON.stringify(lock, null, 2));
+
+  // Validation lives in the parsing boundary, so EVERY command refuses it:
+  // check is the CI gate, and detach used to write the bad token back out.
+  for (const cmd of ["uninstall", "check", "detach"]) {
+    const r = cli(["install.ts", cmd, repo, ...(cmd === "detach" ? ["rule:commits.md"] : [])]);
+    assert(r.status === 2, `${cmd}: expected a refusal (exit 2), got ${r.status}`);
+    contains(r.stderr, "malformed token", `${cmd} should name the problem`);
+  }
+  assert(existsSync(victim), "a path outside .claude must never be deleted");
+  assert(existsSync(join(repo, ".claude/.ronce-racine.json")), "a refused run must change nothing");
+});
+
+test("an unreadable lockfile is not reported as an absent one", () => {
+  const repo = freshRepo("lock-unparseable");
+  cli(["install.ts", "install", repo, "--yes"]);
+  writeFileSync(join(repo, ".claude/.ronce-racine.json"), "{ broken json");
+  const r = cli(["install.ts", "uninstall", repo]);
+  assert(r.status === 2, `expected exit 2, got ${r.status}`);
+  contains(r.stderr, "not valid JSON", "an installation on disk must not be called 'nothing to uninstall'");
+  absent(r.stderr, "No lockfile", "that message would be a lie here");
+});
+
+test("uninstall keeps a pre-uninstall backup out of the .adopted manifest", () => {
+  const repo = freshRepo("uninstall-adopted-bak");
+  cli(["install.ts", "install", repo, "--yes", "--pick", "rule:commits", "rule:minimal-code"]);
+  const edited = join(repo, ".claude/rules/shared/commits.md");
+  writeFileSync(edited, `${readFileSync(edited, "utf8")}\n# local edit\n`);
+  cli(["install.ts", "detach", repo, "rule:minimal-code.md"]);
+
+  cli(["install.ts", "uninstall", repo]);
+  const manifest = readFileSync(join(repo, ".claude/rules/shared/.adopted"), "utf8");
+  absent(manifest, ".bak", "a backup is not an adopted generic rule");
+  const listed = manifest.split("\n").filter((l) => l && !l.startsWith("#"));
+  assert(listed.length === 1 && listed[0] === "minimal-code.md", `only the surviving rule belongs there, got: ${listed.join(", ")}`);
+});
+
+test("uninstall refuses a lockfile whose installed list is not a list", () => {
+  const repo = freshRepo("uninstall-shape");
+  cli(["install.ts", "install", repo, "--yes"]);
+  writeFileSync(join(repo, ".claude/.ronce-racine.json"), JSON.stringify({ source: "x", detached: [] }, null, 2));
+  const r = cli(["install.ts", "uninstall", repo]);
+  assert(r.status === 2, `expected exit 2, got ${r.status}`);
+  contains(r.stderr, "lists of strings", "it should say what is wrong");
+});
+
+test("uninstall leaves no empty directories behind", () => {
+  const repo = freshRepo("uninstall-empty");
+  cli(["install.ts", "install", repo, "--yes"]);
+  cli(["install.ts", "uninstall", repo]);
+  assert(!existsSync(join(repo, ".claude")), ".claude/ must be gone when nothing of the user's was in it");
+});
+
+test("uninstall keeps the wiring of a detached hook", () => {
+  const repo = freshRepo("uninstall-detached-hook");
+  cli(["install.ts", "install", repo, "--yes"]);
+  const hookTok = readLock(repo).installed.find((t) => t.startsWith("hook:"))!;
+  cli(["install.ts", "detach", repo, hookTok]);
+
+  cli(["install.ts", "uninstall", repo]);
+  const mjs = hookTok.slice("hook:".length).replace(/\.ts$/, ".mjs");
+  assert(existsSync(join(repo, ".claude/hooks", mjs)), "a detached hook must survive on disk");
+  const settings = JSON.parse(readFileSync(join(repo, ".claude/settings.json"), "utf8"));
+  const events = Object.values(settings.hooks ?? {}) as { hooks?: { command: string }[] }[][];
+  const commands = events.flat().flatMap((e) => e.hooks ?? []).map((h) => h.command);
+  assert(commands.some((c) => c.endsWith(mjs)), "a hook kept on disk must keep its wiring, or it never fires again");
+});
+
+test("uninstall keeps a locally modified artifact as a backup", () => {
+  const repo = freshRepo("uninstall-drift");
+  cli(["install.ts", "install", repo, "--yes"]);
+  const ruleTok = readLock(repo).installed.find((t) => t.startsWith("rule:"))!;
+  const rulePath = join(repo, ".claude/rules/shared", ruleTok.slice("rule:".length));
+  const EDIT = `${readFileSync(rulePath, "utf8")}\n# my local edit\n`;
+  writeFileSync(rulePath, EDIT);
+
+  const r = cli(["install.ts", "uninstall", repo]);
+  assert(r.status === 0, `uninstall exit ${r.status}: ${r.stderr}`);
+  assert(!existsSync(rulePath), "the artifact itself is still removed");
+  assert(readFileSync(`${rulePath}.pre-uninstall.bak`, "utf8") === EDIT, "a local edit must not vanish silently");
+  contains(r.stdout, "pre-uninstall.bak", "the user must be told the backup exists");
+});
+
+test("uninstall rewrites the .adopted manifest to the rules that survive", () => {
+  const repo = freshRepo("uninstall-adopted");
+  cli(["install.ts", "install", repo, "--yes"]);
+  const ruleTok = readLock(repo).installed.find((t) => t.startsWith("rule:"))!;
+  cli(["install.ts", "detach", repo, ruleTok]);
+
+  cli(["install.ts", "uninstall", repo]);
+  const manifest = readFileSync(join(repo, ".claude/rules/shared/.adopted"), "utf8");
+  const listed = manifest.split("\n").filter((l) => l && !l.startsWith("#"));
+  assert(listed.length === 1 && listed[0] === ruleTok.slice("rule:".length), `the manifest must list only what is left, got: ${listed.join(", ")}`);
+});
+
+test("uninstall without a lockfile exits 2 rather than guessing", () => {
+  const repo = freshRepo("uninstall-nolock");
+  const r = cli(["install.ts", "uninstall", repo]);
+  assert(r.status === 2, `expected exit 2, got ${r.status}`);
+  contains(r.stderr, "No lockfile", "it should say why it refused");
 });
 
 finish("installer");

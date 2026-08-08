@@ -7,6 +7,158 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Individual artifacts (rules, skills, hooks) also carry their own `version` in
 their frontmatter; this file tracks the toolkit as a whole.
 
+## [0.7.0] - 2026-08-08
+
+### Added
+- **`uninstall`**, the command that was missing. Driven by the lockfile, so it
+  removes what it installed and nothing else: detached artifacts stay, a
+  `*.pre-install.bak` is restored over the file the install overwrote, and only
+  the hook commands it wired are dropped from `settings.json`. An artifact
+  carrying local edits is kept as `*.pre-uninstall.bak` rather than dropped,
+  a detached hook keeps its wiring, and the `.adopted` manifest is rewritten to
+  the rules that survive. `--dry-run` lists the removal without performing it.
+- **The lockfile is validated at the parsing boundary**, so every command
+  refuses a malformed one instead of one command only. It is a committed file
+  in the target repository, so `hook:../../../something` was a path traversal
+  waiting for the first command that deletes on its strength, `check --strict`
+  died in CI with a bare stack trace, and `install` copied a bad token forward
+  into a fresh lockfile. An unreadable lockfile is also no longer reported as
+  an absent one, which told users there was nothing to uninstall while their
+  `.claude/` was full.
+
+### Changed
+- The CLI is split under `src/` (paths, lock, catalog, detect, settings,
+  selector, uninstall); `install.ts` keeps the commands and the argument
+  parsing, and re-exports what importers used to get from it.
+- The README is organized around what each artifact is for rather than around
+  the architecture, with the full skill catalog moved to
+  [`docs/catalog.md`](docs/catalog.md) and the mechanics to
+  [`docs/distribution-model.md`](docs/distribution-model.md) and
+  [`docs/quality-bar.md`](docs/quality-bar.md).
+
+### Fixed
+- **The issue #1 regression guard had stopped guarding anything.** It asserted
+  that `install.ts` contains no `cpSync`, which became vacuously true once
+  `copyPath` moved to `src/lock.ts`. It now scans every installer source.
+- **`docs/chardon/` shipped in the npm tarball.** The `files` entry `docs/`
+  overrides `.gitignore`, so local workflow reports, absolute paths included,
+  were published with the package.
+- `tests/*.ts` are now typechecked (they were outside the `tsconfig.json`
+  include), which surfaced three unsound casts.
+- A batch of documentation claims that no longer matched the code, mostly in
+  `docs/adopting-a-repo.md`, `docs/architecture.md` and `docs/developing.md`.
+
+## [0.6.0] - 2026-08-08
+
+Bringing the engineering floor up to the level of the monitoring plugin
+sitting next to it - and then letting the new gates find what they found.
+
+### Fixed
+- **Install no longer half-completes on Windows** (#1). `fs.cpSync` onto an
+  existing destination fails when the absolute path holds a non-ASCII
+  character - the native override path calls unlink and reports `errno 0,
+  syscall 'unlink'`. All four copy sites now go through `copyFileSync`, whose
+  binding is unaffected. Thanks to @loicchossiere for a report that arrived
+  with the root cause, a minimal repro and a table of what works.
+- **A retried install no longer destroys the backup of your work.** Any run
+  that did not reach the lockfile left the next one believing nothing was
+  installed, so it backed up again - overwriting the backup holding the user's
+  version with the canonical file, and producing a silently hybrid backup on a
+  skill directory. A backup is now written only when none exists.
+- **A dangling symlink in the target no longer aborts the install.** The copy
+  followed links where `cpSync` recreated them; the backup walk crosses
+  arbitrary user content, where one broken link threw ENOENT mid-install - and
+  fed the defect above on the next run.
+- **A crashed install no longer records itself as complete** (#1). The lockfile
+  was written before the hooks were wired, so a failure during wiring left
+  `check` reporting no drift while the requested hooks were absent - silently,
+  for the life of the project. Wiring happens first now.
+- **`agents/code-reviewer.md` loaded with no metadata at all.** An unquoted
+  "Read-only: " made its frontmatter invalid YAML, which Claude Code does not
+  fail loudly on: the read-only agent shipped without its tool restriction.
+  Agents are now validated like every other artifact family.
+- **Two artifacts were uninstallable**: `performance-profiling` and the
+  `doc-code-parity` rule were present, documented and shipped in the package,
+  yet in no catalog, so no command could install them. A test now requires the
+  catalog and the disk to name the same set for every family - skills, rules,
+  agents, scripts and hooks - in both directions. The skills-only version of
+  that test is what let the second one through.
+- **The sweep scripts built regexes from raw argv** - a component name holding a
+  metacharacter changed what was matched, and a pathological one backtracked
+  over every scanned line (CodeQL `js/regex-injection`, 4 sites).
+- **A quoted eval criterion was unescaped twice**, so the criterion sent to the
+  judge was not the one written (CodeQL `js/double-escaping`).
+
+### Added
+- **Installable as a Claude Code plugin**: `/plugin marketplace add
+  ChariereFiedler/ronce-racine`. The skills and the agents, subscribed rather
+  than copied. Deliberately not the rules, the hooks or the drift control -
+  always-on context and code that runs on your machine belong in a reviewed
+  diff.
+- **`domain-glossary` skill** (36 skills now): fixes the vocabulary of a
+  codebase in a `GLOSSARY.md`, resolving synonyms to one name and recording the
+  rejected ones, so a search for the wrong word lands on the right entry.
+  Ships with the `mixed-vocabulary` fixture that plants the defect.
+- **Disambiguation lint** (`skills.ts routing`): ten realistic user sentences,
+  each required to score strictly above the neighbours it is confusable with.
+  **Five of the ten failed on the first run** - half the sampled skills did not
+  distinguish themselves from their neighbours, which is the clearest argument
+  yet that 36 skills is a surface to reduce rather than to grow.
+- **The external plugin validator in CI** (`claude plugin validate --strict`),
+  which reads the artifacts the way the runtime does. It found a defect a
+  seven-check in-house harness had missed.
+- **A rule against moving the target** in `docs/evaluating-skills.md`: every
+  gate here scores something its author can edit, so a description changes only
+  when the change is right independently of the test.
+- **Agent contract validation** (`skills.ts agents`), the artifact family
+  nothing checked until now.
+- **`readme-freshness` hook** (opt-in): before a `git push` carrying structural
+  changes, Claude re-reads README.md against the diff and reports the claims it
+  contradicts - a wrong count, a renamed command, a mechanism that changed. An
+  LLM rather than a grep, because that drift stays true-looking to any pattern
+  you can write. Warns without blocking, fails open on every failure mode.
+  Its first real catch was its own arrival: four stale claims in this README.
+
+- **`performance-profiling` skill**: measure, then change,
+  then measure again - noise floor before any timing claim, macro profile
+  before micro work, off-CPU as well as on-CPU, and "inconclusive" as a
+  first-class verdict. Per-ecosystem sheets for Go, Node/web, native and Tracy.
+- **Biome** over the TypeScript, in CI. It caught an `Array.forEach` callback
+  used as an expression, an implicitly-`any` `let`, and five assignments hidden
+  inside `if` conditions. Formatting stays off: reformatting the tree would
+  bury review in noise for no defect caught.
+- **`npm run coverage`** (v8), with a threshold on the pure layer only. The
+  global figure is deliberately not gated - most of this code runs as a
+  subprocess and is invisible to in-process instrumentation.
+- **`npm run verify`** = typecheck + lint + test, the single pre-PR command.
+- **Property-based tests** (fast-check) over the eval manifest parser, the
+  canonical hash and the selector's key handling, plus the mutation proving
+  the selector property can fail.
+- **A release workflow**: a `v*` tag runs the full gate set, checks that the
+  tag and `package.json` agree, and opens the GitHub Release from the matching
+  CHANGELOG section. npm publish stays manual.
+
+### Changed
+- **The README leads with the problem, not the architecture.** A visitor used to
+  reach what the thing does on line 100 and the install command on line 190;
+  both are now above the fold, the reference material follows, and the console
+  capture is regenerated from a real run rather than edited in place.
+- **Lint covers the scripts shipped to users**, not just the repo's own tooling:
+  the four scripts skills install into other people's repositories were the
+  only executable code nobody linted.
+- **Example projects removed from 22 SKILL.md files.** `acme-app` / `beta-app`
+  were private projects of mine, renamed for the release and meaningless to
+  every reader since - carried in text a model reads on every invocation. The
+  precedence note they sat in stays: each one names what the project skill
+  knows that the generic one cannot.
+- **CI split into parallel jobs** (validate on Node 18 and 22, coverage,
+  mutation, CodeQL, gitleaks) with every action pinned to a SHA instead of a
+  mutable tag, and `npm audit --omit=dev` on the runtime supply chain.
+- Contributor docs now describe the suite that actually runs, with a table of
+  what each gate protects and what it structurally cannot see.
+- The workflow reports the monitoring plugin writes under `docs/chardon/` are
+  ignored: they are observations of one machine, not documentation.
+
 ## [0.5.3] - 2026-07-21
 
 A hook is never alone on its event.

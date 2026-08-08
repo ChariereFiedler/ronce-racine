@@ -173,6 +173,46 @@ If the session starts in a linked git worktree (not the main worktree) and the m
 
 ---
 
+## `readme-freshness.ts` - re-reads the README before a push (PreToolUse/Bash)
+
+**Event**: `PreToolUse` · **Matcher**: `Bash` · **Opt-in** (spends one API call per push)
+
+Before a `git push` that carries structural changes (`install.ts`, `package.json`,
+`skills/`, `rules/`, `hooks/`, `agents/`, `scripts/`, `templates/`), asks Claude to
+read `README.md` against the diff being pushed and report the claims it
+contradicts: a wrong count, a renamed command, a mechanism that changed, a
+documented file that moved.
+
+An LLM rather than a grep, because the drift that matters is semantic - "34
+skills" or "validated by npm test" stays true-looking to any pattern you can
+write, and stops being true the moment the number or the command changes.
+
+**Warns, never blocks, by default.** It fails open on every failure mode: no
+`claude` on PATH, not authenticated, timed out, rate-limited, no upstream to
+diff against. A push is never held hostage by this check.
+
+| Variable | Effect |
+|---|---|
+| `RONCE_README_CHECK=block` | a contradiction denies the push instead of warning |
+| `RONCE_README_CHECK=off` | skips the check entirely |
+| `RONCE_CLAUDE_BIN` | path to the `claude` binary (default: `claude` on PATH) |
+
+Scope: this sees pushes made by Claude. A human typing `git push` in their own
+terminal does not go through it - keep a CI job for that guarantee.
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [{ "type": "command",
+          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/readme-freshness.mjs" }] }
+    ]
+  }
+}
+```
+
+---
+
 ## `precommit-scan.ts` - secret/debug scan before commit
 
 Shipped with the `commit-readiness-review` skill (`skills/commit-readiness-review/scripts/precommit-scan.ts`). Read-only, exit 1 if a secret/sensitive file is staged. Two possible wirings:

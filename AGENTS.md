@@ -12,7 +12,7 @@ Canonical source of **generic Claude Code config** (project-agnostic), installab
 
 ## Non-negotiable rules
 
-- **Genericity**: an artifact here contains **no** project coupling (crate/script/path name, imposed tracker, imposed stack). If useful but coupled → split: the generic principle here, the tooling in the project repo. A routing override "e.g. acme-app → `x`, it wins" is allowed.
+- **Genericity**: an artifact here contains **no** project coupling (crate/script/path name, imposed tracker, imposed stack). If useful but coupled → split: the generic principle here, the tooling in the project repo. A precedence note ("if this repo has a specific X skill, it wins") is expected, and states what the project variant knows that this one cannot - without naming an example project.
 - **Language**: English (code identifiers may remain as-is). Correct accents, "siliceum" always lowercase.
 - **Commits**: `type(scope): description` format (`feat|fix|refactor|test|docs|chore`), 1st line ≤ 72 chars, **never** mention Claude/AI/LLM. **Ask for confirmation before any commit.**
 - **Pre-commit validation**: `npm test` must be **green** (see Harness).
@@ -24,6 +24,7 @@ npx ronce-racine plan    <repo>          # detects the stack, PROPOSES (read-onl
 npx ronce-racine install <repo> [--all]  # copies relevant rules/skills/hooks/agents + lockfile
 npx ronce-racine check   <repo> [--strict]  # drift vs canonical (soft, or blocking)
 npx ronce-racine detach  <repo> <kind:name> # excludes a customized artifact from control
+npx ronce-racine uninstall <repo> [--dry-run] # removes what the lockfile records, and only that
 ```
 Detail: `docs/adopting-a-repo.md`. The lockfile `<repo>/.claude/.ronce-racine.json` tracks what is managed + the source package version and content hash.
 
@@ -80,7 +81,8 @@ Useful commands: `npm run skills:list`, `npm run skills:triggers`, `npm run rule
 ```
 rules/        skills/<name>/SKILL.md (+ reference/ scripts/ templates/)
 hooks/        agents/         scripts/
-install.ts     (user-facing CLI, at the root)
+install.ts     (user-facing CLI, at the root: commands + argument parsing)
+src/           (the CLI split up: paths, lock, catalog, detect, settings, selector, uninstall)
 tools/         (internal harnesses: skills.ts, tests.ts, mutations.ts, eval.ts, all via tsx)
 docs/         templates/      README.md  AGENTS.md
 ```

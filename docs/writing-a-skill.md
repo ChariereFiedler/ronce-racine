@@ -12,7 +12,10 @@ If the workflow is useful but coupled, **split it**: the generic *protocol* come
 
 ## What a complete skill looks like
 
-Every file below is required by a CI gate. A skill missing one of them fails `npm test`.
+`SKILL.md` and `README.md` are required by `npm test` (`tools/skills.ts validate`),
+and a `scripts/<x>.ts` without its `scripts/<x>.test.ts` fails the same command.
+`eval.yaml` is validated by `npm run eval:dry`, a separate CI job: a skill that
+ships without one is skipped rather than reported, so adding it is on you.
 
 ```
 skills/<name>/
@@ -103,16 +106,22 @@ A deterministic detection command belongs in `scripts/` ("Run `scripts/x.ts`") r
 ## Validation before opening a PR
 
 ```bash
-npm test              # structure, bilingual trigger routing, versioning, behavioral tests
-npm run typecheck
+npm run verify        # typecheck + lint + structure, trigger routing, versioning, behavioral tests
 npm run test:mutation # every declared mutation must turn its tests red
 npm run eval:dry      # every eval.yaml parses and names an existing fixture
 ```
 
-All four run in CI. The harness fails (exit 1) on any drift from the contract.
+All of them run in CI. The harness fails (exit 1) on any drift from the
+contract. What each gate covers - and what it structurally cannot see - is in
+[developing.md](developing.md#what-each-gate-actually-protects).
 
 ## After adding / modifying
 
-1. Bump `version` + `last-reviewed`, add a line to the `## Changelog`.
-2. Update the skills table in the [README](../README.md).
-3. The four commands above, green.
+1. Bump `version` + `last-reviewed`, add a line to the `## Changelog` (the
+   section itself is mandatory: `tools/skills.ts validate` requires it).
+2. Add the skill to the `CATALOG` in [`src/catalog.ts`](../src/catalog.ts) with
+   the signal that should propose it. `tests/installer.test.ts` fails on an
+   artifact that exists on disk but no command can install.
+3. Update the skills table in the [README](../README.md). Nothing gates that
+   table, so it is the line most likely to go stale.
+4. The commands above, green.

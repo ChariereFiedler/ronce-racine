@@ -1,15 +1,15 @@
 ---
 name: bug-ticket-root-cause
 description: Use when reporting or documenting an observed bug as a ticket (any tracker - GitLab, Jira, GitHub) - "report a bug", "signale un bug", "create a bug ticket", "crée un ticket de bug", "it doesn't work", "ça ne marche pas", a regression to document without fixing it now.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: bug
 ---
 
 # Bug ticket with root cause
 
-> If the current repo has a specific ticketing skill (e.g. acme-app → `add-bug`, beta-app → `jira-bug`), it wins - this skill defines the **content**, the project skill defines the **format/tracker**.
+> If the current repo has a specific ticketing skill, it wins - this skill defines the **content**, the project skill defines the **format/tracker**.
 
 ## This skill vs. others
 
@@ -82,5 +82,7 @@ If the scope has already had 2+ recent fixes → a "Recurrence" section in the t
 - [ ] Recurrence checked (section added + `recurring-bug-root-cause` if 2+ recent fixes)
 
 ## Changelog
+
+- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
 
 - 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

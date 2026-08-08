@@ -1,5 +1,10 @@
+coverage/
+dist/
+docs/chardon/
+.mutations.lock
 node_modules/
 playground/fixtures/
+release-notes.md
+reports/
+.stryker-tmp/
 .superpowers/
-.mutations.lock
-dist/

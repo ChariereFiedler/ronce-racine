@@ -1,0 +1,17 @@
+{
+  "name": "ronce-racine",
+  "owner": {
+    "name": "Cedric Chariere Fiedler",
+    "url": "https://github.com/ChariereFiedler"
+  },
+  "description": "Ronce Racine as an installable Claude Code plugin: the skills and agents, without the repo-level distribution layer.",
+  "plugins": [
+    {
+      "name": "ronce-racine",
+      "source": "./",
+      "description": "Skills and agents for everyday engineering work, each evaluated against a real agent run before it ships.",
+      "category": "engineering",
+      "keywords": ["skills", "code-review", "testing", "frontend", "audit"]
+    }
+  ]
+}

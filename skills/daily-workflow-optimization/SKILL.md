@@ -1,15 +1,15 @@
 ---
 name: daily-workflow-optimization
 description: Use when reviewing recurring development workflow friction - "what's slowing things down", "qu'est-ce qui nous ralentit", periodic toil review, cutting repeated manual steps, identical recurring feedback/fixes, stale memories or context to refresh.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: process
 ---
 
 # Daily Workflow Optimization - cut workflow friction, not fix code
 
-> If the current repo has a tooled improvement command (e.g. acme-app → `daily-improve`), it wins - it knows its metrics, scripts and paths.
+> If the current repo has a tooled improvement command, it wins - it knows its metrics, scripts and paths.
 
 ## This skill vs. others
 
@@ -77,4 +77,6 @@ If the repo exposes a measurement tool (metrics script, report), use it - it win
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) - initial version, generalized from acme-app's daily-improve workflow (metrics/scripts coupling removed)
+- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
+
+- 1.0.0 (2026-06-19) - initial version, generalized from a project-specific daily-improve workflow (metrics/scripts coupling removed)

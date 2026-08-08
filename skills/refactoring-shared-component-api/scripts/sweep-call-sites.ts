@@ -19,6 +19,13 @@ const kebab = name
   .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
   .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
   .toLowerCase()
+
+/** The component name comes from argv: a metacharacter in it would otherwise
+ * become regex syntax - at best a wrong result, at worst a catastrophic
+ * backtrack on every scanned line. */
+const rx = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const nameRx = rx(name)
+const kebabRx = rx(kebab)
 const EXT = new Set(['.vue', '.ts', '.tsx', '.js', '.jsx', '.svelte', '.html'])
 const SKIP = new Set(['node_modules', '.git', 'dist', 'build', '.nuxt', '.next', '.output', 'coverage'])
 
@@ -32,11 +39,11 @@ const hits: Hit[] = []
 
 function classify(text: string, file: string): string | null {
   const base = path.basename(file)
-  if (new RegExp(`<${name}[\\s/>]`).test(text)) return 'tag PascalCase'
-  if (new RegExp(`<${kebab}[\\s/>]`).test(text)) return 'tag kebab-case'
+  if (new RegExp(`<${nameRx}[\\s/>]`).test(text)) return 'tag PascalCase'
+  if (new RegExp(`<${kebabRx}[\\s/>]`).test(text)) return 'tag kebab-case'
   if (/:is=|<component\b/.test(text) && text.includes(name)) return 'dynamic usage (:is/component)'
   if (/v-bind="(?!\$attrs)|\{\.\.\./.test(text) && text.includes(name)) return 'potential spread'
-  if (new RegExp(`\\b${name}\\b`).test(text)) {
+  if (new RegExp(`\\b${nameRx}\\b`).test(text)) {
     if (/\.(spec|test|stories)\./.test(base)) return 'test/story'
     if (/mock|fixture/i.test(file)) return 'mock/fixture'
     return 'reference (import, type, doc)'

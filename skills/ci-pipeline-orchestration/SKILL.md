@@ -1,15 +1,15 @@
 ---
 name: ci-pipeline-orchestration
 description: Use when a CI pipeline needs checking after a push, when CI is red and the failure must be diagnosed, when jobs need retrying, or when validating post-deploy HTTP headers and smoke tests. Triggers on "check the pipeline", "vérifier le pipeline", "rerun CI", "relancer CI", "the pipeline failed", "le pipeline a échoué", "validate the headers", "valider les headers", after any `git push`.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: process
 ---
 
 # CI Pipeline Orchestration - drive the pipeline end-to-end after a push
 
-> If the current repo has a project-specific pipeline skill (e.g. acme-app → `pipeline-orchestration`), it wins - it knows the CI provider, its commands and the deploy URLs.
+> If the current repo has a project-specific pipeline skill, it wins - it knows the CI provider, its commands and the deploy URLs.
 
 ## This skill vs. others
 
@@ -106,5 +106,7 @@ Pipeline still `failed` with no ticket and no fix = not done.
 - The CI provider's CLI depending on the project (`gh run view/rerun`, `glab ci`, REST API) - spot the available command before acting, do not hardcode a single provider.
 
 ## Changelog
+
+- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
 
 - 1.0.0 (2026-06-19) - initial version, derived from a project workflow and decoupled from the CI provider

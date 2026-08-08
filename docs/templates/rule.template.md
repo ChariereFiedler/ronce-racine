@@ -1,6 +1,7 @@
 ---
 # Limit injection to the relevant files (saves context).
-# Omit the whole frontmatter for an always-on rule.
+# Drop the `paths` key (and only that key) for an always-on rule.
+# `version` and `last-reviewed` are mandatory: `npm run rules:validate` fails without them.
 paths:
   - "**/*.ext"
 version: 1.0.0

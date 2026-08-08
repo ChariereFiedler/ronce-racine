@@ -8,9 +8,9 @@ An artifact (rule, skill, hook, agent, script) lives here **only if it is truly 
 
 - no crate, package, script, path, or identifier name tied to a specific project;
 - no imposed tracker (Jira, GitLab, GitHub…), no imposed stack;
-- examples use **fictional** project names (`acme-app`, `beta-app`).
+- no project name at all in a SKILL.md, not even a fictional one: it is read on every invocation and means nothing to the reader. A README illustrating a scenario may name a placeholder project.
 
-If an idea is useful but coupled to a project, **split it**: the generic principle goes here, the project-specific tooling stays in the project's own repo (via a routing override - "e.g. `acme-app` → `my-skill`, it wins").
+If an idea is useful but coupled to a project, **split it**: the generic principle goes here, the project-specific tooling stays in the project's own repo. The generic skill opens with a precedence note - "if this repo has a specific X skill, it wins" - naming what the project variant knows that the generic one cannot (the tracker, the SQL engine, the forge), never naming an example project.
 
 Detailed criteria:
 - Rules → [`docs/writing-a-rule.md`](docs/writing-a-rule.md)
@@ -29,9 +29,12 @@ The repository is **English-facing**: rules, skills, docs, and user-facing tooli
 3. Run the local checks:
    ```bash
    npm install
-   npm test          # skill structure + routing, rule/script/hook versioning
-   npm run typecheck # tsc --noEmit
+   npm run verify    # typecheck + lint + tests, the one to run before a PR
    ```
+   What each gate protects (and what it cannot see) is laid out in
+   [`docs/developing.md`](docs/developing.md#what-each-gate-actually-protects).
+   If your change touches `install.ts`, a hook or a script, add a mutation
+   entry in `tools/mutations.ts` proving the new test can fail.
 4. Open a Pull Request explaining **why** the artifact is generic (what project coupling was removed, if any).
 
 ## Versioning

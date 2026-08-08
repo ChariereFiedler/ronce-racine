@@ -1,15 +1,15 @@
 ---
 name: visual-regression-check
 description: Use when a UI change is about to be committed and its real rendering needs checking on desktop and mobile - "does it render well?", "does it display correctly?", "ça rend bien ?", "est-ce que ça s'affiche bien ?", suspected visual regression, layout/restyle changed, green tests but the rendering never seen.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: frontend
 ---
 
 # Visual regression check - see the real rendering before commit
 
-> If the current repo has a dedicated visual skill (e.g. acme-app → `visual-self-review`), it wins - it knows the pages, the snapshot harness, and the project commands.
+> If the current repo has a dedicated visual skill, it wins - it knows the pages, the snapshot harness, and the project commands.
 
 ## This skill vs. others
 
@@ -86,4 +86,6 @@ Not checked: <unreachable state/surface - explicit>
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) - initial generic release extracted from acme-app/visual-self-review (stack coupling removed, viewports parameterizable)
+- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
+
+- 1.0.0 (2026-06-19) - initial generic release extracted from a project-specific visual-self-review workflow (stack coupling removed, viewports parameterizable)

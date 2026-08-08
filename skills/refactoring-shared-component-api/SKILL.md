@@ -1,15 +1,15 @@
 ---
 name: refactoring-shared-component-api
 description: Use when changing the public API (props, emits, slots, events, exported signatures) of a UI component or module consumed in 2+ places - renaming a prop, removing a parameter, changing a contract - "change this shared component's API", "change l'API de ce composant partagé", "rename this prop", "renomme cette prop". Also use when a typecheck passes but the change touches a shared contract.
-version: 1.0.1
+version: 1.0.3
 metadata:
-  last-reviewed: 2026-07-20
+  last-reviewed: 2026-08-08
   category: frontend
 ---
 
 # Refactoring a shared component's API
 
-> If the current repo has a dedicated skill or conventions for this case (e.g. acme-app → `shared-component-refactor`), they win.
+> If the current repo has a dedicated skill or conventions for this case, they win.
 
 ## This skill vs. others
 
@@ -78,6 +78,10 @@ A shared-API refactor is **not done when the typecheck passes**: it is done when
 - `scripts/sweep-call-sites.ts <ComponentName> [rootDir]` - automatic sweep (casings, dynamic usages, spreads, **suspicious wrappers highlighted**, stories/mocks), output = markdown checklist
 
 ## Changelog
+
+- 1.0.3 (2026-08-08) - dropped the fictional example projects from the precedence note
+
+- 1.0.2 (2026-08-08) - sweep-call-sites.ts escapes the component name before building its regexes
 
 - 1.0.1 (2026-07-20) - co-located test procedure for sweep-call-sites.ts (scripts/sweep-call-sites.test.ts)
 

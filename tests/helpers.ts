@@ -1,9 +1,11 @@
 /**
- * Shared mini-harness for the behavioral test files (zero deps, tsx only).
+ * Shared harness for the behavioral test files, running on Vitest.
  *
- * Each *.test.ts file is standalone: it can be run directly
- * (`npx tsx tests/installer.test.ts`, `npx tsx skills/<s>/scripts/<x>.test.ts`)
- * or discovered by the root runner (`tsx tools/tests.ts`, wired into `npm test`).
+ * The domain helpers (`hook`, `builtHook`, `cli`, `freshRepo`…) are the point of
+ * this file: they spawn the real hooks and the real CLI as subprocesses, which
+ * is what makes these tests behavioral rather than unit. The assertion helpers
+ * (`test`, `assert`, `contains`, `absent`) are kept as thin wrappers over Vitest
+ * so the seven test files did not need rewriting when the runner changed.
  *
  * No dates/random: fixtures live under a per-file temp dir, wiped by initWork().
  */
@@ -12,31 +14,37 @@ import { join, dirname, basename, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { test as vitestTest, expect, afterAll } from "vitest";
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const TSX = join(ROOT, "node_modules", ".bin", "tsx");
-/** One workspace per test file, so files run standalone or in any order. */
-export const WORK = join(tmpdir(), "ronce-racine-tests", basename(process.argv[1] ?? "run", ".ts"));
 
-let passed = 0;
-const failures: string[] = [];
+/**
+ * One workspace per test file, so files run in any order and in parallel.
+ *
+ * Under the previous runner each file was its own process, so `process.argv[1]`
+ * identified it. Vitest runs them from a shared entry point, where argv[1] is
+ * the Vitest binary and every file would have collided on one directory. The
+ * test path comes from Vitest's own state instead.
+ */
+function workspaceName(): string {
+  const testPath = expect.getState().testPath;
+  return testPath ? basename(testPath, ".ts") : basename(process.argv[1] ?? "run", ".ts");
+}
+export const WORK = join(tmpdir(), "ronce-racine-tests", workspaceName());
 
+/** Declares a case. Same signature as before, so the test files are unchanged. */
 export function test(name: string, fn: () => void): void {
-  try {
-    fn();
-    passed++;
-  } catch (e) {
-    failures.push(`${name}: ${(e as Error).message}`);
-  }
+  vitestTest(name, fn);
 }
 export function assert(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
 }
 export function contains(haystack: string, needle: string, msg: string): void {
-  if (!haystack.includes(needle)) throw new Error(`${msg} - missing ${JSON.stringify(needle)} in: ${haystack.slice(0, 400)}`);
+  expect(haystack, msg).toContain(needle);
 }
 export function absent(haystack: string, needle: string, msg: string): void {
-  if (haystack.includes(needle)) throw new Error(`${msg} - unexpected ${JSON.stringify(needle)}`);
+  expect(haystack, msg).not.toContain(needle);
 }
 
 export interface Run { status: number | null; stdout: string; stderr: string; }
@@ -92,14 +100,15 @@ export function initWork(): void {
   mkdirSync(WORK, { recursive: true });
 }
 
-/** Prints this file's verdict and exits non-zero on failure. Call once at the end. */
-export function finish(label: string): void {
-  rmSync(WORK, { recursive: true, force: true });
-  if (failures.length) {
-    console.error(`✗ ${label}: ${failures.length} test(s) failed:\n  ${failures.join("\n  ")}`);
-    process.exit(1);
-  }
-  console.log(`✓ ${passed} ${label} tests passed`);
+/**
+ * Registers cleanup of this file's workspace. Vitest reports the verdict, so all
+ * that remains of the former runner's `finish()` is the teardown; the call is
+ * kept at the bottom of each test file to say plainly what gets cleaned up.
+ */
+export function finish(_label: string): void {
+  afterAll(() => {
+    rmSync(WORK, { recursive: true, force: true });
+  });
 }
 
 /** Runs a hook exactly as a target repo does: the BUILT .mjs, on plain node. */

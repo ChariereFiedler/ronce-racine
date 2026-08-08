@@ -3,11 +3,11 @@
  * Behavioral tests of the hooks: command rewriting (bash-npm-silent,
  * truncate-output), session-memo trio (schema + persistence), worktree-env-setup.
  */
-import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync, chmodSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { spawnSync } from "node:child_process";
 import {
-  test, assert, contains, absent, hook, builtHook, freshRepo, initWork, finish, WORK,
+  test, assert, contains, absent, hook, builtHook, freshRepo, gitCommit, initWork, finish, WORK,
   type Run,
 } from "./helpers.js";
 import { buildMemo, persistMemo, repoSlug, branchSlug } from "../hooks/session-writer.js";
@@ -74,12 +74,12 @@ test("persistMemo writes the memo derived from the transcript", () => {
   const repo = freshRepo("memo");
   const home = join(WORK, "home-memo");
   const transcript = join(WORK, "transcript.jsonl");
-  writeFileSync(transcript, JSON.stringify({ type: "user", message: { role: "user", content: "do the migration" } }) + "\n");
+  writeFileSync(transcript, `${JSON.stringify({ type: "user", message: { role: "user", content: "do the migration" } })}\n`);
   const prevHome = process.env.HOME;
   process.env.HOME = home;
   try {
     persistMemo(repo, transcript, "2026-01-01 00:00");
-    const memoPath = join(home, ".claude/projects", repoSlug(repo), "sessions", branchSlug("master") + ".md");
+    const memoPath = join(home, ".claude/projects", repoSlug(repo), "sessions", `${branchSlug("master")}.md`);
     assert(existsSync(memoPath), `memo should be written at ${memoPath}`);
     contains(readFileSync(memoPath, "utf8"), "do the migration", "memo should capture the intent");
   } finally {
@@ -90,7 +90,7 @@ test("persistMemo writes the memo derived from the transcript", () => {
 test("session-inject emits the CORRECT SessionStart schema (nested additionalContext)", () => {
   const repo = freshRepo("inject");
   const home = join(WORK, "home-inject");
-  const memoPath = join(home, ".claude/projects", repoSlug(repo), "sessions", branchSlug("master") + ".md");
+  const memoPath = join(home, ".claude/projects", repoSlug(repo), "sessions", `${branchSlug("master")}.md`);
   mkdirSync(dirname(memoPath), { recursive: true });
   writeFileSync(memoPath, "# Session\nprevious work here\n");
 
@@ -108,7 +108,7 @@ test("session-inject emits the CORRECT SessionStart schema (nested additionalCon
 function repoWithWorktree(name: string): { main: string; wt: string } {
   const main = freshRepo(name);
   writeFileSync(join(main, ".env"), "SECRET=1\n");
-  const wt = join(WORK, name + "-wt");
+  const wt = join(WORK, `${name}-wt`);
   rmSync(wt, { recursive: true, force: true });
   spawnSync("git", ["worktree", "add", "-q", wt], { cwd: main });
   return { main, wt };
@@ -208,10 +208,10 @@ test("session-precompact persists a memo from the event's transcript", () => {
   const repo = freshRepo("precompact");
   const home = join(WORK, "home-precompact");
   const transcript = join(WORK, "precompact.jsonl");
-  writeFileSync(transcript, JSON.stringify({ type: "user", message: { role: "user", content: "refactor the parser" } }) + "\n");
+  writeFileSync(transcript, `${JSON.stringify({ type: "user", message: { role: "user", content: "refactor the parser" } })}\n`);
   const r = hook("session-precompact.ts", { transcript_path: transcript, cwd: repo }, { HOME: home, CLAUDE_PROJECT_DIR: repo });
   assert(r.status === 0, `precompact exit ${r.status}: ${r.stderr}`);
-  const memoPath = join(home, ".claude/projects", repoSlug(repo), "sessions", branchSlug("master") + ".md");
+  const memoPath = join(home, ".claude/projects", repoSlug(repo), "sessions", `${branchSlug("master")}.md`);
   assert(existsSync(memoPath), "precompact must write the memo");
   contains(readFileSync(memoPath, "utf8"), "refactor the parser", "memo must carry the intent");
 });
@@ -221,6 +221,11 @@ test("a rewritten command stays readable and still executes", () => {
   // plugins, transcripts and logs read it downstream. An opaque base64 blob
   // breaks all of them, so the original must survive in clear.
   const cases = ["git log", "git diff", "cargo build && npm test", `echo "a'b" && git diff`];
+  // Both runs happen in a repo this test owns. Inheriting the cwd made the
+  // outcome depend on where the suite ran from: under a sandboxed runner the
+  // checkout is copied without .git, and `git diff` then answers differently.
+  const repo = freshRepo("wrap-parity");
+  gitCommit(repo, "seed", true);
   for (const original of cases) {
     const out = updatedCommand(builtHook("truncate-output.ts", { tool_name: "Bash", tool_input: { command: original } }));
     assert(out !== null, `${original} should have been wrapped`);
@@ -228,8 +233,8 @@ test("a rewritten command stays readable and still executes", () => {
     // Readability must not cost correctness: wrapping must not change the
     // outcome. Comparing against the bare command also covers the case where a
     // trailing comment would swallow part of it, or a quote would break parsing.
-    const wrapped = spawnSync("bash", ["-c", out!], { encoding: "utf8", timeout: 30_000 });
-    const bare = spawnSync("bash", ["-c", original], { encoding: "utf8", timeout: 30_000 });
+    const wrapped = spawnSync("bash", ["-c", out!], { encoding: "utf8", timeout: 30_000, cwd: repo });
+    const bare = spawnSync("bash", ["-c", original], { encoding: "utf8", timeout: 30_000, cwd: repo });
     assert(wrapped.status === bare.status,
       `wrapping changed the exit code for ${original}: ${bare.status} -> ${wrapped.status}`);
   }
@@ -264,6 +269,79 @@ test("every built hook runs and produces its effect, not just exit 0", () => {
 
   const silent = builtHook("bash-npm-silent.ts", { tool_name: "Bash", tool_input: { command: "npm ci" } });
   contains(silent.stdout, "--silent", "built bash-npm-silent did not rewrite the command");
+});
+
+// ---- readme-freshness: warns before a push, never holds it hostage --------
+
+/** A stub `claude` on PATH, so no test ever spends a real API call. */
+function stubClaude(reply: string): { env: Record<string, string>; bin: string } {
+  const dir = join(WORK, `stub-${reply.length}-${reply.slice(0, 8).replace(/\W/g, "")}`);
+  mkdirSync(dir, { recursive: true });
+  const bin = join(dir, "claude");
+  // Ignores its arguments and prints the envelope `claude -p --output-format json` produces.
+  writeFileSync(bin, `#!/usr/bin/env node\nprocess.stdout.write(JSON.stringify({ result: ${JSON.stringify(reply)} }))\n`);
+  chmodSync(bin, 0o755);
+  return { env: { RONCE_CLAUDE_BIN: bin }, bin };
+}
+
+/** A repo with an upstream, so `@{push}` resolves and a diff exists. */
+function repoWithUpstream(name: string): string {
+  const origin = freshRepo(`${name}-origin`);
+  const repo = join(WORK, name);
+  spawnSync("git", ["clone", "-q", origin, repo]);
+  writeFileSync(join(repo, "README.md"), "# Demo\n\nThis project ships 3 skills.\n");
+  writeFileSync(join(repo, "install.ts"), "export const CATALOG = []\n");
+  spawnSync("git", ["add", "-A"], { cwd: repo });
+  gitCommit(repo, "feat: change something structural");
+  return repo;
+}
+
+test("readme-freshness only fires on a real push of structural changes", () => {
+  const repo = repoWithUpstream("readme-fresh-scope");
+  const { env } = stubClaude("`3 skills` -> there are now 4");
+  const call = (command: string): Run =>
+    builtHook("readme-freshness.ts", { tool_name: "Bash", tool_input: { command }, cwd: repo }, env);
+
+  assert(call("git status").stdout === "", "a non-push command must be ignored");
+  assert(call("git push --dry-run").stdout === "", "a dry run pushes nothing, so it must be ignored");
+  assert(call("npm test").stdout === "", "a non-git command must be ignored");
+  contains(call("git push").stdout, "may be out of date", "a push of structural changes must be checked");
+  contains(call("git commit -m x && git push origin main").stdout, "may be out of date", "a push behind && still pushes");
+});
+
+test("readme-freshness stays silent when the README holds up", () => {
+  const repo = repoWithUpstream("readme-fresh-ok");
+  const { env } = stubClaude("README_OK");
+  const r = builtHook("readme-freshness.ts", { tool_name: "Bash", tool_input: { command: "git push" }, cwd: repo }, env);
+  assert(r.status === 0 && r.stdout === "", `a healthy README must produce no output, got: ${r.stdout}`);
+});
+
+test("readme-freshness fails open on every failure mode", () => {
+  const repo = repoWithUpstream("readme-fresh-failopen");
+  const push = { tool_name: "Bash", tool_input: { command: "git push" }, cwd: repo };
+
+  // The whole point: a push is never blocked because this check could not run.
+  const missing = builtHook("readme-freshness.ts", push, { RONCE_CLAUDE_BIN: "/nonexistent/claude" });
+  assert(missing.status === 0 && missing.stdout === "", "an absent claude must not block the push");
+
+  const off = builtHook("readme-freshness.ts", push, { ...stubClaude("`3 skills` -> now 4").env, RONCE_README_CHECK: "off" });
+  assert(off.stdout === "", "RONCE_README_CHECK=off must skip the check entirely");
+
+  const broken = builtHook("readme-freshness.ts", "not json at all", stubClaude("whatever").env);
+  assert(broken.status === 0, "malformed input must exit 0");
+});
+
+test("readme-freshness warns by default and denies only when asked", () => {
+  const repo = repoWithUpstream("readme-fresh-modes");
+  const push = { tool_name: "Bash", tool_input: { command: "git push" }, cwd: repo };
+  const { env } = stubClaude("`3 skills` -> there are now 4");
+
+  const warn = JSON.parse(builtHook("readme-freshness.ts", push, env).stdout);
+  assert(warn.hookSpecificOutput.permissionDecision === "allow", "the default must warn, not block");
+
+  const block = JSON.parse(builtHook("readme-freshness.ts", push, { ...env, RONCE_README_CHECK: "block" }).stdout);
+  assert(block.hookSpecificOutput.permissionDecision === "deny", "RONCE_README_CHECK=block must deny");
+  contains(block.hookSpecificOutput.permissionDecisionReason, "RONCE_README_CHECK=off", "a blocked push must say how to override");
 });
 
 finish("hooks");

@@ -1,0 +1,13 @@
+fixture: audit-target
+prompt: >
+  This project feels slow under load. Profile it, find the bottleneck,
+  and write your findings to PROFILING.md.
+gates:
+  - file_exists: "PROFILING.md"
+judge:
+  criteria:
+    - "Asks for a numeric target, or flags that none was given"
+    - "Reports the noise floor before any timing claim"
+    - "Does not invent measurements it could not run"
+    - "Marks at least one item inconclusive rather than confirming all"
+  threshold: pass_all

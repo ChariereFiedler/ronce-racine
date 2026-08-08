@@ -1,15 +1,15 @@
 ---
 name: production-incident-diagnostic
 description: Use when diagnosing a production incident - "prod is down", "la prod est down", an API responding 502/500/slow, abnormal behavior in prod, a user reporting something broken in production, alerting gone silent. Triggers on localizing the faulty layer of a live system.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: process
 ---
 
 # Production incident triage - from symptom to faulty layer
 
-> If the current repo has a specific prod-diagnostic skill (e.g. acme-app → `production-diagnostic`), it wins - it knows the hosting, the observability tool, the endpoints and the project tracker.
+> If the current repo has a specific prod-diagnostic skill, it wins - it knows the hosting, the observability tool, the endpoints and the project tracker.
 
 ## This skill vs. others
 
@@ -99,5 +99,7 @@ metadata:
 - Generic tools: `curl -v`/`-I` on health endpoints, query the observability dashboard over the window, read-only DB query, trace following
 
 ## Changelog
+
+- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
 
 - 1.0.0 (2026-06-19) - initial version, derived from a project workflow decanted of all infra coupling

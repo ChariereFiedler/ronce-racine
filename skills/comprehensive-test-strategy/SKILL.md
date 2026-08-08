@@ -1,9 +1,9 @@
 ---
 name: comprehensive-test-strategy
-description: Use when defining or auditing the test strategy of a module or whole project - building a coverage matrix by risk, choosing the test pyramid split, prioritizing what to test first, deciding which surfaces deserve which test level - "define the test strategy", "définis la stratégie de test", "coverage matrix by risk", "matrice de couverture". Not for writing the tests of one targeted file.
-version: 1.0.0
+description: Use when defining or auditing the test strategy of a module or whole project - building a coverage matrix by risk, choosing the test pyramid split, prioritizing what to test first, deciding which surfaces deserve which test level - "define the test strategy", "définis la stratégie de test", "coverage matrix by risk", "matrice de couverture". Not for writing the tests of one targeted file - that is `writing-robust-tests`.
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: test
 ---
 
@@ -104,5 +104,7 @@ Tickets: <list of follow-up tickets created>
 - `reference/testing-advanced.md` - advanced techniques loaded on demand: quality gates, mutation testing, fuzzing, API snapshots, UAT, pyramid detail. Read it when the strategy must rely on automated safeguards.
 
 ## Changelog
+
+- 1.0.1 (2026-08-08) - the exclusion clause now names the skill it redirects to
 
 - 1.0.0 (2026-06-19) - initial release, generalized from a project workflow (coverage matrix, risk prioritization, pyramid), stack/tracker coupling removed.

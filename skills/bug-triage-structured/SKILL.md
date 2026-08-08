@@ -1,15 +1,15 @@
 ---
 name: bug-triage-structured
 description: Use when a bug needs full triage before deciding what to do with it - "reproduce and analyze this bug", "reproduis et analyse ce bug", "fix now or open a ticket?", "faut-il corriger maintenant ou ouvrir un ticket", "triage this bug", "trie ce bug", a fresh bug report where reproduction and root cause are still unknown. NOT for merely documenting an already-understood bug.
-version: 1.1.0
+version: 1.1.1
 metadata:
-  last-reviewed: 2026-07-21
+  last-reviewed: 2026-08-08
   category: bug
 ---
 
 # Structured bug triage - reproduce, understand, decide
 
-> If the current repo has a specific triage/ticketing skill (e.g. acme-app → `add-bug`, beta-app → `jira-bug`), it wins - it knows the project's tracker, paths and commands.
+> If the current repo has a specific triage/ticketing skill, it wins - it knows the project's tracker, paths and commands.
 
 ## This skill vs. others
 
@@ -98,6 +98,8 @@ If the scope has already had 2+ recent fixes → apply `recurring-bug-root-cause
 - `templates/bug-triage.md` - triage sheet / tracker-agnostic ticket body
 
 ## Changelog
+
+- 1.1.1 (2026-08-08) - dropped the fictional example projects from the precedence note
 
 - 1.1.0 (2026-07-21) - recurrence check made mechanical (git log command, count stated even when zero); eval runs showed agents skipping it
 

@@ -1,15 +1,15 @@
 ---
 name: qa-session-intake
 description: Use when processing a recorded human QA session (timeline of verbal remarks, screenshots, captured network errors) into tracker tickets - "process the QA session", "create the QA tickets", "traite la session QA", "crée les tickets QA", a QA bundle folder to triage.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: process
 ---
 
 # QA Session Intake - from a recorded QA session to tickets
 
-> If the current repo has dedicated intake tooling (e.g. acme-app → `qa-intake` + `tool/qa-session/`), it wins - run its script instead of triaging by hand.
+> If the current repo has dedicated intake tooling, it wins - run its script instead of triaging by hand.
 
 ## This skill vs. others
 
@@ -74,5 +74,7 @@ Deliver alongside the tickets:
 - Follow the project bug skill's ticket template for the content of each ticket created.
 
 ## Changelog
+
+- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
 
 - 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

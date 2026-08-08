@@ -1,15 +1,15 @@
 ---
 name: writing-robust-tests
-description: Use when writing tests for existing code that lacks coverage - "write tests for X", "cover this file", "add tests", "écris des tests pour X", "couvre ce fichier", "ajoute des tests", code shipped without sufficient tests, flaky or fragile test suites to harden.
-version: 1.0.1
+description: Use when writing tests for existing code that lacks coverage - "write tests for X", "cover this file", "add tests", "écris des tests pour X", "couvre ce fichier", "ajoute des tests", a module or file with no tests at all, code shipped without sufficient tests, flaky or fragile test suites to harden.
+version: 1.0.3
 metadata:
-  last-reviewed: 2026-07-20
+  last-reviewed: 2026-08-08
   category: test
 ---
 
 # Writing Robust Tests - ISTQB design + evidence
 
-> If the current repo has a dedicated test skill (e.g. acme-app → `write-tests`), it wins - it knows the golden dataset and the project commands.
+> If the current repo has a dedicated test skill, it wins - it knows the golden dataset and the project commands.
 
 ## This skill vs. others
 
@@ -82,6 +82,10 @@ A test that stays green with broken code is a Liar - rewrite it.
 - Advanced techniques (automated mutation testing, contract harness, fuzzing, quality gates): see `comprehensive-test-strategy/reference/testing-advanced.md` - shared with the strategy skill.
 
 ## Changelog
+
+- 1.0.3 (2026-08-08) - description names its most common trigger: a module with no tests at all
+
+- 1.0.2 (2026-08-08) - dropped the fictional example projects from the precedence note
 
 - 1.0.1 (2026-07-20) - Tooling now links the shared testing-advanced reference (was announced as planned while it already existed)
 

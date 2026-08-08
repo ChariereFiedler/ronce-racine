@@ -1,15 +1,15 @@
 ---
 name: api-contract-versioning
 description: Use when modifying an API endpoint, schema or contract consumed elsewhere - renaming/removing/restructuring a request or response field, pagination or envelope change, "field X must become", "le champ X doit devenir", introducing a breaking change, versioning an API, or deprecating a field/route. Covers REST, GraphQL and gRPC alike.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: feature
 ---
 
 # Versioning a network API contract
 
-> If the current repo has a specific skill or conventions for this case (e.g. acme-app → `api-contract-evolution`), they win - they know the project's paths, snapshots and stack.
+> If the current repo has a specific skill or conventions for this case, they win - they know the project's paths, snapshots and stack.
 
 ## This skill vs. others
 
@@ -73,4 +73,6 @@ A network API contract has a chain of consumers that are **coupled and potential
 
 ## Changelog
 
-- 1.0.0 (2026-06-19) - initial release, generalized from the acme-app `api-contract-evolution` workflow (decoupled from a Rust/Axum stack, agnostic across REST/GraphQL/gRPC)
+- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
+
+- 1.0.0 (2026-06-19) - initial release, generalized from a project-specific `api-contract-evolution` workflow (decoupled from a Rust/Axum stack, agnostic across REST/GraphQL/gRPC)

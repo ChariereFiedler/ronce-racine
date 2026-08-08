@@ -1,15 +1,15 @@
 ---
 name: frontend-spec-call-site-audit
 description: Use BEFORE writing any frontend feature ticket or spec - new page, new component, new dashboard section, "add an X page", "ajoute une page X". Use when drafting acceptance criteria for a UI change in an existing app.
-version: 1.0.1
+version: 1.0.3
 metadata:
-  last-reviewed: 2026-07-20
+  last-reviewed: 2026-08-08
   category: frontend
 ---
 
 # Codebase audit before a frontend spec
 
-> If the current repo has a specific spec skill (e.g. acme-app → `frontend-feature-spec`), it wins.
+> If the current repo has a specific spec skill, it wins.
 
 ## This skill vs. others
 
@@ -76,6 +76,10 @@ A scenario like "I click the card → I see the detail" says nothing about the s
 - `templates/ticket-frontend.md` - ticket skeleton with the blocking audit section
 
 ## Changelog
+
+- 1.0.3 (2026-08-08) - dropped the fictional example projects from the precedence note
+
+- 1.0.2 (2026-08-08) - audit-entry-points.ts escapes the component name before building its regex
 
 - 1.0.1 (2026-07-20) - co-located test procedure for audit-entry-points.ts (scripts/audit-entry-points.test.ts)
 

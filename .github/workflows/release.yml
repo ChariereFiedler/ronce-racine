@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+# Least privilege by default; the release job elevates only what it needs.
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the GitHub Release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Full gate set: a tag that fails any of these does not become a release.
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run test:mutation
+
+      # The tag names a version; package.json is what npm will publish. A
+      # mismatch between the two is the release mistake this catches.
+      - name: The tag matches package.json
+        run: |
+          TAGGED="${GITHUB_REF_NAME#v}"
+          PACKAGED=$(node -p "require('./package.json').version")
+          test "$TAGGED" = "$PACKAGED" || {
+            echo "tag $GITHUB_REF_NAME does not match package.json ($PACKAGED)" >&2
+            exit 1
+          }
+
+      - name: Extract the release notes from CHANGELOG.md
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '/^## \[/ { p = index($0, "[" ver "]") > 0 } p' \
+            CHANGELOG.md > release-notes.md
+          # A tag with no matching changelog section is a release mistake too.
+          test -s release-notes.md
+
+      - name: Create the GitHub Release
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          body_path: release-notes.md
+
+      # npm publish stays manual on purpose: it needs an NPM_TOKEN this
+      # repository does not hold. `npm run build && npm publish` from a clean
+      # checkout of the tag, once this workflow is green.
