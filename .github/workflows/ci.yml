@@ -16,8 +16,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 18 = the documented minimum (package.json engines), 22 = current LTS.
-        node: [18, 22]
+        # The dev toolchain floor, not the product floor: vitest 4 imports
+        # util.styleText, which lands in Node 20.12. What ships (the built CLI
+        # and the hooks) still runs on Node 18, and the job below proves it.
+        node: [20, 22]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -45,6 +47,27 @@ jobs:
 
       - name: Eval manifests dry-run
         run: npm run eval:dry
+
+  engines-floor:
+    name: The shipped CLI runs on Node 18
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 18
+          cache: npm
+
+      # package.json claims engines >=18. The test suite cannot run there, so
+      # what is verified is the claim itself: install, build, then exercise the
+      # artifacts a target repository actually executes.
+      - run: npm ci
+      - run: npm run build
+      - name: The built CLI runs
+        run: node dist/install.js plan . > /dev/null
+      - name: A shipped hook runs
+        run: echo '{}' | node dist/hooks/skill-reminder.mjs > /dev/null
 
   coverage:
     name: Coverage of the imported modules
