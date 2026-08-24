@@ -31,6 +31,7 @@ import { interactiveSelect } from "./src/selector.js";
 // Re-exported so importers (and the test suite) keep a single entry point.
 export { canonicalHash, copyPath, describeSource, isStale } from "./src/lock.js";
 export { CATALOG, type Item } from "./src/catalog.js";
+export { hookCommand, wiredHookName, type CommandHook } from "./src/settings.js";
 export { applySelectorKey, type SelectorState } from "./src/selector.js";
 
 /**
@@ -200,10 +201,20 @@ async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rules
   // announces itself as healthy, and stays that way (issue #1).
   if (collectedWirings.length > 0) {
     const settingsPath = join(dotclaude, "settings.json");
-    const { added, backedUp, malformed } = mergeHookSettings(dotclaude, collectedWirings);
+    // The lockfile's hooks, so a legacy wiring is repaired even when this run's
+    // detection no longer selects that hook (installed once with --all, signal
+    // since gone). Without it, "re-run the installer" only fixes what is picked.
+    const installedHookFiles = (prevLock?.installed ?? [])
+      .filter((t) => t.startsWith("hook:"))
+      .map((t) => t.slice("hook:".length));
+    const { added, rewired, backedUp, malformed } = mergeHookSettings(dotclaude, collectedWirings, installedHookFiles);
+    const backupNote = backedUp && !malformed ? " (backup: settings.json.bak)" : "";
     if (malformed) console.log(`\n⚠ ${settingsPath} was not valid JSON (or its hooks section had an unexpected shape) - backed up to settings.json.bak and rewritten.`);
-    if (added > 0) console.log(`${malformed ? "" : "\n"}Wired ${added} hook(s) into ${settingsPath}${backedUp && !malformed ? " (backup: settings.json.bak)" : ""}.`);
-    else if (!malformed) console.log(`\nHooks already wired in ${settingsPath} - no change.`);
+    if (added > 0) console.log(`${malformed ? "" : "\n"}Wired ${added} hook(s) into ${settingsPath}${backupNote}.`);
+    // Worth its own line: it means the wirings that were there did not work, or
+    // were duplicated. Folding it into "no change" would hide a repair.
+    if (rewired > 0) console.log(`${added > 0 || malformed ? "" : "\n"}Repaired ${rewired} pre-existing wiring(s) to the exec form${added > 0 ? "" : backupNote}.`);
+    if (added === 0 && rewired === 0 && !malformed) console.log(`\nHooks already wired in ${settingsPath} - no change.`);
     console.log(`(details: .claude/hooks/README.md)`);
   }
 

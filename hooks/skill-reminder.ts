@@ -6,12 +6,12 @@
  * quoted triggers + the words of the name against the prompt.
  * NEVER blocks (exit 0 no matter what); emits nothing if there is no match.
  *
- * settings.json wiring (see hooks/README.md):
- *   "UserPromptSubmit": [{ "hooks": [{ "type": "command",
- *     "command": "npx tsx $CLAUDE_PROJECT_DIR/.claude/hooks/skill-reminder.ts" }] }]
+ * settings.json wiring (see hooks/README.md) - exec form, no shell involved:
+ *   "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "node",
+ *     "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/skill-reminder.mjs"] }] }]
  *
- * @version 1.0.0
- * @last-reviewed 2026-06-25
+ * @version 1.1.0
+ * @last-reviewed 2026-08-24
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -53,8 +53,13 @@ function loadSkills(dir: string): { name: string; triggers: string[] }[] {
     const p = join(dir, name, "SKILL.md");
     if (!existsSync(p)) continue;
     const raw = readFileSync(p, "utf8");
-    const fm = /^---\n([\s\S]*?)\n---/.exec(raw);
-    const desc = fm && /description:\s*(.*)/.exec(fm[1]);
+    // \r?\n, not \n: with core.autocrlf=true (the Git default on Windows) a
+    // checkout materializes SKILL.md as CRLF, and an LF-only delimiter matched
+    // none of them - the hook then suggested only the skills that happened to
+    // stay LF. Same reason the capture is bounded to the line rather than `.*`,
+    // which would keep a trailing \r.
+    const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw);
+    const desc = fm && /description:\s*([^\r\n]*)/.exec(fm[1]);
     if (desc) out.push({ name, triggers: triggers(name, desc[1]) });
   }
   return out;

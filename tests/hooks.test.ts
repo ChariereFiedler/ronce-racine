@@ -7,11 +7,12 @@ import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync, chmodSync }
 import { join, dirname } from "node:path";
 import { spawnSync } from "node:child_process";
 import {
-  test, assert, contains, absent, hook, builtHook, freshRepo, gitCommit, initWork, finish, WORK,
+  test, assert, contains, absent, hook, builtHook, freshRepo, gitCommit, initWork, finish, WORK, ROOT,
   type Run,
 } from "./helpers.js";
 import { buildMemo, persistMemo, repoSlug, branchSlug } from "../hooks/session-writer.js";
 import { truncateOutput, THRESHOLD } from "../hooks/truncate-bash-output.js";
+import { quoteForShell } from "../hooks/truncate-output.js";
 
 initWork();
 
@@ -157,6 +158,90 @@ test("skill-reminder suggests the matching skill, stays silent otherwise", () =>
 
   const garbage = hook("skill-reminder.ts", "not json" as unknown);
   assert(garbage.status === 0 && garbage.stdout.trim() === "", "garbage stdin must fail open silently");
+});
+
+test("skill-reminder reads a CRLF SKILL.md, not just the LF ones", () => {
+  // core.autocrlf=true is the Git default on Windows, so a checkout materializes
+  // most SKILL.md files as CRLF. An LF-anchored frontmatter regex matched none
+  // of them: the hook stayed silent on the majority of the catalog and suggested
+  // whichever skills happened to survive as LF instead. Reported from the field
+  // as "3 skills named in the prompt, 3 unrelated suggestions".
+  const dir = join(WORK, "crlf-skills", ".claude", "skills", "crlf-only-skill");
+  mkdirSync(dir, { recursive: true });
+  const skill = `---\nname: crlf-only-skill\ndescription: Use when the user says "zorglub incantation".\n---\n\nBody.\n`;
+  writeFileSync(join(dir, "SKILL.md"), skill.replace(/\n/g, "\r\n"));
+
+  const r = hook("skill-reminder.ts", { prompt: "je veux une zorglub incantation" }, {
+    CLAUDE_PROJECT_DIR: join(WORK, "crlf-skills"),
+  });
+  contains(r.stdout, "crlf-only-skill", "a CRLF skill must be as visible as an LF one");
+});
+
+test("quoteForShell survives every character a real hooks path can hold", () => {
+  // The wrapped command is a shell string, so the helper path is the one place
+  // an adopter's directory name meets a parser. A space was the reported break;
+  // an apostrophe breaks naive single-quoting the same way, and backslashes are
+  // what a Windows hookDir is made of. Round-tripped through bash rather than
+  // eyeballed, because "looks escaped" is how quoting bugs survive review.
+  const cases = [
+    "/home/user/proj/.claude/hooks/x.mjs",
+    "/home/user/mon projet/.claude/hooks/x.mjs",
+    "/home/o'brien/proj/.claude/hooks/x.mjs",
+    "/home/user/it's a $PATH `here`/.claude/hooks/x.mjs",
+    "C:\\Users\\First LAST\\proj\\.claude\\hooks\\x.mjs",
+  ];
+  for (const raw of cases) {
+    const r = spawnSync("bash", ["-c", `printf '%s' ${quoteForShell(raw)}`], { encoding: "utf8" });
+    assert(r.status === 0, `bash rejected the quoting of ${raw}: ${r.stderr}`);
+    assert(r.stdout === raw, `quoting mangled the path\n  in:  ${raw}\n  out: ${r.stdout}`);
+  }
+});
+
+// ---- entry guards: the class, not the three occurrences --------------------
+
+test("every built hook still fires when its own path holds a space", () => {
+  // Third time this class bit us. The guard was first bound to the .ts
+  // extension (dead after the build), then to a basename split on "/" (dead on
+  // win32, where argv[1] is all backslashes). Both failed the same way: exit 0,
+  // empty stdout, indistinguishable from "nothing to do". The separator half
+  // needs the Windows CI leg; the space half is checkable right here, and a
+  // path with a space is what the field report was actually running on.
+  const spaced = join(WORK, "dir with space", "hooks");
+  mkdirSync(spaced, { recursive: true });
+  const cases: { file: string; input: unknown; expect: string }[] = [
+    { file: "truncate-output.ts", input: { tool_name: "Bash", tool_input: { command: "cargo build" } }, expect: "truncate-bash-output.mjs" },
+    { file: "skill-reminder.ts", input: { prompt: "lance un sweep" }, expect: "detection-sweep" },
+    { file: "bash-npm-silent.ts", input: { tool_name: "Bash", tool_input: { command: "npm ci" } }, expect: "--silent" },
+  ];
+  for (const c of cases) {
+    const built = join(ROOT, "dist", "hooks", c.file.replace(/\.ts$/, ".mjs"));
+    const copy = join(spaced, c.file.replace(/\.ts$/, ".mjs"));
+    writeFileSync(copy, readFileSync(built, "utf8"));
+    const r = spawnSync("node", [copy], { encoding: "utf8", input: JSON.stringify(c.input) });
+    assert((r.stdout ?? "").trim().length > 0, `${c.file} produced nothing from a path with a space: its entry guard did not fire`);
+    contains(r.stdout, c.expect, `${c.file} ran but did not do its job`);
+  }
+});
+
+test("truncate-output resolves its helper without CLAUDE_PROJECT_DIR", () => {
+  // The fallback used URL.pathname, which on win32 yields a percent-encoded
+  // "/C:/Users/First%20LAST/..." that nothing can resolve. A space in the path
+  // exposes the encoding half of that on any platform.
+  const spaced = join(WORK, "dir with space", "fallback");
+  mkdirSync(spaced, { recursive: true });
+  for (const f of ["truncate-output.mjs", "truncate-bash-output.mjs"]) {
+    writeFileSync(join(spaced, f), readFileSync(join(ROOT, "dist", "hooks", f), "utf8"));
+  }
+  const r = spawnSync("node", [join(spaced, "truncate-output.mjs")], {
+    encoding: "utf8",
+    input: JSON.stringify({ tool_name: "Bash", tool_input: { command: "cargo build" } }),
+    env: { ...process.env, CLAUDE_PROJECT_DIR: "" },
+  });
+  const cmd = JSON.parse(r.stdout).hookSpecificOutput.updatedInput.command as string;
+  absent(cmd, "%20", "a percent-encoded path is not a path any runtime can open");
+  const helper = /'([^']*truncate-bash-output\.mjs)'/.exec(cmd)?.[1];
+  assert(helper !== undefined, `the helper path must be shell-quoted, got ${cmd}`);
+  assert(existsSync(helper!), `the wrapper points at a file that does not exist: ${helper}`);
 });
 
 // ---- truncateOutput (unit) -------------------------------------------------

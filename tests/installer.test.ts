@@ -8,7 +8,7 @@ import { join, dirname } from "node:path";
 import {
   test, assert, contains, absent, cli, freshRepo, readLock, initWork, finish, WORK, ROOT,
 } from "./helpers.js";
-import { canonicalHash, CATALOG, copyPath } from "../install.js";
+import { canonicalHash, CATALOG, copyPath, wiredHookName, type CommandHook } from "../install.js";
 
 initWork();
 
@@ -286,11 +286,18 @@ test("hooks ship built, run on plain node, and stay drift-clean", () => {
   assert(shipped.every((f) => f.endsWith(".js") || f.endsWith(".mjs")), `hooks must ship as JS, got ${shipped.join(", ")}`);
   assert(!shipped.some((f) => f.endsWith(".ts")), `hooks must never ship as TypeScript, got ${shipped.join(", ")}`);
 
-  const cmd = JSON.parse(readFileSync(join(repo, ".claude/settings.json"), "utf8"))
-    .hooks.UserPromptSubmit[0].hooks[0].command as string;
-  assert(cmd.startsWith("node "), `hooks must run on plain node, got ${cmd}`);
-  absent(cmd, "tsx", "a target repo must not need tsx to run hooks");
-  contains(cmd, ".mjs", "the wiring must point at the built file");
+  const wiring = JSON.parse(readFileSync(join(repo, ".claude/settings.json"), "utf8"))
+    .hooks.UserPromptSubmit[0].hooks[0] as { command: string; args?: string[] };
+  // Exec form: the executable alone in `command`, the script path as one arg.
+  // A shell-form string here is the 0.7.0 wiring that died on any path with a
+  // space in it, so the shape is asserted, not just the substrings.
+  assert(wiring.command === "node", `hooks must run on plain node, got ${wiring.command}`);
+  assert(Array.isArray(wiring.args) && wiring.args.length === 1, `wiring must be exec form, got ${JSON.stringify(wiring)}`);
+  const scriptArg = wiring.args![0];
+  absent(scriptArg, "tsx", "a target repo must not need tsx to run hooks");
+  contains(scriptArg, ".mjs", "the wiring must point at the built file");
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: the literal ${...} IS the placeholder under test
+  contains(scriptArg, "${CLAUDE_PROJECT_DIR}", "the braced placeholder is the one Claude Code substitutes itself");
 
   // A built artifact still has to be drift-controlled against its source.
   const check = cli(["install.ts", "check", repo]);
@@ -752,9 +759,12 @@ test("uninstall keeps the wiring of a detached hook", () => {
   const mjs = hookTok.slice("hook:".length).replace(/\.ts$/, ".mjs");
   assert(existsSync(join(repo, ".claude/hooks", mjs)), "a detached hook must survive on disk");
   const settings = JSON.parse(readFileSync(join(repo, ".claude/settings.json"), "utf8"));
-  const events = Object.values(settings.hooks ?? {}) as { hooks?: { command: string }[] }[][];
-  const commands = events.flat().flatMap((e) => e.hooks ?? []).map((h) => h.command);
-  assert(commands.some((c) => c.endsWith(mjs)), "a hook kept on disk must keep its wiring, or it never fires again");
+  const events = Object.values(settings.hooks ?? {}) as { hooks?: { command: string; args?: string[] }[] }[][];
+  // The whole invocation, not just `command`: in exec form the script path lives
+  // in args, and reading `command` alone is exactly the blind spot that made
+  // uninstall walk past its own wirings.
+  const invocations = events.flat().flatMap((e) => e.hooks ?? []).map((h) => [h.command, ...(h.args ?? [])].join(" "));
+  assert(invocations.some((c) => c.endsWith(mjs)), "a hook kept on disk must keep its wiring, or it never fires again");
 });
 
 test("uninstall keeps a locally modified artifact as a backup", () => {
@@ -789,6 +799,197 @@ test("uninstall without a lockfile exits 2 rather than guessing", () => {
   const r = cli(["install.ts", "uninstall", repo]);
   assert(r.status === 2, `expected exit 2, got ${r.status}`);
   contains(r.stderr, "No lockfile", "it should say why it refused");
+});
+
+// ---- hook wiring identity: install and uninstall must agree ----------------
+
+/** Every hook invocation in a settings.json, flattened, form-agnostic. */
+function wirings(repo: string): string[] {
+  const settings = JSON.parse(readFileSync(join(repo, ".claude/settings.json"), "utf8"));
+  const events = Object.values(settings.hooks ?? {}) as { hooks?: { command: string; args?: string[] }[] }[][];
+  return events.flat().flatMap((e) => e.hooks ?? []).map((h) => [h.command, ...(h.args ?? [])].join(" "));
+}
+
+/** The placeholder Claude Code substitutes. A literal here, never interpolated. */
+// biome-ignore lint/suspicious/noTemplateCurlyInString: this literal IS the placeholder under test
+const DIR = "${CLAUDE_PROJECT_DIR}";
+
+test("hook identity survives every wiring shape a Windows adopter can have", () => {
+  // The half of the win32 behavior that is pure logic, so it is pinned HERE
+  // rather than only on the Windows runner: string shapes go in, an identity
+  // comes out. A backslash separator, a settings.json hand-edited on Windows, a
+  // legacy .ts path, a quoted shell form - all name the same hook, and both
+  // install and uninstall must see that. Reading `command` alone saw none of
+  // the exec-form ones, which is how uninstall left dangling wirings behind.
+  const same: CommandHook[] = [
+    { type: "command", command: "node", args: [`${DIR}/.claude/hooks/skill-reminder.mjs`] },
+    { type: "command", command: "node", args: ["C:\\Users\\First LAST\\proj\\.claude\\hooks\\skill-reminder.mjs"] },
+    { type: "command", command: "node $CLAUDE_PROJECT_DIR/.claude/hooks/skill-reminder.mjs" },
+    { type: "command", command: `node "${DIR}"/.claude/hooks/skill-reminder.mjs` },
+    { type: "command", command: `npx tsx ${DIR}/.claude/hooks/skill-reminder.ts` },
+  ];
+  for (const hookEntry of same) {
+    // Identity is the NAME, not the spelling: a pre-0.5 `.ts` wiring and a
+    // current `.mjs` one are the same hook, and treating them as different is
+    // how a re-install ends up appending a duplicate beside the old entry.
+    const got = wiredHookName(hookEntry);
+    assert(got === "skill-reminder", `${JSON.stringify(hookEntry)} must resolve to skill-reminder, got ${got}`);
+  }
+
+  // And it must NOT claim a hook that simply is not ours: a user's own script,
+  // or one living outside .claude/hooks. Over-claiming here would make
+  // uninstall delete wirings it never wrote.
+  const foreign: CommandHook[] = [
+    { type: "command", command: "node", args: [`${DIR}/scripts/my-own.mjs`] },
+    { type: "command", command: "prettier --write ." },
+    { type: "command", command: "node", args: [`${DIR}/.claude/other/skill-reminder.mjs`] },
+  ];
+  for (const hookEntry of foreign) {
+    assert(wiredHookName(hookEntry) === null, `${JSON.stringify(hookEntry)} is not ours and must not be claimed`);
+  }
+});
+
+// The positive counterpart - "every guarded hook uses THE one idiom" - is a
+// static check, and it lives in tools/portability.ts rather than here. Stryker
+// instruments the hooks it mutates, so any assertion made against their source
+// TEXT fails in the sandbox and aborts the whole mutation run.
+
+test("install repairs a legacy shell-form wiring instead of duplicating it", () => {
+  // What a 0.7.0 user has on disk. Recognizing our own entry by exact string
+  // equality meant any rewritten form went unrecognized: the next install
+  // appended the fragile entry BESIDE the working one, so the hook fired twice
+  // per event and the shell copy failed on every path containing a space.
+  const repo = freshRepo("wiring-legacy");
+  const dotclaude = join(repo, ".claude");
+  mkdirSync(dotclaude, { recursive: true });
+  writeFileSync(join(dotclaude, "settings.json"), `${JSON.stringify({
+    hooks: {
+      UserPromptSubmit: [{ hooks: [{ type: "command", command: "node $CLAUDE_PROJECT_DIR/.claude/hooks/skill-reminder.mjs" }] }],
+    },
+  }, null, 2)}\n`);
+
+  const r = cli(["install.ts", "install", repo, "--yes"]);
+  assert(r.status === 0, `install exit ${r.status}: ${r.stderr}`);
+
+  const reminder = wirings(repo).filter((w) => w.includes("skill-reminder.mjs"));
+  assert(reminder.length === 1, `exactly one skill-reminder wiring must remain, got ${reminder.length}: ${reminder.join(" | ")}`);
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: the literal ${...} IS the placeholder under test
+  contains(reminder[0], "${CLAUDE_PROJECT_DIR}", "the surviving wiring must be the repaired one");
+  absent(reminder[0], "node $CLAUDE_PROJECT_DIR", "the fragile shell form must be gone, not kept alongside");
+  contains(r.stdout, "Repaired", "a repair must be reported, never folded into 'no change'");
+});
+
+test("a legacy wiring is repaired even when this run does not select that hook", () => {
+  // "Re-run the installer to get the fix" was only true for hooks the current
+  // detection happens to pick. One installed with --all, or whose signal has
+  // since left the repo, kept its broken pre-0.8 wiring while its .mjs sat
+  // right there in .claude/hooks - a hook that errors on every event, and a
+  // recovery path that quietly did not cover it.
+  const repo = freshRepo("wiring-unselected");
+  cli(["install.ts", "install", repo, "--all", "--yes"]);
+
+  // An OPTIONAL hook specifically: those are the ones a plain re-install does
+  // not pick, which is the whole point. Picking whichever hook came first made
+  // this test pass against the unfixed code, because it landed on one that is
+  // always selected anyway.
+  const optionalHook = CATALOG.find((i) => i.kind === "hook" && i.optional)!;
+  const degraded = optionalHook.name.replace(/\.ts$/, "");
+  assert(readLock(repo).installed.includes(`hook:${optionalHook.name}`), `--all must install ${degraded}`);
+
+  const settingsPath = join(repo, ".claude/settings.json");
+  const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
+  let found = false;
+  for (const entries of Object.values(settings.hooks) as { hooks: CommandHook[] }[][]) {
+    for (const entry of entries) {
+      for (let i = 0; i < entry.hooks.length; i++) {
+        if (wiredHookName(entry.hooks[i]) !== degraded) continue;
+        // Back to the exact 0.7.0 shell form, by hand.
+        entry.hooks[i] = { type: "command", command: `node $CLAUDE_PROJECT_DIR/.claude/hooks/${degraded}.mjs` };
+        found = true;
+      }
+    }
+  }
+  assert(found, `${degraded} must be wired after --all for this test to mean anything`);
+  writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+
+  // A plain re-install: no --all, so the optional hooks are NOT selected again.
+  const r = cli(["install.ts", "install", repo, "--yes"]);
+  assert(r.status === 0, `re-install exit ${r.status}: ${r.stderr}`);
+
+  const after = JSON.parse(readFileSync(settingsPath, "utf8"));
+  const all = (Object.values(after.hooks) as { hooks: CommandHook[] }[][])
+    .flat().flatMap((e) => e.hooks);
+  const target = all.filter((h) => wiredHookName(h) === degraded);
+  assert(target.length === 1, `expected exactly one ${degraded} wiring, got ${target.length}`);
+  assert(target[0].command === "node" && Array.isArray(target[0].args),
+    `${degraded} was installed but left in the broken shell form: ${JSON.stringify(target[0])}`);
+});
+
+test("repairing a wiring keeps its position among the user's own hooks", () => {
+  // Order inside an event is semantic - hooks/README.md states that PreToolUse
+  // `updatedInput` is last-wins. A repair implemented as filter-then-push moved
+  // our entry to the end, silently flipping which rewrite wins against a hook
+  // the user wired themselves. Repairing must change the entry, and nothing else.
+  const repo = freshRepo("wiring-order");
+  const dotclaude = join(repo, ".claude");
+  mkdirSync(dotclaude, { recursive: true });
+  writeFileSync(join(dotclaude, "settings.json"), `${JSON.stringify({
+    hooks: {
+      UserPromptSubmit: [{ hooks: [
+        { type: "command", command: "node $CLAUDE_PROJECT_DIR/.claude/hooks/skill-reminder.mjs" },
+        { type: "command", command: "node ./user-own-hook.mjs" },
+      ] }],
+    },
+  }, null, 2)}\n`);
+
+  const r = cli(["install.ts", "install", repo, "--yes"]);
+  assert(r.status === 0, `install exit ${r.status}: ${r.stderr}`);
+  contains(r.stdout, "Repaired", "the legacy wiring must actually have been repaired for this test to mean anything");
+
+  const settings = JSON.parse(readFileSync(join(dotclaude, "settings.json"), "utf8"));
+  const entry = settings.hooks.UserPromptSubmit.find((e: { hooks: unknown[] }) => e.hooks.length === 2);
+  assert(entry !== undefined, `expected the two-hook entry to survive, got ${JSON.stringify(settings.hooks.UserPromptSubmit)}`);
+  const order = entry.hooks.map((h: { command: string; args?: string[] }) => [h.command, ...(h.args ?? [])].join(" "));
+  contains(order[0], "skill-reminder.mjs", `ours must stay FIRST, where it was; got ${JSON.stringify(order)}`);
+  contains(order[0], DIR, "and it must be the repaired form, not the legacy one");
+  contains(order[1], "user-own-hook.mjs", "the user's hook must stay where they put it");
+});
+
+test("uninstall removes the wirings install wrote, in exec form", () => {
+  // unwire read `command` only. In exec form that is just "node", so every
+  // wiring the installer had written was invisible to it: the .mjs files went,
+  // the wirings stayed, and each one errored on every event afterwards.
+  const repo = freshRepo("wiring-unwire");
+  cli(["install.ts", "install", repo, "--yes"]);
+  assert(wirings(repo).length > 0, "the install must have wired something to make this test meaningful");
+
+  const r = cli(["install.ts", "uninstall", repo]);
+  assert(r.status === 0, `uninstall exit ${r.status}: ${r.stderr}`);
+  const left = existsSync(join(repo, ".claude/settings.json")) ? wirings(repo) : [];
+  assert(left.length === 0, `uninstall left dangling wirings behind: ${left.join(" | ")}`);
+});
+
+test("install then uninstall survive a project path containing a space", () => {
+  // The field report's actual environment: C:\Users\First LAST\... A space in
+  // the path broke the wiring on every platform, not just Windows - the shell
+  // split the expanded placeholder at the space and node got a truncated path.
+  const repo = freshRepo("project dir with space");
+  const install = cli(["install.ts", "install", repo, "--yes"]);
+  assert(install.status === 0, `install exit ${install.status}: ${install.stderr}`);
+
+  // Exec form means the path travels as ONE argument: no quoting to get right,
+  // nothing for a shell to tokenize. Asserted on the arg, where the path lives.
+  const settings = JSON.parse(readFileSync(join(repo, ".claude/settings.json"), "utf8"));
+  const entries = (Object.values(settings.hooks) as { hooks: { command: string; args?: string[] }[] }[][]).flat();
+  for (const hookEntry of entries.flatMap((e) => e.hooks)) {
+    assert(hookEntry.command === "node", `every wiring must be exec form, got ${JSON.stringify(hookEntry)}`);
+    assert(hookEntry.args?.length === 1, `the script path must be exactly one argument, got ${JSON.stringify(hookEntry.args)}`);
+  }
+
+  const check = cli(["install.ts", "check", repo]);
+  contains(check.stdout, "match the canonical", `check must be clean under a spaced path: ${check.stdout}`);
+  const un = cli(["install.ts", "uninstall", repo]);
+  assert(un.status === 0, `uninstall exit ${un.status}: ${un.stderr}`);
 });
 
 finish("installer");

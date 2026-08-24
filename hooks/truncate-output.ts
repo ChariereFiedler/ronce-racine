@@ -10,10 +10,12 @@
  *
  * Bypass strategy: if the command contains `# no-truncate`, we leave it untouched.
  *
- * @version 2.0.0
- * @last-reviewed 2026-07-10
+ * @version 2.1.0
+ * @last-reviewed 2026-08-24
  */
 import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 interface HookInput {
   tool_name?: string
@@ -57,7 +59,17 @@ export function wrapCommand(cmd: string, hookDir: string): string {
   // `: 'cmd';` prefix does not (it breaks on `echo it's fine`).
   // Newlines are flattened, otherwise the comment would swallow the next line.
   const readable = cmd.replace(/\s*\n\s*/g, ' ').trim()
-  return `TRUNCATE_CMD_B64=${encoded} node '${hookDir}/truncate-bash-output.mjs' # ${readable}`
+  // Single quotes keep spaces and backslashes literal (a Windows hookDir is full
+  // of both), but they do not survive an apostrophe in the path: `'` has to be
+  // closed, escaped and reopened. `/home/o'brien/...` is rarer than a space, not
+  // rarer than never.
+  const helper = quoteForShell(join(hookDir, 'truncate-bash-output.mjs'))
+  return `TRUNCATE_CMD_B64=${encoded} node ${helper} # ${readable}`
+}
+
+/** POSIX single-quoting: the only form that is literal for every other character. */
+export function quoteForShell(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`
 }
 
 function readStdin(): string {
@@ -85,10 +97,12 @@ function main(): void {
   if (!cmd || !isVerboseCommand(cmd)) return
 
   // Resolving the hooks directory: the CLAUDE_PROJECT_DIR variable takes priority,
-  // otherwise a path relative to this file (for local execution / tests)
+  // otherwise a path relative to this file (for local execution / tests).
+  // fileURLToPath, never URL.pathname: on win32 the latter yields a percent-encoded
+  // "/C:/Users/First%20LAST/..." that no shell and no runtime can resolve.
   const hookDir = process.env.CLAUDE_PROJECT_DIR
-    ? `${process.env.CLAUDE_PROJECT_DIR}/.claude/hooks`
-    : new URL('.', import.meta.url).pathname.replace(/\/$/, '')
+    ? join(process.env.CLAUDE_PROJECT_DIR, '.claude', 'hooks')
+    : fileURLToPath(new URL('.', import.meta.url)).replace(/[\\/]$/, '')
 
   const output = {
     hookSpecificOutput: {
@@ -103,9 +117,10 @@ function main(): void {
   process.stdout.write(JSON.stringify(output))
 }
 
-// Entry guard by BASENAME, never by extension: this file is authored as .ts and
-// ships as .mjs, and an extension-bound guard silently disables main() in the
-// built copy - the hook then exits 0 doing nothing, with no signal at all.
-const invoked = (process.argv[1] ?? "").split("/").pop()?.replace(/\.(ts|mjs|js)$/, "")
-if (invoked === 'truncate-output') main()
+// Compare URLs, never parse the path: pathToFileURL normalizes the separator,
+// so this holds on win32 where a basename split on "/" never matches, and it is
+// blind to the .ts -> .mjs rename the build performs. Both traps cost us a
+// silently dead hook once each (see docs/postmortems/2026-08-24-hook-portability.md).
+const isMain = import.meta.url === pathToFileURL(process.argv[1] ?? '').href
+if (isMain) main()
 

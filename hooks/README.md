@@ -7,6 +7,56 @@ Hooks are authored in TypeScript but SHIP BUILT: the installer copies `.mjs` fil
 > **Note** - the `install.ts` installer copies the selected hooks and automatically composes the merged `settings.json` snippet - the manual wiring below is only useful for a hand install.
 
 
+## Wiring rule: exec form, always
+
+Every snippet below uses the **exec form** - `"command"` holds the executable,
+`"args"` holds the arguments:
+
+```json
+{ "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/skill-reminder.mjs"] }
+```
+
+Not the shell form (`"command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/x.mjs"`),
+which shipped until 0.7.0 and broke for every adopter whose project path
+contained a space - the shell split the expanded path at the space, and on a
+Windows box without Git Bash the unbraced `$CLAUDE_PROJECT_DIR` was never
+expanded at all. Exec form spawns with no shell: each argument is passed exactly
+as written, and `${CLAUDE_PROJECT_DIR}` braced is substituted by Claude Code
+itself rather than by whichever shell happens to be there.
+
+Two constraints worth knowing:
+
+- **`node` plus a script path, never the script as the executable.** On Windows
+  exec form needs `command` to resolve to a real binary; `node.exe` is one
+  everywhere. The `.cmd` shims in `node_modules/.bin` are not.
+- **A hook needing shell syntax stays in shell form** - a pipe, `&&`, `|| true`.
+  Then every placeholder must be wrapped in double quotes (see the
+  `precommit-scan` snippet below), because the shell does the tokenizing.
+
+`ronce-racine install` writes the exec form and repairs a pre-0.8 shell-form
+wiring in place, so re-running the installer is enough to pick this up.
+
+---
+
+## Permission gate: the rewriting hooks answer `allow`
+
+`bash-npm-silent` and `truncate-output` change the command that runs. Claude Code
+only applies an `updatedInput` when the hook answers
+`permissionDecision: "allow"`, so **every command these two rewrite is
+auto-approved and skips the permission prompt you would otherwise see.**
+
+Concretely, with both installed, these no longer prompt: `npm install`, `npm ci`
+(which run `postinstall` scripts), `cargo build/test/clippy`, `curl …`,
+`docker build/logs`, `rustup …`, and unbounded `git log`/`git diff`. Commands
+they do not match are unaffected.
+
+This is a real widening of what runs without asking. If that trade is not one you
+want, do not install these two hooks - or wire them under an `if` rule narrowing
+them to the command classes you accept. The other hooks in this directory observe
+without rewriting and do not answer `allow`.
+
+---
+
 ## Composition rule: a hook is never alone on its event
 
 Several plugins can observe the same Claude Code event, and `PreToolUse`
@@ -40,7 +90,7 @@ Locates skills in this order: `$CLAUDE_PROJECT_DIR/.claude/skills`, `./.claude/s
 {
   "hooks": {
     "UserPromptSubmit": [
-      { "hooks": [{ "type": "command", "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/skill-reminder.mjs" }] }
+      { "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/skill-reminder.mjs"] }] }
     ]
   }
 }
@@ -64,7 +114,7 @@ Leaves interactive `npm install <pkg>` calls (adding a dependency) untouched.
     "PreToolUse": [
       { "matcher": "Bash",
         "hooks": [{ "type": "command",
-          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/bash-npm-silent.mjs" }] }
+          "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/bash-npm-silent.mjs"] }] }
     ]
   }
 }
@@ -88,7 +138,7 @@ Leaves interactive `npm install <pkg>` calls (adding a dependency) untouched.
     "PreToolUse": [
       { "matcher": "Bash",
         "hooks": [{ "type": "command",
-          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/truncate-output.mjs" }] }
+          "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/truncate-output.mjs"] }] }
     ]
   }
 }
@@ -111,7 +161,7 @@ Writes a session memo to `~/.claude/projects/<repo-slug>/sessions/<branch>.md` (
   "hooks": {
     "Stop": [
       { "hooks": [{ "type": "command",
-          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/session-writer.mjs" }] }
+          "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/session-writer.mjs"] }] }
     ]
   }
 }
@@ -129,7 +179,7 @@ Re-reads the memo (written by `session-writer`) and injects it as `additionalCon
     "SessionStart": [
       { "matcher": "compact",
         "hooks": [{ "type": "command",
-          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/session-inject.mjs" }] }
+          "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/session-inject.mjs"] }] }
     ]
   }
 }
@@ -146,7 +196,7 @@ Injects the memo as `systemMessage` into the compaction prompt, so the generated
   "hooks": {
     "PreCompact": [
       { "hooks": [{ "type": "command",
-          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/session-precompact.mjs" }] }
+          "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/session-precompact.mjs"] }] }
     ]
   }
 }
@@ -165,7 +215,7 @@ If the session starts in a linked git worktree (not the main worktree) and the m
   "hooks": {
     "SessionStart": [
       { "hooks": [{ "type": "command",
-          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/worktree-env-setup.mjs" }] }
+          "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/worktree-env-setup.mjs"] }] }
     ]
   }
 }
@@ -205,7 +255,7 @@ terminal does not go through it - keep a CI job for that guarantee.
   "hooks": {
     "PreToolUse": [
       { "matcher": "Bash", "hooks": [{ "type": "command",
-          "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/readme-freshness.mjs" }] }
+          "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/readme-freshness.mjs"] }] }
     ]
   }
 }
@@ -229,7 +279,7 @@ exec npx tsx "$CLAUDE_PROJECT_DIR/.claude/skills/commit-readiness-review/scripts
     "PreToolUse": [
       { "matcher": "Bash",
         "hooks": [{ "type": "command",
-          "command": "npx tsx $CLAUDE_PROJECT_DIR/.claude/skills/commit-readiness-review/scripts/precommit-scan.ts || true" }] }
+          "command": "npx tsx \"${CLAUDE_PROJECT_DIR}/.claude/skills/commit-readiness-review/scripts/precommit-scan.ts\" || true" }] }
     ]
   }
 }
@@ -241,4 +291,4 @@ exec npx tsx "$CLAUDE_PROJECT_DIR/.claude/skills/commit-readiness-review/scripts
 
 The `install.ts` installer copies the selected hooks and automatically composes the merged `settings.json` snippet - this is the recommended method.
 
-For a manual install: copy the desired `.ts` files into `<repo>/.claude/hooks/`, then add the corresponding wiring to `<repo>/.claude/settings.json`. Paths use `$CLAUDE_PROJECT_DIR` (resolved by Claude Code) - no hardcoded absolute path.
+For a manual install: copy the desired `.mjs` files into `<repo>/.claude/hooks/`, then add the corresponding wiring to `<repo>/.claude/settings.json`. Paths use `${CLAUDE_PROJECT_DIR}` (substituted by Claude Code itself) - no hardcoded absolute path, and no reliance on a shell to expand it.

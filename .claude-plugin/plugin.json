@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "ronce-racine",
   "displayName": "Ronce Racine",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Skills and agents for everyday engineering work - triage, review, testing, frontend specs, incident diagnosis - each one evaluated against a real agent run before it ships.",
   "author": {
     "name": "Cedric Chariere Fiedler",

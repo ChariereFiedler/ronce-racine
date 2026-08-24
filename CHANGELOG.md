@@ -7,6 +7,62 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Individual artifacts (rules, skills, hooks) also carry their own `version` in
 their frontmatter; this file tracks the toolkit as a whole.
 
+## [0.8.0] - 2026-08-24
+
+### Fixed
+- **Hooks were silently broken on Windows, and on any project path containing a
+  space** ([#2](https://github.com/ChariereFiedler/ronce-racine/issues/2), field
+  report). Six defects, all sharing one cause: nothing in the code expressed the
+  contract a shipped hook runs under. Full analysis in
+  [`docs/postmortems/2026-08-24-hook-portability.md`](docs/postmortems/2026-08-24-hook-portability.md).
+  - The installer wrote each wiring as a **shell string**, which the shell split
+    at the first space in the path - and which a Windows box without Git Bash
+    never expanded at all. Wirings are now written in **exec form**
+    (`"command": "node"`, `"args": ["${CLAUDE_PROJECT_DIR}/…"]`): no shell, and
+    the braced placeholder is substituted by Claude Code itself.
+  - **Re-running `install` repairs a pre-0.8 wiring in place** instead of
+    appending a duplicate beside it, and leaves it at the position it held in
+    its event - order there is semantic, since `PreToolUse` `updatedInput` is
+    last-wins. The repair covers every hook the lockfile records as installed,
+    not only the ones the current run selects, so a hook installed once with
+    `--all` is not left behind. Identity ignores the extension, so a pre-0.5
+    `.ts` wiring is recognized as the same hook rather than duplicated.
+  - `uninstall` recognized wirings by their `command` string only, so every
+    exec-form entry was **invisible** to it: the hook files went and the wirings
+    stayed, erroring on every event. Install and uninstall now share one identity
+    predicate.
+  - Three hooks (`truncate-output`, `truncate-bash-output`, `readme-freshness`)
+    extracted their own basename by **splitting on `/`**, which never matches on
+    win32: the hook loaded, `main()` never ran, and it exited 0 producing nothing.
+    All nine hooks now use one entry-guard idiom, pinned by a test.
+  - `skill-reminder` could not parse a **CRLF** `SKILL.md`. With
+    `core.autocrlf=true` (the Git default on Windows) that is most of the
+    catalog, so it suggested whichever skills happened to stay LF. Same blind
+    spot fixed in the `tools/skills.ts` frontmatter lint.
+  - `truncate-output` resolved its helper through `URL.pathname`, yielding a
+    **percent-encoded** path nothing can open.
+- **`truncate-bash-output` no longer swallows a spawn failure.** It returned
+  `stdout ?? ''` with exit 0, reporting the user's command as a silent success
+  while discarding its entire output.
+
+### Added
+- **A `windows-latest` CI job.** The matrix had a Node-version axis and no OS
+  axis, which is why all six defects above shipped past a green build. It checks
+  out with `core.autocrlf=true`, then exercises what ships from a path containing
+  a space.
+- **`tools/portability.ts`**, wired into `npm test`: forbids the POSIX-only
+  idioms that caused this class (it found three live hits on its first run), and
+  runs every built hook from a directory whose name contains a space, failing if
+  one produces nothing. One-off exceptions via `// portability:allow <reason>`.
+
+### Documented
+- **The rewriting hooks answer `permissionDecision: "allow"`**, which is required
+  for `updatedInput` to apply and has the side effect of **skipping the
+  permission prompt** for every command they match - `npm install`/`npm ci` (and
+  their `postinstall` scripts), `cargo`, `curl`, `docker build`, unbounded
+  `git log`/`git diff`. `hooks/README.md` now states this plainly and says how to
+  decline the trade.
+
 ## [0.7.0] - 2026-08-08
 
 ### Added

@@ -13,8 +13,9 @@
 import { existsSync, readFileSync, writeFileSync, rmSync, rmdirSync, readdirSync, renameSync } from "node:fs";
 import { join, resolve, sep } from "node:path";
 import { tokenPaths, compareToken } from "./lock.js";
-import { shippedHookName, ADOPTED_HEADER } from "./paths.js";
-import type { EventEntry } from "./settings.js";
+import { ADOPTED_HEADER } from "./paths.js";
+import { wiredHookName, hookNameOf } from "./settings.js";
+import type { CommandHook, EventEntry } from "./settings.js";
 
 /** Directories the installer creates, deepest first so a parent empties before it is tested. */
 const OWNED_DIRS = ["rules/shared", "rules", "skills", "hooks", "agents", "scripts"];
@@ -43,10 +44,14 @@ export function unwireHookSettings(dotclaude: string, hookFiles: string[]): { re
   const hooks = settings.hooks;
   if (!hooks || typeof hooks !== "object" || Array.isArray(hooks)) return { removed: 0, unreadable: false };
 
-  const ours = new Set(hookFiles.map((f) => shippedHookName(f)));
-  const isOurs = (command: string): boolean => {
-    const file = command.split(/[/\\]/).pop() ?? "";
-    return command.includes(".claude") && ours.has(file);
+  // The SAME predicate the installer writes with. Reading only `command` made
+  // every exec-form entry invisible here (its command is just "node"), so
+  // uninstall deleted the .mjs files and left the wirings behind - the dangling
+  // state the docblock above says it exists to prevent.
+  const ours = new Set(hookFiles.map((f) => hookNameOf(f)));
+  const isOurs = (hook: CommandHook): boolean => {
+    const file = wiredHookName(hook);
+    return file !== null && ours.has(file);
   };
 
   let removed = 0;
@@ -56,7 +61,7 @@ export function unwireHookSettings(dotclaude: string, hookFiles: string[]): { re
     for (const entry of entries) {
       if (!entry || !Array.isArray(entry.hooks)) continue;
       const before = entry.hooks.length;
-      entry.hooks = entry.hooks.filter((h) => !(h && typeof h.command === "string" && isOurs(h.command)));
+      entry.hooks = entry.hooks.filter((h) => !isOurs(h));
       removed += before - entry.hooks.length;
     }
     // An entry we emptied was ours; one that was already empty is not our business.

@@ -9,6 +9,15 @@ on:
 permissions:
   contents: read
 
+# A push supersedes the run still going for the previous commit on the same ref,
+# so that one is cancelled rather than left to finish against a tree nobody will
+# ship. Three pushes in twenty minutes while iterating on the Windows job burned
+# roughly twenty machine-minutes proving things about commits already replaced.
+# Keyed per ref, so branches never cancel each other.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     name: Validate (Node ${{ matrix.node }})
@@ -69,6 +78,121 @@ jobs:
       - name: A shipped hook runs
         run: echo '{}' | node dist/hooks/skill-reminder.mjs > /dev/null
 
+  windows:
+    name: What ships works on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # The adopters who reported issue #2 had core.autocrlf=true, the Git
+        # default on Windows. Checking out CRLF here is the point: an LF-only
+        # frontmatter parser passed every Linux job while being blind to most of
+        # the catalog on their machine.
+      - name: Check out with CRLF, as a Windows adopter does
+        shell: pwsh
+        run: |
+          # pwsh only fails a step on the LAST command's exit code, so each git
+          # call is checked: a re-normalization that quietly did nothing would
+          # otherwise leave an LF tree and make the CRLF assertions below pass
+          # vacuously - the exact failure mode this whole job exists to catch.
+          $ErrorActionPreference = 'Stop'
+          function Run($desc, [scriptblock]$cmd) {
+            & $cmd
+            if ($LASTEXITCODE -ne 0) { throw "$desc failed with exit $LASTEXITCODE" }
+          }
+          Run 'git config'    { git config core.autocrlf true }
+          Run 'git rm cached' { git rm --cached -r . -q }
+          Run 'git reset'     { git reset --hard -q }
+
+          # Prove it, do not assume it. Counts the SKILL.md files that actually
+          # materialized with CRLF; zero means the re-normalization silently
+          # no-oped and every CRLF check downstream is worthless.
+          $skills = Get-ChildItem -Path skills -Filter SKILL.md -Recurse -File
+          $crlf = @($skills | Where-Object {
+            [System.IO.File]::ReadAllText($_.FullName) -match "`r`n"
+          })
+          Write-Host "$($crlf.Count) of $($skills.Count) SKILL.md files are CRLF"
+          if ($crlf.Count -eq 0) {
+            throw "the working tree is still LF: core.autocrlf did not take effect, so this job would prove nothing about CRLF"
+          }
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Every Linux job passed while six defects shipped, because all six needed
+      # a backslash separator, a percent-encoded file URL, a CRLF checkout or a
+      # space in the project path to appear. This job is the axis that was
+      # missing from the matrix - not a Node version, an operating system.
+      - name: Portability gate (static idioms + hooks run from a spaced path)
+        run: npm run portability
+
+      - name: The built CLI runs
+        run: node dist/install.js plan . > $null
+
+      # Fix #5, checked against a real CRLF working tree rather than a fixture:
+      # the repo's own skills are CRLF here, so an LF-only frontmatter parser
+      # sees no skill at all and this step goes silent. That silence is exactly
+      # what the field report described, and what no Linux job could reproduce.
+      - name: skill-reminder parses the CRLF checkout it was blind to
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # The skills this hook is about to read must actually be CRLF, or a
+          # passing assertion below says nothing the Linux jobs did not already.
+          $sample = Join-Path 'skills' 'detection-sweep/SKILL.md'
+          if ([System.IO.File]::ReadAllText($sample) -notmatch "`r`n") {
+            throw "$sample is LF: this step would pass on an LF tree too, proving nothing"
+          }
+          $out = '{"prompt":"lance un sweep sur le projet"}' | node dist/hooks/skill-reminder.mjs
+          if ($LASTEXITCODE -ne 0) { throw "skill-reminder exited $LASTEXITCODE" }
+          if (-not $out) { throw "skill-reminder produced nothing on a CRLF checkout - the frontmatter parser is blind again" }
+          if ($out -notmatch 'detection-sweep') { throw "expected detection-sweep, got: $out" }
+          Write-Host $out
+
+      # Fix #4/#6 under the real separator: argv[1] is an all-backslash path
+      # here, and the hooks directory is quoted into the rewritten command.
+      - name: truncate-output fires and points at a resolvable helper
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $payload = '{"tool_name":"Bash","tool_input":{"command":"cargo build"}}'
+          $out = $payload | node dist/hooks/truncate-output.mjs
+          if ($LASTEXITCODE -ne 0) { throw "truncate-output exited $LASTEXITCODE" }
+          if (-not $out) { throw "truncate-output produced nothing - the entry guard did not fire on win32" }
+          $cmd = ($out | ConvertFrom-Json).hookSpecificOutput.updatedInput.command
+          if ($cmd -match '%20') { throw "the helper path is percent-encoded: $cmd" }
+          if ($cmd -notmatch 'truncate-bash-output\.mjs') { throw "the wrapper lost its helper: $cmd" }
+          Write-Host $cmd
+
+      # Deliberately NOT the full vitest suite: it shells out to ln -s, bash
+      # stubs and git worktree, so a Windows failure there would report on the
+      # test harness rather than on the product. What ships is covered above;
+      # widening this job means porting those helpers first.
+      - name: Install into a path containing a space, then uninstall
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $target = Join-Path $env:RUNNER_TEMP 'target repo with space'
+          New-Item -ItemType Directory -Force -Path $target | Out-Null
+          git -C $target init -q
+          if ($LASTEXITCODE -ne 0) { throw "git init failed in a spaced path" }
+          git -C $target -c user.email=ci@example.invalid -c user.name=ci commit -q --allow-empty -m init
+          if ($LASTEXITCODE -ne 0) { throw "git commit failed in a spaced path" }
+          node dist/install.js install $target --yes
+          if ($LASTEXITCODE -ne 0) { throw "install failed" }
+          $settings = Get-Content (Join-Path $target '.claude/settings.json') -Raw | ConvertFrom-Json
+          $entries = $settings.hooks.PSObject.Properties.Value | ForEach-Object { $_ } | ForEach-Object { $_.hooks }
+          if (-not $entries) { throw "install wired no hook at all" }
+          foreach ($h in $entries) {
+            if ($h.command -ne 'node') { throw "wiring is not exec form: $($h | ConvertTo-Json -Compress)" }
+            if ($h.args.Count -ne 1) { throw "script path must be exactly one argument: $($h.args -join ', ')" }
+          }
+          node dist/install.js uninstall $target
+          if ($LASTEXITCODE -ne 0) { throw "uninstall failed" }
+
   coverage:
     name: Coverage of the imported modules
     runs-on: ubuntu-latest
@@ -83,9 +207,22 @@ jobs:
       # the toolkit runs as subprocesses, which v8 coverage cannot see.
       - run: npm run coverage
 
+  # The two harnesses are independent and were the critical path at ~4 min run
+  # to run when chained in one job. Split, they overlap and the slower one alone
+  # sets the pace. Kept as one matrix rather than two jobs so a harness added
+  # later is one line, and so the pair stays visibly a pair.
   mutation:
-    name: Mutation
+    name: Mutation (${{ matrix.harness.label }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        harness:
+          # Guards against tests that run the code without asserting on it.
+          - { label: "subprocess-tested code", script: "test:mutation" }
+          # Complements the above: Stryker only sees modules the tests import
+          # in-process, which the on-disk harness cannot reach cheaply.
+          - { label: "imported modules", script: "test:mutation:inprocess" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -93,13 +230,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Guards against tests that run the code without asserting on it.
-      - name: Subprocess-tested code (the tests can fail)
-        run: npm run test:mutation
-      # Complements the above: Stryker only sees modules the tests import
-      # in-process, which the on-disk harness cannot reach cheaply.
-      - name: Imported modules
-        run: npm run test:mutation:inprocess
+      - run: npm run ${{ matrix.harness.script }}
 
   plugin:
     name: Plugin manifests

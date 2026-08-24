@@ -21,12 +21,13 @@
  * `git push` in their own terminal does not go through it - use the CI job for
  * that guarantee.
  *
- * @version 1.0.0
- * @last-reviewed 2026-08-08
+ * @version 1.1.0
+ * @last-reviewed 2026-08-24
  */
 import { readFileSync, existsSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 interface HookInput {
   tool_name?: string
@@ -159,8 +160,9 @@ function main(): void {
   else emit('allow', message)
 }
 
-// Entry guard by BASENAME, never by extension: this file is authored as .ts and
-// ships as .mjs, and an extension-bound guard silently disables main() in the
-// built copy - the hook then exits 0 doing nothing, with no signal at all.
-const invoked = (process.argv[1] ?? '').split('/').pop()?.replace(/\.(ts|mjs|js)$/, '')
-if (invoked === 'readme-freshness') main()
+// Compare URLs, never parse the path: pathToFileURL normalizes the separator,
+// so this holds on win32 where a basename split on "/" never matches, and it is
+// blind to the .ts -> .mjs rename the build performs. Both traps cost us a
+// silently dead hook once each (see docs/postmortems/2026-08-24-hook-portability.md).
+const isMain = import.meta.url === pathToFileURL(process.argv[1] ?? '').href
+if (isMain) main()

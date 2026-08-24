@@ -31,8 +31,12 @@ interface Frontmatter {
 }
 
 /** Minimal parser: top-level `key: value` + a single nested level under `metadata:`. */
-function parseFrontmatter(raw: string): { fm: Frontmatter; body: string } {
-  if (!raw.startsWith("---\n")) return { fm: {}, body: raw };
+function parseFrontmatter(rawInput: string): { fm: Frontmatter; body: string } {
+  // Normalize first: with core.autocrlf=true a Windows checkout materializes
+  // these files as CRLF, and every LF-anchored delimiter below silently
+  // degrades to "no frontmatter" - the lint then passes by seeing nothing.
+  const raw = rawInput.replace(/\r\n/g, "\n");
+  if (!raw.startsWith("---\n")) return { fm: {}, body: raw }; // portability:allow - raw is CRLF-normalized on the line above
   const end = raw.indexOf("\n---", 4);
   if (end === -1) return { fm: {}, body: raw };
   const head = raw.slice(4, end);
@@ -74,8 +78,9 @@ function referencedPaths(body: string): string[] {
  * ("Read-only: it reports findings"), which this repo's own parser - lenient,
  * line-based - had been reading happily for months.
  */
-function unquotedColonProblems(raw: string, label: string): string[] {
-  const head = raw.startsWith("---\n") ? raw.slice(4).split("\n---")[0] : "";
+function unquotedColonProblems(rawInput: string, label: string): string[] {
+  const raw = rawInput.replace(/\r\n/g, "\n"); // see parseFrontmatter: CRLF checkouts
+  const head = raw.startsWith("---\n") ? raw.slice(4).split("\n---")[0] : ""; // portability:allow - raw is CRLF-normalized on the line above
   const errs: string[] = [];
   for (const line of head.split("\n")) {
     const m = /^([\w-]+):\s+(.*)$/.exec(line);
