@@ -1,0 +1,110 @@
+# audit-industrialisation / hard - a prior review that is right about everything
+# except the thing that changed.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. The one figure this skill ever carried was judge-saturated over
+# 2 pairs on a fixture that no longer exists. `tier: probed`.
+#
+# WHY THIS IS THE HARD SCENARIO
+# The prompt asks for a domain-by-domain maturity picture, which is exactly the
+# shape of docs/audits/2026-02-11-intake-summary.md: seven areas, an impression
+# each, one line of justification each. It is the highest-quality-looking
+# artefact in the repository for this task and it is stale in the one place that
+# matters - "the repository's own rules run on every merge request and stop it
+# going in". They did when it was written. `npm run gate` now reports five
+# problems and exits 0, because package.json invokes tools/quality/gate.js
+# without the `--enforce` flag the script needs to fail. README.md says the same
+# thing the February review does, and the `quality` job exists, is wired and has
+# never failed, so the pipeline history looks healthy. Establishing otherwise
+# takes one command and its exit code, or a close reading of one line of
+# package.json.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# Three independent sources agree that the control works, and none of them is
+# lying. The gate's own output is a list of five untidy things, which reads as a
+# healthy gate doing its job rather than as five violations nobody has acted on.
+# Nothing points at `echo $?`, and nothing points at a flag that is not there.
+# An agent under the breadth pressure of eight domains has every reason to take
+# the three agreeing sources at their word - and the wrong level lands on a MUST
+# question about whether a bad change can reach live, which is the one line of a
+# consolidated report a board acts on.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Give the board a domain-by-domain maturity picture of this repository and
+  file it in the repository.
+gates:
+  # from-exit: Markdown report saved to `docs/audit/`
+  - file_matching: { pattern: "^docs/audit/.*\.md$" }
+  # from-exit: Markdown report saved to `docs/audit/`
+  - repo_clean: { except: "docs/audit/" }
+  # from-exit: each question scored 0-4 or N/A with factual evidence
+  # The quality-gate question carries a level of 0 or 1. Scoring it 3 because a
+  # gate exists, is configured and is green is the world's single most likely
+  # wrong answer, and it is what copying the February impressions produces.
+  - grep_min: { pattern: "[Qq][Aa]-04[^\n]*\|\s*[01]\s*\|", in: "docs/audit/", count: "1" }
+  # from-exit: each question scored 0-4 or N/A with factual evidence
+  # The evidence for that level: the flag the script needs and package.json does
+  # not pass. A report that concludes the gate blocks contains neither spelling.
+  - grep_min: { pattern: "--enforce|[Ee]nforce flag", in: "docs/audit/", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and the skill states it in those words: Phase 1 is what happens
+# "Before launching the audits". This skill names no `Guardrails` and no step
+# budget, and its one named tool is the Agent tool of Phase 2, whose rendered
+# name in a Harbor trajectory is not something this manifest can verify without
+# a run - so no `tool_used` is written on a guess. What remains is the
+# ordering, and an ordering is exactly what a repository snapshot cannot hold:
+# the report is byte-for-byte the same file whether the reconnaissance came
+# before it or after it. The one act all nine DO prescribe - "each
+# reference/<section>.md read" - is deliberately not gated: the arm with no
+# skill installed has no such file to open, so a check on it would move this
+# dimension by construction rather than by behaviour, and tools/eval-report.ts
+# already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the destination path. This prompt does not
+# name where the report goes - the destination is the skill's own promise - but
+# an agent that has read the skill puts `docs/audit/` into its opening
+# TodoWrite, and a `then` of "docs/audit/" would match that todo at step 1 and
+# fail an ordering the agent in fact kept. That failure would fall on the aided
+# arm alone, which is worse than a check nobody can pass. Keying on the
+# rendered argument matches the Write and the Edit and nothing the agent merely
+# says. Its honest limit: a report written through a shell heredoc renders no
+# `file_path=` at all, and the check then holds vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): Before launching the audits, **build a structured
+  # project profile** that will be passed to every subagent.
+  #
+  # Phase 4 states what a level may rest on - `technical_test`, the output of
+  # an executed command - and the one command that settles QA-04 is the gate.
+  # Its source is where the missing `--enforce` is visible. A board report
+  # filed before that file was opened rests on three agreeing documents, all of
+  # which were true when they were written.
+  - before: { first: "tools/quality/gate.js", then: "file_path=docs/audit/" }
+judge:
+  criteria:
+    - { dimension: tooling, text: "The gate's exit code is the evidence, not the job's presence" }
+    - { dimension: trap, text: "The February review is treated as stale rather than as a baseline" }
+    - { dimension: outcome, text: "The five unactioned rule failures are named" }
+  threshold: pass_all

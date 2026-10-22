@@ -1,0 +1,121 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. No paired trial exists for this skill on any fixture; the only
+# skill in the base with a real six-pair figure is recurring-bug-root-cause.
+# The tier below says `probed` for that reason and must not be raised until a
+# six-pair run has been recorded here.
+#
+# Rebuilt from scratch on the `surface` world (2026-09-03). The manifest it
+# replaces ran against a 15-line fixture and its single gate was a grep for a
+# hex colour in one file; the base-wide probe found 43 of 58 such gates.
+#
+# THE SCENARIO
+#
+# `class: 'tally'` is hand-written in five places. Four are console screens and
+# must move onto a component; the fifth, src/print/invoice-sheet.js, must NOT -
+# the billing service fetches that sheet and renders it to PDF without
+# console.css, so a class name migrated there resolves to nothing. The module
+# docstring says so, and tools/check/tokens-allow.json carries `src/print/` for
+# the same reason. That is the exemption the exit condition's "grep = 0 outside
+# an exemption" is talking about.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# Asked to cover a repeated block with a component, an agent greps the class
+# name and gets five hits in five files. Nothing in the grep distinguishes the
+# print sheet from the four screens: it is the same three lines, with the same
+# two modifier classes. Migrating all five is the tidier-looking answer, it
+# leaves the grep at zero, and every check in the repository still passes -
+# `npm test` never renders the sheet and `node tools/check/tokens.js src` is
+# happy either way, because src/print/ is exempt from it. The world's ranked
+# wrong answer #4 is exactly this. The second failure is the record: the
+# pattern library's own README says a record is written the day a component
+# lands and that "a record that cannot fill in its Enforcement section is
+# telling you something", and an agent that ships the component without one has
+# skipped the doc layer the exit condition demands.
+#
+# SATURATION RISK, STATED IN ADVANCE
+#
+# The print sheet's docstring names its reason in plain English, so an agent
+# that opens the file before migrating it is handed the answer. That is the
+# world's fair path (EXPECTED.md, "Residual risk" 2) and it is deliberate; the
+# discrimination expected here is whether the agent opens it at all, not
+# whether it could work the reason out.
+fixture: surface
+tier: probed
+prompt: >
+  Four screens hand-write the same little counter block - a muted label and a
+  number, side by side above the ledger. Cover it with a pattern-library
+  component and move the screens onto it. Add its record under
+  docs/pattern-library/, following the template that is already there.
+preconditions:
+  # The record has to land somewhere the gates can read it. Naming the
+  # directory in the prompt makes its existence unearnable credit, so it is a
+  # precondition: what it buys is that the gate below is worth reading.
+  - file_matching: { pattern: "^docs/pattern-library/(?!README\\.md|TEMPLATE\\.md|status-pill\\.md|data-table\\.md|field-row\\.md)[^/]+\\.md$" }
+gates:
+  # Pristine: 12 matching lines across berths, arrivals, invoices and moorings
+  # (three lines each: the wrapper, the label span, the value strong). The
+  # pattern is `'tally` unclosed on purpose so it also reaches `'tally__label'`
+  # and `'tally__value'` - a migration that lifts only the wrapper and leaves
+  # the two spans behind is a half-answer, and this counts it as one.
+  # from-exit: ALL call sites of the raw pattern migrated (grep = 0 outside an exemption)
+  - grep_zero: { pattern: "'tally", in: "src/pages/" }
+  # The other half of the same promise: the pattern has to have gone somewhere,
+  # not just gone. Pristine 0 under src/components/. Floor of 1 rather than 3
+  # because the three class strings can legitimately sit on one line, and
+  # grepHits counts lines. No file name is dictated: the exit condition
+  # promises a component, not a path.
+  # from-exit: ALL call sites of the raw pattern migrated (grep = 0 outside an exemption)
+  - grep_min: { pattern: "'tally", in: "src/components/", count: "1" }
+  # The exemption, as an act rather than a sentence. src/print/invoice-sheet.js
+  # renders for another target; touching it at all is the world's ranked wrong
+  # answer #4, and it breaks a PDF nothing in this repository can see.
+  # from-exit: ALL call sites of the raw pattern migrated (grep = 0 outside an exemption)
+  - repo_clean: { in: "src/print" }
+  # The doc layer, keyed on the exemption rather than on the record's wording:
+  # a record whose Exemptions table is empty has not recorded the one thing
+  # that makes this migration a decision. Pristine 0 in docs/pattern-library/,
+  # and neither string appears in the skill's own component-contract template,
+  # so the format probe cannot pass it.
+  # from-exit: Enforcement: doc + lint (exemption removed) + test/audit - all 3 layers
+  - grep_min: { pattern: "invoice-sheet|src/print", in: "docs/pattern-library/", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Never
+# replayed for this skill on any fixture.
+#
+# ONE CHECK, and the shape of the section is set by the skill: its `Tooling`
+# says "No generic script: raw-pattern detection (grep) and the lint rule are
+# stack-specific; tool them in the project skill", so there is no script to
+# name and the tooling dimension stays empty here. Nor is there a `before`
+# anchor: the record's path is the agent's to choose, and every source file
+# this scenario writes is one it must read first, so an ordering claim would
+# invert. No `tool_absent` - touching the print sheet is already gated on the
+# tree by `repo_clean: { in: "src/print" }` - and no `step_budget`.
+trajectory:
+  # from-skill(sequence): Inventory ALL the call sites of the raw pattern
+  # (`grep -rn '<raw pattern>' <src>`) - migrating them is part of the batch,
+  # not just the requesting call site
+  #
+  # The fifth call site is the one that must NOT move, and the world states the
+  # measurement in as many words: "the discrimination expected here is whether
+  # the agent opens it at all, not whether it could work the reason out"
+  # (EXPECTED.md, Residual risk 2). The reason lives in the module docstring
+  # and nowhere else, so an exemption granted without opening the file was
+  # guessed rather than decided - and `repo_clean: { in: "src/print" }` above
+  # scores the guess and the decision identically. That is the pair: the gate
+  # holds the act, this holds the decision behind it.
+  #
+  # KNOWN UNDERCOUNT: `grep -rn "'tally" src/` prints the sheet's three lines
+  # and its own action names no path, so a trial that decides from the grep
+  # output alone reads as a miss. It costs both arms equally.
+  - tool_used: { name: "invoice-sheet" }
+judge:
+  criteria:
+    # The exemption, with its reason - an absence produced on purpose.
+    - { dimension: restraint, text: "The print sheet is left alone because it renders without console.css" }
+    # Contract: testid as pass-through, state props from the caller.
+    - { dimension: outcome, text: "The new component takes its label and its value from the caller" }
+    # Enforcement, doc layer: the raw pattern -> component mapping is what
+    # makes the component discoverable rather than decorative.
+    - { dimension: outcome, text: "The record names where the component is used" }
+  threshold: pass_all

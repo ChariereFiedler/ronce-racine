@@ -10,7 +10,12 @@ export default defineConfig({
     // shared repo state (playground/fixtures, dist/hooks), so running files
     // concurrently makes them race and fail on ENOTEMPTY.
     fileParallelism: false,
-    testTimeout: 30_000,
+    // 30_000 until the eval base was rebuilt onto five worlds of 59-79 files
+    // with real commit history: `playground/setup.ts` measures 35 s alone now,
+    // and nine tests spawn it (four in fixtures.test.ts, five in eval.test.ts),
+    // so three of them timed out on a dependency rather than on their subject.
+    // 120_000 is ~3x the measured cost - still short enough to catch a hang.
+    testTimeout: 120_000,
     // `npm run coverage`. Only the modules a test IMPORTS are visible here: the
     // behavioral tests spawn the real CLI and the real hooks as subprocesses,
     // which v8 coverage of this process cannot see. Read it as coverage of the

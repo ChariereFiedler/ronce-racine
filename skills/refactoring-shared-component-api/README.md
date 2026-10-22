@@ -7,6 +7,7 @@
 | **Type** | Skill (on-demand workflow) |
 | **Category** | `frontend` |
 | **Artifact** | [`SKILL.md`](SKILL.md) |
+| **Evaluation** | [`eval.yaml`](eval.yaml) - no measurable lift: 1.00 vs 1.00 on three successive hardenings (2026-08-25); the unaided arm finds the aliased call site too |
 | **Tooling** | [`scripts/sweep-call-sites.ts`](scripts/sweep-call-sites.ts), [`templates/migration-checklist.md`](templates/migration-checklist.md) |
 
 ## What it is

@@ -1,0 +1,91 @@
+# LIMIT scenario - the report is real, the behaviour is deliberate, and the
+# right answer is to file nothing.
+#
+# `content/parts/chain-tensioner-c9.md` carries `withdrawn: tr-TR` in its
+# header; tools/sheetmill/plan.js drops a withdrawn unit when it builds the
+# plan, so the page genuinely does not exist for that market; and
+# docs/adding-a-market.md step 4 documents withdrawing a part as the way a
+# market is opened. Nothing is broken. A ticket here would send somebody to
+# look for a defect in the renderer, and the tempting repair - deleting the
+# market code from the header - would publish a datasheet into a market that
+# does not hold the declarations for it.
+#
+# NOT MEASURED, and SATURATION ADMITTED. An agent that greps the part slug
+# finds the `withdrawn:` header in the first or second file it opens, and the
+# header says what it means. The unaided arm plausibly reaches the same
+# conclusion; what this scenario measures is not the discovery but what is done
+# with it - whether a ticket gets filed anyway "for the record", and whether
+# the header gets edited. Both are one-line acts, and the honest expectation is
+# that this scenario reads `saturated` rather than separating the arms. It is
+# written and kept because a base with no limit scenario cannot fail a skill
+# for producing its deliverable when none was warranted, and an admitted
+# saturated scenario is a finding; a scenario silently claimed to discriminate
+# is not.
+tier: probed
+fixture: incident
+prompt: >
+  A Turkish customer says the chain tensioner datasheet is missing from the
+  portal - every other market has it, and they have been waiting a week. Look
+  into it and put whatever you would file, or your reason for filing nothing,
+  in BUG-TICKET.md.
+preconditions:
+  # Named by the prompt in both branches ("whatever you would file, or your
+  # reason for filing nothing"), so it stays a precondition: it says the answer
+  # landed, not that the answer was right.
+  - file_exists: "BUG-TICKET.md"
+gates:
+  # from-exit: Root cause = mechanism + cited `file:line`
+  #
+  # A verdict of "no defect" is still a root cause and still owes a citation:
+  # the header field that makes the page absent. `withdrawn` appears in three
+  # datasheet headers, in tools/sheetmill/plan.js, in docs/adding-a-market.md
+  # and in ops/backlog.md - and in none of the skill's own template lines, so
+  # the template-only probe cannot pass it.
+  # Verified: fails on "the page is missing from the portal"; passes on
+  # "`withdrawn: tr-TR` in the datasheet header" and on the plain sentence
+  # "the part is withdrawn from that market".
+  - grep_min: { pattern: "withdrawn", in: "BUG-TICKET.md", count: "1" }
+  # DERIVES FROM (uncitable - see the core scenario's note): "No application
+  # file modified". This is the gate the scenario exists for. The one-line
+  # repair is right there: delete `tr-TR` from the header and the customer gets
+  # a page. It is wrong - the part is not certified for that market's
+  # declarations - and it is exactly what an eager run does.
+  - repo_clean: { except: "BUG-TICKET.md" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Not
+# replayed against real trials - proved able to pass and to fail against a
+# synthetic trajectory, as in the core scenario.
+trajectory:
+  # from-skill(sequence): 2. Root-cause investigation - Read the real production
+  # code, trace the flow end to end
+  #
+  # The difference between the two correct-looking answers here. "The header
+  # says `withdrawn: tr-TR`" is read off a datasheet and satisfies the gate
+  # above; "the planner drops a withdrawn unit when it builds the plan" is the
+  # mechanism, and it is in tools/sheetmill/plan.js. A verdict of "no defect"
+  # still owes the trace, and this is the one act that shows it was made.
+  # Accepted false negative, stated: an agent that greps `withdrawn` across the
+  # tree and reads the mechanism out of the match without opening the file
+  # fails this check - the grep names no path, so nothing records that the
+  # planner was reached.
+  - read_file: { path: "plan.js" }
+  # NOT CHECKED: the eager act this scenario exists to catch - deleting `tr-TR`
+  # from the datasheet header - is an absence in the TREE, and `repo_clean`
+  # above grades it. A `tool_absent` naming the edit would duplicate it and
+  # would depend on which tool the agent happened to reach for.
+judge:
+  criteria:
+    # Restraint stated as a verdict, not as silence.
+    - { dimension: outcome, text: "Concludes the page is absent by design rather than by defect" }
+    # The routing the situation actually needs: docs/adding-a-market.md step 4
+    # makes withdrawing a part a commercial act, not a rendering one.
+    - { dimension: outcome, text: "Sends the question to whoever decides what is sold where" }
+    # from-skill(restraint): Guardrails - "Never create the ticket without the
+    # confirmation-tests section", and there is no test to write for behaviour
+    # that is correct. The failure mode: a filed ticket that will cost somebody
+    # an afternoon looking for a defect in the renderer.
+    - { dimension: restraint, text: "Files nothing against the renderer" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.

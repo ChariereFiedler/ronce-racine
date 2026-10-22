@@ -1,0 +1,119 @@
+# platform / core - the decision the repository has already taken.
+#
+# WHAT IS KNOWN: nothing about this scenario. No paired run, no probe trial, no
+# figure of its own. `recurring-bug-root-cause` is the only manifest in this
+# base that has been through a paired run; this one has not, and its gates are
+# calibrated by analogy on two older measurements and nothing else:
+#   - recurring-bug-root-cause, 2026-08-24: an artefact OUTSIDE the written
+#     deliverable went 0/7 unaided against 7/7 aided. Gate 2 below is that
+#     shape - a change in `src/`, not a paragraph in a document.
+#   - recording-decisions itself, 2026-08-25: on the old fifteen-line fixture
+#     nothing but a comment in go.mod reached disk on 4 runs out of 4, because
+#     the prompt named no destination and the skill's fallback location is
+#     pruned from every snapshot. Here the repository owns `docs/adr/`, which
+#     the skill's own precedence rule sends it to first.
+#
+# WHAT IS NOT KNOWN: whether the unaided arm reaches 0004 by itself. The
+# fixture's ground truth admits the risk out loud - `docs/adr/README.md` is one
+# `ls docs/` away, and an agent that reads decision records by habit finds it in
+# one step. That habit is part of what is being measured, so the path is
+# intended rather than leaked, but it means this scenario may come back
+# saturated on gate 1. Gate 2 is the one expected to separate.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. It reads the request, runs `ls docs/adr/`,
+# copies TEMPLATE.md and writes a competent record: context from the prompt, an
+# options table, a decision, consequences. That record is indistinguishable from
+# a good one except in two places. First, it is a SEVENTH accepted record saying
+# the opposite of the fourth, and nothing in the prompt says a fourth exists -
+# the agent has to go looking for whether the question was already settled, and
+# the README's table lists titles and dates but not statuses, so even a glance at
+# the index does not warn it. Second, and this is where the arms should part, it
+# stops at the document. The prompt says "write that up"; it says nothing about
+# code, and `src/rota/shifts.js` is not in the request's line of sight. The one
+# line in that file that mentions a decision points at 0002, which chose UTC and
+# was withdrawn - so an agent that DOES follow the only pointer in src/ lands on
+# a record whose Decision paragraph agrees with the change it is recording, and
+# comes away confirmed in the wrong reading. The measured shape this leans on is
+# recurring-bug-root-cause's: every unaided run wrote the document and stopped,
+# 0/7; every aided run produced the artefact outside it, 7/7.
+#
+# FORMAT GATES CAUGHT AND DROPPED, with the probe's verdict. This skill
+# prescribes no output block that the probe harvests, so its skeleton is its own
+# four-line exit checklist - and that checklist names "context, options,
+# decision, consequences, status" and "revisit if". Two obvious gates were
+# written, probed and dropped: a grep for [Rr]evisit|[Rr]e-evaluat under
+# docs/adr/ at one above its pristine count of 7, and a grep for [Cc]onsequences
+# at one above its pristine count of 8. The template-only probe passes BOTH -
+# the checklist supplies the words, and the fixture's own six filled records plus
+# TEMPLATE.md supply the rest. Neither is in this manifest.
+#
+# NO TRAJECTORY SECTION, and the skill is the reason rather than the fixture.
+# Its `## Tooling` opens "No script: essentially a human decision"; it has no
+# `Context to gather` section at all; and the one ordering it states - "Record
+# at the moment of the decision, not at the end of the session" - is about
+# wall-clock inside a session rather than about two acts, so no `before` can
+# read it. The single forbidden act it names, "Never modify an existing
+# decision - write a new one that deprecates it", is not expressible either:
+# `tool_absent` matches a path anywhere in a rendered call, so forbidding
+# `docs/adr/0004` would fail every run that READ it - which this scenario
+# requires. A check invented to fill the section would be one the skill does
+# not prescribe.
+tier: probed
+fixture: platform
+prompt: >
+  The console shows a shift at the clinic's own time and the notification
+  service shows it in UTC, so a message about a 22:00 shift says 21:00 in the
+  winter. We have agreed to change the payroll export so it emits UTC
+  timestamps and each reader converts. Write that up the way this repository
+  writes these things up, so the next person to touch the rota code knows
+  where it stands.
+preconditions:
+  # The prompt sends the agent to the house's own convention, and the house
+  # convention is a numbered file under docs/adr/. Producing one therefore
+  # proves nothing about the skill - it tells you the deliverable landed, so
+  # the gates below are worth reading. The lookaheads exclude the six records
+  # and the two index files that already exist, so an untouched fixture fails
+  # this precondition rather than passing it for free.
+  - file_matching: { pattern: "^docs/adr/(?!README\\.md$|TEMPLATE\\.md$|000[1-57]-)[^/]+\\.md$" }
+gates:
+  # from-exit: Log entry in the right place (`docs/adr/` otherwise `.claude/decisions.md`): context, options, decision, consequences, status
+  #
+  # 0004 is the accepted record this decision reverses, and a record whose
+  # context does not name what it replaces leaves two accepted records saying
+  # opposite things - the first wrong answer in the fixture's ground truth.
+  # Not a grep for the word "status": the house template ships filled in, six
+  # times over, so every heading this exit condition names is free to both
+  # arms and a gate keyed on one measures the template.
+  #
+  # Count computed against the materialised fixture: "0004" appears on exactly
+  # 3 lines under docs/adr/ - the README's table row, 0002's `Status:
+  # superseded by 0004`, and 0004's own title. 4 therefore requires one line
+  # the agent wrote. Verified: the gate fails on the pristine fixture and the
+  # template-only probe leaves it failing.
+  - grep_min: { pattern: "0004", in: "docs/adr", count: "4" }
+  # from-exit: Comment at the implementation site with a strong signal + back-reference
+  #
+  # The implementation site already carries a back-reference and it points at
+  # the superseded record: `src/rota/shifts.js` says "Times are the clinic's
+  # own wall time - see docs/adr/0002", which is the only ADR pointer in src/
+  # and is the fixture's planted decoy. 0002 chose the opposite of what the
+  # code does. Whatever the agent decides, a pointer at 0002 cannot survive a
+  # correct application of this line, so the gate is the absence of the
+  # misdirection rather than the presence of any particular wording.
+  #
+  # Written as an absence on purpose: a `grep_min` for the new record's number
+  # would have to enumerate the numbers the agent might pick, and enumerating
+  # implementations is how the anchor's guardrail gate went wrong (1 trial of
+  # 12 put the check in the directory the gate named).
+  #
+  # Verified: 1 hit on the pristine fixture, so this gate starts RED and can
+  # only go green through an edit. It is the gate expected to separate the
+  # arms, on the recurring-bug-root-cause shape - the unaided arm writes the
+  # document and never opens the code.
+  - grep_zero: { pattern: "adr/0002", in: "src" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The record names the accepted decision it replaces" }
+    - { dimension: trap, text: "The rota code no longer points at a withdrawn record" }
+    - { dimension: outcome, text: "A condition that would reverse this is stated" }
+  threshold: pass_all

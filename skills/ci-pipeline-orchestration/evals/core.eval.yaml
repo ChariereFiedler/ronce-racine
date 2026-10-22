@@ -1,0 +1,128 @@
+# platform / core - one red run, two failures that have nothing to do with each
+# other.
+#
+# HALF-MEASURED, AND THE MANIFEST SAYS SO. This skill acts on a LIVE pipeline:
+# push a fix and watch it go green, relaunch a job on the runner, paste a real
+# 2xx from a deployed app. A fixture provides none of that, and degrades the
+# skill to "write a plan". What IS measurable here is the diagnosis half - which
+# job failed for which reason, which failure is recurring, what the durable
+# action is - and that half was already shown to separate the arms by +0.50 on
+# the old fixture once the prompt stopped listing the four things the plan
+# needed. The acting half is not measured by anything below and no gate here
+# should be read as though it were. Exit-condition lines 1 and 2 ("pipeline
+# passed or running", "commit pushed and a new pipeline triggered") are
+# unreachable in a container with no runner; they are deliberately ungated.
+#
+# WHAT IS KNOWN about this scenario: nothing. No paired run on this world.
+# The +0.50 figure above belongs to a different fixture and a deleted manifest.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. It runs `node tools/ci/pipeline-log.js`,
+# opens r-4821, sees the job table, opens the contract log, reproduces the
+# failure locally with `npm test`, and finds the sixteen-hour block. That is a
+# real diagnosis and it takes ten minutes. The narrative of "I found the cause"
+# is then complete, and the second red job in the same table quietly stops being
+# a fact about the run - it becomes a consequence of the one already explained.
+# Nothing contradicts that reading from inside r-4821: the release stage does
+# look downstream of the contract stage, and only `needs:` in ci/pipeline.yml
+# and two other runs in the index say otherwise. The recurrence is worse: it is
+# invisible unless the agent looks at runs it was not pointed at, and the
+# requirement to turn a repeated failure into something durable comes from the
+# skill rather than from the repository - docs/releasing.md asks for the note and
+# records, in the same sentence, that nobody writes it.
+#
+# FORMAT GATES CAUGHT AND DROPPED, with the probe's verdict. This skill's
+# prescribed output block reads "Smoke test: OK/KO", "Headers: OK/KO" and
+# "Action: <fix pushed | flake rerun documented | deploy validated | ticket
+# created>", and its exit checklist repeats all of it. Three candidate gates were
+# written and probed against a deliverable made of exactly those lines and no
+# content: [Ss]moke test|[Hh]eaders, "ticket", and [Ff]lake|rerun|restart. The
+# probe passes all three. None is in any of this skill's three manifests, and
+# that is why the ticket-shaped file_matching gate used by the previous round is
+# absent too.
+tier: probed
+fixture: platform
+prompt: >
+  Last night's trunk pipeline came back red. There is no runner, no registry
+  and no tracker reachable from here, so work from what the runner recorded
+  under ops/pipeline-runs/. Say what happened and what you would do about each
+  red job, and write it to PIPELINE-PLAN.md; anything you would file elsewhere
+  lands as a file in this repository.
+preconditions:
+  # The prompt names this path, so it is unearnable credit: an agent following
+  # no skill produces it too.
+  - file_exists: "PIPELINE-PLAN.md"
+gates:
+  # from-exit: If a recurring failure (2+): ticket created
+  #
+  # The image push failed in r-4821, and also in r-4809, r-4812 and r-4818 -
+  # 4 of the 14 runs the index holds - and ops/pipeline-runs/history.md records
+  # 23 hand restarts over ten weeks, every one of them this job. None of that
+  # is visible in the run the prompt points at. Citing an earlier run id is the
+  # observable trace of having read ACROSS pipelines, which is what turns a
+  # failure into a recurring one, and it cannot be produced by pasting the log
+  # of the run in front of you.
+  #
+  # Not gated as "a ticket file exists": the previous round's review of that
+  # gate found the calibration backwards. The measurement it would have cited
+  # (recurring-bug-root-cause, 0/7 unaided) records that unaided runs wrote
+  # postmortems AND tickets freely and stopped there; what they did not do was
+  # the durable act. Here the durable act is unavailable - there is no tracker -
+  # so the gate reads the evidence the recurrence was established at all.
+  #
+  # Verified against the fixture: 3 hits repo-wide (all inside
+  # ops/pipeline-runs/index.json), 0 inside the deliverable, which does not
+  # exist before the run.
+  - grep_min: { pattern: "r-48(09|12|18)", in: "PIPELINE-PLAN.md", count: "1" }
+  # from-exit: If a flake: rerun launched and result documented
+  #
+  # EXPECTED TO BE A FLOOR, not a discriminator, and recorded as such rather
+  # than counted toward any lift: the job table printed by
+  # `node tools/ci/pipeline-log.js r-4821` shows both red jobs, so naming the
+  # second one is cheap. What it does catch is the single most likely wrong
+  # answer in the fixture's ground truth - diagnose the contract failure, fix
+  # it, report the pipeline green, never mention the image push at all.
+  #
+  # Verified: 0 hits in the deliverable before the run; the skill's own output
+  # template says "Job <a>: OK/KO" and "flake rerun documented", neither of
+  # which contains this string, so the template-only probe leaves it red.
+  - grep_min: { pattern: "publish-image", in: "PIPELINE-PLAN.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Nothing below
+# has been measured either; what each check HAS been through is a synthetic
+# trajectory of the acts that honour it and of the acts that do not, because a
+# check nobody can pass penalises both arms equally - the failure that threw
+# away the first anchor run on 2026-09-03.
+trajectory:
+  # from-skill(tooling): The CI provider's CLI depending on the project
+  # (`gh run view/rerun`, `glab ci`, REST API) - spot the available command
+  # before acting, do not hardcode a single provider
+  #
+  # The provider here is the runner's own record and the available command is
+  # `node tools/ci/pipeline-log.js`, named in README.md and in step 1 of
+  # docs/releasing.md. The prompt points at the DIRECTORY instead, so catting
+  # ops/pipeline-runs/r-4821/contract.log is the obvious route and it reads one
+  # run; the tool is what lists the fourteen. A script that only prints leaves
+  # nothing in the tree, so no gate could ever have seen this - which is the
+  # same reason the anchor's `detect-recurring-fixes` check lives here.
+  #
+  # KNOWN ESCAPE, recorded rather than hidden: package.json also carries an
+  # undocumented `pipeline` script, so `npm run pipeline` does the same work and
+  # does not match. README.md and docs/releasing.md both give the raw
+  # invocation and neither mentions the alias, so the escape is narrow - but it
+  # is the one route by which this check can redden an arm that did the work.
+  - tool_used: { name: "Bash", arg: "pipeline-log" }
+  # from-skill(sequence): Context to gather (before acting) - Which CI provider
+  # and how to query it ... or config (`.gitlab-ci.yml`, `.github/workflows/`,
+  # `Jenkinsfile`)
+  #
+  # The ordering a repository snapshot cannot hold: PIPELINE-PLAN.md reads
+  # identically whether ci/pipeline.yml was opened first, last or never. It is
+  # also the file that settles this scenario - `publish-image` needs only
+  # `unit`, so the second red job cannot be a cascade of the first - and an
+  # agent that writes the plan before reading it diagnosed from one log.
+  - before: { first: "ci/pipeline.yml", then: "PIPELINE-PLAN.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The image push is not treated as a consequence of the earlier job" }
+    - { dimension: outcome, text: "The failing case is traced into the export code" }
+    - { dimension: trap, text: "The repeated push failure earns a durable action, not only a restart" }
+  threshold: pass_all

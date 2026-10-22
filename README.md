@@ -8,10 +8,6 @@
 **A personal [Claude Code](https://claude.com/claude-code) config, packaged so it
 installs into any repository and stays up to date there.**
 
-```bash
-npx ronce-racine plan .      # read-only: what fits this repo, and why
-```
-
 It is a set of habits I use every day, written down once and shipped by a CLI:
 
 - **13 rules**, always on, injected by file type. The standing constraints an
@@ -103,9 +99,14 @@ your teammates and your CI agent work from the same one you do.
 > `settings.json`. [`SECURITY.md`](SECURITY.md) says exactly what runs and when.
 > Worth two minutes before you install anything, here or anywhere else.
 
-**Requirements**: Node 18 or later in the target repo, and nothing else. Hooks
-ship pre-built, rules and skills are plain Markdown. Only the optional detection
-scripts need `npx tsx`.
+**Requirements**: Node 18 or later in the target repo. Hooks ship pre-built,
+rules and skills are plain Markdown; only the optional detection scripts need
+`npx tsx`. The hook wirings use the exec form (`"command": "node"` plus `args`)
+and `${CLAUDE_PROJECT_DIR}`, which need **Claude Code 2.1.139 or later**
+([changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md):
+`args: string[]` (exec form) landed there); the optional `readme-freshness`
+hook also needs the `claude` CLI on PATH. Rules and skills alone have no such
+floor.
 
 ## What you get
 
@@ -194,15 +195,22 @@ A skill nobody can trigger does not exist, and prose cannot be unit-tested. So
 two things are mechanical here rather than hoped for.
 
 **Routing is linted.** Ten realistic sentences must reach the right skill ahead
-of the ones it is confusable with. When that lint was introduced, five of the
-ten failed, which is what a catalog looks like before anyone checks it.
+of the ones it is confusable with; half of them failed on the first run.
 
-**Every skill is evaluated against a real agent run.** Each carries an
-`eval.yaml`: a fixture, a realistic prompt, gates derived from its own exit
-conditions, and a judge for what stays subjective. It regularly says no.
+**Every skill is measured with and without itself.** Each carries a manifest
+(fixture, prompt, gates derived from its own exit conditions, checks over what
+the agent DID, a judge for the rest), and the two arms run as paired trials in a
+container so the only difference between them is the skill. A skill prescribes
+more than a deliverable - a script to run, a context to gather *before* acting,
+an act to refrain from - and none of that survives into the final tree, so those
+claims are graded from the agent's trajectory instead.
+Each dimension is read on its own, never averaged, and no lift is claimed below
+six pairs. It regularly says no: `refactoring-shared-component-api` is recorded
+as no measurable lift after three attempts to find one.
 
 What that costs and what else it caught:
-[`docs/quality-bar.md`](docs/quality-bar.md).
+[`docs/quality-bar.md`](docs/quality-bar.md) · how to run it:
+[`docs/evaluating-skills.md`](docs/evaluating-skills.md).
 
 ## Staying in sync
 
@@ -229,6 +237,8 @@ states): [`docs/distribution-model.md`](docs/distribution-model.md) ·
 ```bash
 npx ronce-racine plan    <repo>              # proposes, read-only
 npx ronce-racine install <repo> [--all]      # applies (--all = + optionals)
+npx ronce-racine install <repo> --yes        # no selector: the pre-checked set (CI, non-TTY)
+npx ronce-racine install <repo> --pick <kind:name...>  # exactly these, e.g. skill:detection-sweep
 npx ronce-racine install <repo> --rules-only # rules + lockfile only
 npx ronce-racine check   <repo> [--strict]   # drift vs canonical (warns, or fails CI)
 npx ronce-racine detach  <repo> <token>      # exempt a customized artifact from control
@@ -239,15 +249,8 @@ It copies into `<repo>/.claude/` and merges the hook wirings into
 `settings.json` without disturbing what is already there. Full procedure:
 [`docs/adopting-a-repo.md`](docs/adopting-a-repo.md).
 
-Changed your mind? `uninstall` reverses it, driven by the lockfile so it removes
-what it installed and nothing else:
-
-```bash
-npx ronce-racine uninstall <repo> --dry-run   # what would go
-npx ronce-racine uninstall <repo>             # remove it
-```
-
-It unwires its own hooks from `settings.json` and leaves the rest of that file
+Changed your mind? `uninstall` reverses it (`--dry-run` first), driven by the
+lockfile so it removes what it installed and nothing else. It unwires its own hooks from `settings.json` and leaves the rest of that file
 alone, keeps anything you `detach`ed, and gives you back any file it overwrote
 on the way in.
 
@@ -267,17 +270,90 @@ and the drift control are deliberately not in it, because always-on context and
 code that runs on your machine belong in a reviewed diff. Reasoning:
 [`docs/distribution-model.md`](docs/distribution-model.md).
 
+### Or all three together
+
+Once the [ronce mod](#the-ronce-mod-early-access) is installed, each layer has
+one channel:
+
+| Layer | Channel |
+|---|---|
+| Rules | the CLI, `install <repo> --rules-only`, versioned in the repository |
+| Skills and agents | the `ronce-racine` plugin, user scope |
+| Hooks | the `ronce` mod, driven by the repository's `.claude/ronce.json` |
+
+To move an adopted repository over, run `uninstall` then
+`install --rules-only`.
+
+## The ronce mod (early access)
+
+`mods/ronce/` is a Claude Code mod: one in-process plugin of function hooks,
+meant to take over from a stack of command hooks. It checks tool calls against a
+per-project policy, measures what output shaping would save, and writes one
+JSONL telemetry file per turn under `~/.claude/ronce/events/`.
+
+Version 0.2 enforces the unambiguous guards by default: shell reads of project
+files, files created through a heredoc, a destructive git command chained after
+`;`, Claude, AI or LLM in a commit message, and a `cd` to the current directory
+(stripped). It shapes long successful outputs, keeping the whole of them under
+`~/.claude/ronce/outputs/`. Every other rule starts in `shadow` mode, where it
+records what it would have done and changes nothing; a project's policy
+switches each rule with `"modes": { "<id>": "enforce" }`. It does the job of the
+`truncate-output`, `bash-npm-silent` and `shell-read-guard` hooks: unwire those
+where the mod runs.
+
+Installed at the user scope, it runs in every project. A project without a
+policy gets the engine's default rules; `"telemetry": null` in its policy turns
+the event files off.
+
+Version 0.3 also does what the session hooks did, each one a key of the policy:
+
+| Key | What it does | Default |
+|---|---|---|
+| `worktree` | Links the main checkout's `.env` (or the files listed) into a linked worktree | on |
+| `memo` | After a compaction, appends the branch, the ticket, the last request and a stale decisions file | on |
+| `band` | A line above the prompt: project, branch, context, cost, budgets | on |
+| `freshness` | Fetches the base branch at session start and warns when the local copy lags | off |
+| `agentBudget` | Refuses a dev subagent past the open merge request or worktree cap; agent types that only read are exempt | off |
+| `skillHints` | Adds a skill suggestion to a prompt that matches a pattern | none |
+| `skillCatalog` | Otherwise, names the skills whose quoted triggers or name words the prompt holds, from the project's `.claude/skills` and the `ronce-racine` plugin's catalog; this is the `skill-reminder` hook | on, 3 at most |
+| `checks.onEdit` | After an edit, runs the checks whose `match` fits the file and hands any finding to the model | rustfmt, ESLint, Biome on `scripts/`, ast-grep |
+| `checks.background` | After a turn, runs the checks of the changed files in the background, once per state of those files; a finding wakes the session (at most `maxWakes` times in a row) | `vitest related` |
+
+A check is a command with placeholders (`{file}`, `{rel}`, `{files}`, `{group}`), a directory, a timeout and
+the rule that turns its output into a finding; it is skipped where its tool or its configuration is missing.
+A check marked `deferIfBusy` waits for the next turn while a heavy process (`busyPattern`) runs, so two
+sessions on the same machine do not compile at once; `onlyIfFilesContain` keeps a costly check for the
+changes it is about (a SQL check for the files that hold a query).
+
+Install it from a local clone. A folder marketplace is read in place, so what
+runs is exactly what you have checked out, and `/reload-plugins` picks up an
+edit:
+
+```bash
+claude plugin marketplace add /path/to/ronce-racine
+claude plugin install ronce@ronce-racine
+```
+
+A project's rules live in its own `.claude/ronce.json`, in a reviewed diff like
+any other code. Two tools work on that policy and on what the mod records:
+
+```bash
+npx tsx tools/ronce-policy.ts <repo>/.claude/ronce.json   # loads it as the mod does: rules, patterns, examples
+npx tsx tools/ronce-report.ts --since 2026-10-08          # calls, failures, shell reads, repetitions, $ per 1 000 calls
+```
+
+In a session, `/ronce-hits` lists the rules that fired, shadow ones included.
+
 ## Contributing
 
-An artifact lives here only if it is truly generic: no crate, script, path or
-identifier tied to a project, no imposed tracker, no imposed stack. If a
-workflow is useful but coupled, split it: the generic protocol here, the tooled
-specifics in your own repository.
+One admission bar: an artifact lives here only if it is truly generic.
 
 [`CONTRIBUTING.md`](CONTRIBUTING.md) for the bar and the workflow ·
 [`docs/writing-a-rule.md`](docs/writing-a-rule.md) ·
 [`docs/writing-a-skill.md`](docs/writing-a-skill.md) ·
 [`docs/evaluating-skills.md`](docs/evaluating-skills.md) ·
+[`docs/fixtures.md`](docs/fixtures.md) for where the eval fixtures come from ·
+[`docs/measuring-prose.md`](docs/measuring-prose.md) for the method, reusable without this code ·
 [`docs/developing.md`](docs/developing.md) for working on the toolkit itself ·
 [`docs/decisions.md`](docs/decisions.md) for why things are the way they are ·
 [`AGENTS.md`](AGENTS.md) if you *are* the agent reading this.

@@ -1,0 +1,110 @@
+# audit-observability / hard - the alert history that is in the repository.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world; the previous manifest for this skill inherited another skill's figure
+# on a fixture that no longer exists. `tier: probed`.
+#
+# WHY THIS IS THE HARD SCENARIO
+# The fixture actively pushes toward the wrong answer, and it does it with a
+# document of the right shape. docs/audits/2026-05-21-caldmere-fleet-observability.md
+# is a filled report for another project that marks al-05 (alert threshold
+# tuning) N/A - "requires the alert history" - which is the textbook treatment
+# and is correct there. It is wrong here: ops/alerts.md records its own tuning
+# history in prose, naming the two changes and their reasons - the slow
+# threshold moved from 500 ms to 800 ms in June after the attachment route
+# started a round trip to the object store, and the unassigned pile moved from
+# 10 to 25 in July because ten fired every Monday by design. That is exactly the
+# evidence al-05 asks for, and an agent that copies the neighbouring report's
+# treatment withholds a question it could have answered.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# The alert catalogue is a markdown table and reads like documentation. An agent
+# with no grid reports what the table shows - seven alerts, thresholds,
+# runbooks - and stops at the table. The two paragraphs under it, and the
+# "Not alerted on, deliberately" section that follows, are the parts that carry
+# maturity: a team that has deleted alerts without runbooks twice, retuned two
+# thresholds with a recorded reason, and written down what it refuses to page
+# on, is doing something a catalogue count cannot see.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit what this service alerts on and what happens when an alert fires.
+  Write the report to AUDIT-ALERTING.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: unearnable credit.
+  - file_exists: "AUDIT-ALERTING.md"
+gates:
+  # from-exit: Strengths, weaknesses and prioritized recommendations (MUST/SHOULD/COULD) filled in
+  - repo_clean: { except: "AUDIT-ALERTING.md" }
+  # from-exit: All 15 questions have received a level 0-4 or been marked N/A with justification
+  # al-05 carries a level rather than being withheld for want of an alert
+  # history that is, in this repository, written down.
+  - grep_min: { pattern: "al-05[^\n]*\|\s*[0-4]\s*\|", in: "AUDIT-ALERTING.md", count: "1" }
+  # from-exit: All 15 questions have received a level 0-4 or been marked N/A with justification
+  # The evidence that level rests on. The earlier threshold appears nowhere but
+  # in the tuning history, so quoting it is proof the paragraph was read.
+  - grep_min: { pattern: "500\s?ms|500 ms to 800|from 10 to 25", in: "AUDIT-ALERTING.md", count: "1" }
+  # from-exit: All 15 questions have received a level 0-4 or been marked N/A with justification
+  # The deliberate non-alerts. A catalogue that says what it refuses to page on,
+  # and why, is a different maturity from one that only lists what it watches.
+  - grep_min: { pattern: "[Dd]eliberate|[Nn]ot alerted", in: "AUDIT-ALERTING.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-ALERTING.md" would match that todo
+# at step 1 and fail an ordering the agent in fact kept. A check nobody can
+# pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 13. **Check runbooks**: content, links, diagnostic
+  # scripts - step 20 of the same protocol is **Produce the report**.
+  #
+  # An alert catalogue that names a runbook per row is worth a level only once
+  # the runbooks have been looked at; four of them exist here and one alert
+  # points at a fifth that does not. Checking that after the report is written
+  # is reporting the table's own claim about itself.
+  - before: { first: "docs/runbooks", then: "file_path=AUDIT-ALERTING.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "Every alert row is checked against a runbook that exists" }
+    - { dimension: trap, text: "The tuning history is used as evidence, not deferred to an interview" }
+    - { dimension: outcome, text: "Deploy failures are recorded as a chosen non-alert" }
+  threshold: pass_all

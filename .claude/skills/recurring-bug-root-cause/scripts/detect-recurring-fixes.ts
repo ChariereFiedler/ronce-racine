@@ -1,7 +1,7 @@
 #!/usr/bin/env npx tsx
 /**
  * Detects recurring scopes: N+ `fix(scope):` commits within a sliding window.
- * Generic version (any git repo, conventional commits) of acme-app's retro-fixes.ts.
+ * Generic version (any git repo, conventional commits) of a project-specific retro-fixes script.
  * Usage: npx tsx detect-recurring-fixes.ts [--window 14] [--threshold 3] [repoDir]
  * Exit: 0 if no scope reaches the threshold, 1 otherwise (usable as a CI check).
  */

@@ -89,9 +89,3 @@ Implement in this order, never the reverse, never a short-circuit. Test each lay
 ## Tooling
 
 - No generic script: the commands (fmt, lint, test, build) depend on the project, to be read from its manifest / CI config.
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.0 (2026-06-19) - initial generic version extracted from a project workflow, decoupled from any stack and any tracker

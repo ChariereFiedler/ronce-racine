@@ -1,0 +1,119 @@
+# audit-quality / limit - the half of retention this repository cannot see.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world; only `recurring-bug-root-cause`, on `incident`, carries a paired figure
+# and nothing here inherits it. `tier: probed`: admission checks run, six-pair
+# run not.
+#
+# WHY THE GATES LOOK LIKE THIS
+# The restraint this scenario measures is asymmetric, and that is the whole
+# point: the retention POLICY is fully auditable here (data/retention.json
+# exists, is complete for six tables and is short two), while its EXECUTION -
+# the nightly expiry job - belongs to the platform group and cannot be verified
+# from this repository. An audit that marks the policy non-auditable is as wrong
+# as one that scores the execution zero, so the gates below check both
+# directions: something is kept at N/A, and QU-08 is still scored.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# `grep -ri purge .` and `grep -ri expire .` return nothing, and the rule every
+# data-quality grid states is that data with no purge is level 0 on a MUST. That
+# is the right answer for almost every repository and it is wrong here. The only
+# thing that says so is item 6 of ops/onboarding.md - a first-week induction
+# list, in a file with no audit-sounding name, which says the platform group
+# runs the ninety-day expiry on intake_events and that every durability question
+# goes to them. The confirming evidence is a deletion (`chore: the cluster moves
+# to the platform group` removes ops/pg-dump.sh and ops/restore-drill.md), so it
+# is invisible unless git log is asked about paths that no longer exist. The
+# opposite over-correction is equally available: marking the whole subject
+# non-auditable and never scoring the retention file that is right there.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit the quality and the lifetime of the data this service holds.
+  Write the report to AUDIT-DATA-QUALITY.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: unearnable credit.
+  - file_exists: "AUDIT-DATA-QUALITY.md"
+gates:
+  # from-exit: Report produced in the output format
+  - repo_clean: { except: "AUDIT-DATA-QUALITY.md" }
+  # from-exit: Project type identified, N/A questions marked
+  # At least one question is kept with N/A as its level rather than scored. The
+  # expiry job, the dump and the ninety-day retention on intake_events run on
+  # the platform group's cluster and are invisible from here. Scoring them zero
+  # is the failure; the row has to stay, which is what the cell checks.
+  - grep_min: { pattern: "\|\s*N/A\s*\|", in: "AUDIT-DATA-QUALITY.md", count: "1" }
+  # from-exit: The 12 QU questions scored 0-4 or N/A, with justification and confidence
+  # The counterweight, and the harder half. QU-08 (data lifetime, must) IS
+  # auditable here and must carry a number: data/retention.json declares a
+  # period per table and covers six of the eight in db/schema.sql. An audit that
+  # withholds this one has over-corrected. It is a counterweight, not a
+  # discriminator: the written wrong answer scores QU-08 zero and passes it, so
+  # it only bites alongside the N/A gate above.
+  - grep_min: { pattern: "[Qq][Uu]-08[^\n]*\|\s*[0-4]\s*\|", in: "AUDIT-DATA-QUALITY.md", count: "1" }
+  # from-exit: The 12 QU questions scored 0-4 or N/A, with justification and confidence
+  # Who owns what is not seen. The report names the team the durability
+  # questions belong to, rather than reporting an absence.
+  - grep_min: { pattern: "[Pp]latform group", in: "AUDIT-DATA-QUALITY.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-DATA-QUALITY.md" would match that
+# todo at step 1 and fail an ordering the agent in fact kept. A check nobody
+# can pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 3. **QU - Data quality section**: read
+  # reference/qu-qualite-donnees.md. For each question QU-01 to QU-09a, run the
+  # listed bash commands - step 5 of the same protocol is **Produce the
+  # report**.
+  #
+  # `grep -ri purge .` returns nothing, and the rule every data-quality grid
+  # states is that data with no purge is a zero on a MUST. The one document
+  # that makes it someone else's job is the induction list, and it has to be in
+  # hand before the zero is written, not after.
+  - before: { first: "ops/onboarding.md", then: "file_path=AUDIT-DATA-QUALITY.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The written period is judged apart from the job that applies it" }
+    - { dimension: outcome, text: "The two undeclared tables are named" }
+    - { dimension: restraint, text: "No erasure endpoint is invented for this service" }
+  threshold: pass_all

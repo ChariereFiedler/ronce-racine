@@ -49,7 +49,7 @@ if (installed("gitleaks")) {
   const hits = addedLines.filter((l) => secretRe.test(l));
   if (hits.length) {
     console.log("✗ Potential SECRET (grep fallback - install gitleaks for reliability):");
-    hits.forEach((l) => console.log("    " + l));
+    for (const l of hits) console.log(`    ${l}`);
     secretHits = 1;
   }
 }
@@ -61,7 +61,7 @@ const sensitive = sh("git diff --cached --name-only")
 let sensitiveHits = 0;
 if (sensitive.length) {
   console.log("✗ SENSITIVE FILE staged:");
-  sensitive.forEach((f) => console.log("    " + f));
+  for (const f of sensitive) console.log(`    ${f}`);
   sensitiveHits = 1;
 }
 
@@ -71,7 +71,7 @@ const debugRe =
 const dbg = addedLines.filter((l) => debugRe.test(l));
 if (dbg.length) {
   console.log("⚠ DEBUG - potential leftovers (check, remove if unwanted):");
-  dbg.forEach((l) => console.log("    " + l));
+  for (const l of dbg) console.log(`    ${l}`);
 }
 
 if (secretHits + sensitiveHits > 0) {

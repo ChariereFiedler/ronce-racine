@@ -10,21 +10,59 @@
  *
  * Bypass strategy: if the command contains `# no-truncate`, we leave it untouched.
  *
- * @version 2.0.0
- * @last-reviewed 2026-07-10
+ * @version 2.1.0
+ * @last-reviewed 2026-08-24
  */
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 const VERBOSE_PATTERNS = [
     /^\s*cargo\s+(build|test|clippy|check|fmt|doc|run)/,
     // `npm install`/`npm ci` are handled by the bash-npm-silent hook (avoid a
     // two-hook conflict on the same command - PreToolUse updatedInput is last-wins).
     /^\s*npm\s+run\s+(build|test|typecheck|lint)\b/,
     /^\s*npx\s+(vitest|tsc|nuxi|tsx)\b/,
-    /^\s*git\s+(log|diff)\b/,
+    // git log/diff are only voluminous UNBOUNDED: `--oneline`, `-n`, `-<count>`
+    // or a `--stat` summary stay short, and rewriting them costs readability for
+    // nothing since the 4000-char threshold would never fire anyway.
+    /^\s*git\s+(log|diff)\b(?!.*(--oneline|--stat|--name-only|--name-status|\s-\d+|\s-n\s))/,
     /^\s*curl\s/,
     /^\s*docker\s+(build|logs)\b/,
     /^\s*rustup\s/,
+    // Lecture de fichiers au shell. Mesuré sur un run d'agent réel (2026-09-19,
+    // 14,15 $, 32 min) : 43 des 101 appels Bash lisaient des fichiers via `cat`,
+    // `sed -n` ou `grep`, pour 125k caractères réinjectés dans le contexte — un
+    // seul `cat` d'un fichier de 10k s'y paie à CHAQUE appel suivant, soit 260
+    // fois sur ce run. Ces commandes-là ne sont pas verbeuses par accident comme
+    // un build : elles le sont par construction, proportionnellement au fichier.
+    //
+    // `cat` sans redirection : `cat > f <<EOF` écrit, il n'y a pas de sortie à
+    // tronquer, et l'envelopper casserait le heredoc.
+    /^\s*cat\s+(?![<>])[^|<>]*$/,
+    /^\s*sed\s+-n\b/,
 ];
+/** Un flag court (un seul tiret) qui porte `l`, `c` ou `q` : `-l`, `-rl`, `-nc`… */
+const SHORT_FLAG = /(?:^|\s)-[A-Za-z]+(?:\s|=|$)/g;
+/**
+ * `grep` qui a DÉJÀ sa borne, donc à laisser tel quel : `-l`/`-c`/`-q` ne
+ * rendent que des noms ou un compte, et un `-m N` explicite dit que l'appelant
+ * a choisi combien de lignes il voulait.
+ *
+ * Le test porte sur les flags à UN tiret uniquement : `--include="*.ts"`
+ * contient `-incl`, qui se lisait comme un `-l` groupé et faisait passer pour
+ * borné un `grep -rn --include` qui ne l'est pas du tout.
+ */
+export function isBoundedGrep(cmd) {
+    if (/(?:^|\s)(?:-m|--max-count)(?:\s|=)/.test(cmd))
+        return true;
+    for (const match of cmd.matchAll(SHORT_FLAG)) {
+        if (match[0].startsWith(' --') || match[0].startsWith('--'))
+            continue;
+        if (/[lcq]/.test(match[0]))
+            return true;
+    }
+    return false;
+}
 const SKIP_PATTERNS = [
     /\|\s*(head|tail|grep|wc|less|more|awk|sed|cut|sort|uniq|jq)\b/,
     /# no-truncate/,
@@ -34,14 +72,29 @@ export function isVerboseCommand(cmd) {
     if (SKIP_PATTERNS.some(p => p.test(cmd)))
         return false;
     const parts = cmd.split(/&&|\|\|/).map(s => s.trim());
-    return parts.some(part => VERBOSE_PATTERNS.some(p => p.test(part)));
+    return parts.some(part => VERBOSE_PATTERNS.some(p => p.test(part)) ||
+        (/^\s*grep\b/.test(part) && !isBoundedGrep(part)));
 }
 export function wrapCommand(cmd, hookDir) {
     const encoded = Buffer.from(cmd).toString('base64');
-    // Run the helper via `npx tsx` (works on any Node ≥ 18) rather than
-    // `node --experimental-strip-types` (only Node ≥ 22.6), matching how the
-    // hooks themselves are wired in settings.json.
-    return `TRUNCATE_CMD_B64=${encoded} node '${hookDir}/truncate-bash-output.mjs'`;
+    // The command travels base64-encoded so no shell quoting can break it, but an
+    // opaque blob is hostile to anything downstream: other hooks observing the
+    // same event, a human reading the transcript, a log. So the original is kept
+    // in clear as a TRAILING COMMENT - a shell comment runs to end of line and
+    // swallows quotes and apostrophes without interpreting them, which a leading
+    // `: 'cmd';` prefix does not (it breaks on `echo it's fine`).
+    // Newlines are flattened, otherwise the comment would swallow the next line.
+    const readable = cmd.replace(/\s*\n\s*/g, ' ').trim();
+    // Single quotes keep spaces and backslashes literal (a Windows hookDir is full
+    // of both), but they do not survive an apostrophe in the path: `'` has to be
+    // closed, escaped and reopened. `/home/o'brien/...` is rarer than a space, not
+    // rarer than never.
+    const helper = quoteForShell(join(hookDir, 'truncate-bash-output.mjs'));
+    return `TRUNCATE_CMD_B64=${encoded} node ${helper} # ${readable}`;
+}
+/** POSIX single-quoting: the only form that is literal for every other character. */
+export function quoteForShell(value) {
+    return `'${value.replace(/'/g, `'\\''`)}'`;
 }
 function readStdin() {
     try {
@@ -68,10 +121,12 @@ function main() {
     if (!cmd || !isVerboseCommand(cmd))
         return;
     // Resolving the hooks directory: the CLAUDE_PROJECT_DIR variable takes priority,
-    // otherwise a path relative to this file (for local execution / tests)
+    // otherwise a path relative to this file (for local execution / tests).
+    // fileURLToPath, never URL.pathname: on win32 the latter yields a percent-encoded
+    // "/C:/Users/First%20LAST/..." that no shell and no runtime can resolve.
     const hookDir = process.env.CLAUDE_PROJECT_DIR
-        ? `${process.env.CLAUDE_PROJECT_DIR}/.claude/hooks`
-        : new URL('.', import.meta.url).pathname.replace(/\/$/, '');
+        ? join(process.env.CLAUDE_PROJECT_DIR, '.claude', 'hooks')
+        : fileURLToPath(new URL('.', import.meta.url)).replace(/[\\/]$/, '');
     const output = {
         hookSpecificOutput: {
             hookEventName: 'PreToolUse',
@@ -84,9 +139,10 @@ function main() {
     };
     process.stdout.write(JSON.stringify(output));
 }
-// Entry guard by BASENAME, never by extension: this file is authored as .ts and
-// ships as .mjs, and an extension-bound guard silently disables main() in the
-// built copy - the hook then exits 0 doing nothing, with no signal at all.
-const invoked = (process.argv[1] ?? "").split("/").pop()?.replace(/\.(ts|mjs|js)$/, "");
-if (invoked === 'truncate-output')
+// Compare URLs, never parse the path: pathToFileURL normalizes the separator,
+// so this holds on win32 where a basename split on "/" never matches, and it is
+// blind to the .ts -> .mjs rename the build performs. Both traps cost us a
+// silently dead hook once each (see docs/postmortems/2026-08-24-hook-portability.md).
+const isMain = import.meta.url === pathToFileURL(process.argv[1] ?? '').href;
+if (isMain)
     main();

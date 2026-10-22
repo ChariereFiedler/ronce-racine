@@ -57,6 +57,12 @@ jobs:
       - name: Eval manifests dry-run
         run: npm run eval:dry
 
+      # Grades a content-free deliverable against every manifest's gates: a gate
+      # it passes scores vocabulary, not work. Reports at every tier, fails only
+      # for a manifest claiming the right to publish a causal verdict.
+      - name: Format-gate probe
+        run: npm run eval:probe
+
   engines-floor:
     name: The shipped CLI runs on Node 18
     runs-on: ubuntu-latest

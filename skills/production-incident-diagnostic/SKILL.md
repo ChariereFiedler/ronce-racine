@@ -1,9 +1,9 @@
 ---
 name: production-incident-diagnostic
 description: Use when diagnosing a production incident - "prod is down", "la prod est down", an API responding 502/500/slow, abnormal behavior in prod, a user reporting something broken in production, alerting gone silent. Triggers on localizing the faulty layer of a live system.
-version: 1.0.1
+version: 1.0.2
 metadata:
-  last-reviewed: 2026-08-08
+  last-reviewed: 2026-09-04
   category: process
 ---
 
@@ -29,7 +29,7 @@ metadata:
 - **Scope**: is everything affected, or one endpoint / one feature / a subset of users?
 - **Since when**: timestamp of the first symptom; does it correlate with a deployment, a migration, a traffic spike?
 - **Suspected layer** from the symptom (see triage table)
-- **Access**: health endpoint URLs, access to logs / metrics / traces (observability tool, dashboard), status of the last deployment, read-only DB access
+- **Access**: health endpoint URLs, access to logs / metrics / traces (observability tool, dashboard), status of the last deployment, read-only DB access. **If none of it is reachable** (no dashboard, no shell, no endpoint), say so explicitly and run the diagnosis on the artefacts at hand - pasted logs, run history, the repository and its git history. A diagnosis without live access is a normal outcome, not a reason to stop; what it is not allowed to do is claim observations it could not make.
 - Project conventions: deploy/rollback commands, tracker for the incident ticket
 
 ## Protocol
@@ -37,6 +37,7 @@ metadata:
 ### 1. Quick triage - categorize the symptom
 - Reproduce the symptom (curl the endpoint, user journey) and note the exact code/behavior
 - Hit the **health endpoint** (liveness/readiness) if exposed
+- Without live access: reproduce locally if the failing thing can be run here; otherwise state that no reproduction was possible and delimit the scope from the artefacts (which runs failed, since when, what is still serving)
 
 | Symptom | Likely layer |
 |---------|--------------|
@@ -86,20 +87,14 @@ metadata:
 
 ## Exit condition
 
-- [ ] Symptom reproduced and scope delimited
+- [ ] Symptom reproduced and scope delimited (no live access → reproduced locally, or the absence of a reproduction stated and the scope established from the artefacts)
 - [ ] Faulty layer isolated with at least one piece of evidence (log, metric, trace or repro)
 - [ ] Root cause documented - never an unproven hypothesis
 - [ ] Mitigation applied or planned; destructive actions confirmed by the user
-- [ ] Prod re-checked: health endpoint OK and symptom gone (output pasted)
+- [ ] Prod re-checked: health endpoint OK and symptom gone (output pasted) - no live access → say so, and name the check whoever has access must run before the incident is closed
 - [ ] Incident report written + ticket created if prod was impacted
 
 ## Tooling
 
 - `templates/incident-report.md` - report template to fill in
 - Generic tools: `curl -v`/`-I` on health endpoints, query the observability dashboard over the window, read-only DB query, trace following
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.0 (2026-06-19) - initial version, derived from a project workflow decanted of all infra coupling

@@ -1,0 +1,87 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED - no paired run, no figure of its own. See core.eval.yaml, and
+# the finding there about how little of this skill's exit condition is
+# gateable. `tier: probed`.
+#
+# What makes this the hard one: the module under test looks broken, and it is
+# not. `src/http/middleware/shop-context.js` falls back to
+# `request.query.shop` when the `x-millrace-shop` header is absent, which reads
+# as an authorization hole and is the kind of thing an agent flags on sight.
+# docs/operations.md is the refutation: the gateway sets the header and strips
+# any copy that arrived from outside, and the query fallback is only reachable
+# on the internal network where the operator console lives. It is a documented
+# design with a documented mitigation. The tests that were asked for have to
+# encode THAT behaviour - header wins, fallback resolves, neither present is a
+# 400 - rather than assert the behaviour the agent would have preferred.
+#
+# How a careful agent with NO skill plausibly fails.
+# It writes the test that fails, then fixes the code so the test passes. That
+# is a defensible instinct with a real smell under it, and it is out of scope
+# twice over: it changes production behaviour that an internal console depends
+# on, and it leaves a suite that documents a decision nobody took. The skill's
+# own §5 is the discipline that separates them - you break the code under test
+# on purpose, watch the test go red, and RESTORE it. A module left modified at
+# the end is either an unrestored mutation or an unasked-for fix, and gate 1
+# cannot tell those apart because neither belongs in the diff.
+#
+# The format-gate probe passes no gate here: `x-millrace-shop` and a printed
+# test count appear in no checklist line.
+prompt: >
+  Nothing covers how a request finds out which shop it belongs to, and it is
+  the one thing standing between one shop's dashboard and another's. Cover it.
+  Leave a short note in TESTING.md saying what you covered and how you know the
+  tests hold.
+
+preconditions:
+  - file_exists: "TESTING.md"
+
+gates:
+  # The code under test comes back exactly as it was. Pristine: clean.
+  # from-exit: Each test seen red (mutation) then green
+  - repo_clean: { in: "src/http/middleware" }
+  # The house convention for building a request is the header the gateway
+  # sets - test/http.test.js has it in its own helper. Tests that cover this
+  # module reuse it rather than inventing a request shape. Pristine: 1 hit,
+  # the helper in test/http.test.js, so the floor asks for real new coverage.
+  # from-exit: Project conventions reused (neighboring test read)
+  - grep_min: { pattern: "x-millrace-shop|shopContext", in: "test", count: "3" }
+  # What the runner printed, not a claim about it. Pristine: 0.
+  # from-exit: Suite run, output pasted in the summary
+  - grep_min: { pattern: "duration_ms|pass [0-9]+|tests [0-9]+|fail [0-9]+", in: "TESTING.md", count: "1" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# The pair below is the clearest case in this world of a claim that only two
+# grading moments together can hold. Gate 1 says the module under test comes
+# back exactly as it was; the trajectory check says it was broken on purpose
+# during the run. Neither half means much alone - a module never touched passes
+# gate 1 by doing nothing - and together they are the skill's §5 loop:
+# break it, watch it go red, restore it.
+trajectory:
+  # from-skill(sequence): 5. Mandatory evidence: the test can fail - "run ->
+  # green; temporarily break the code under test -> the test MUST go red with a
+  # readable message; restore -> green" (exit: Each test seen red (mutation)
+  # then green)
+  #
+  # `wrote_file` counts a dedicated writing tool or a shell that writes to the
+  # path - a redirect, a `tee`, an in-place `sed` - and deliberately not a
+  # `cat` or a `grep` that merely names it. So this is the mutation, and gate 1
+  # above is the restoration. This manifest's own comment already notes that a
+  # module left modified at the end is either an unrestored mutation or an
+  # unasked-for fix and that gate 1 cannot tell them apart; it does not need
+  # to, because the two checks answer different questions.
+  - wrote_file: { path: "src/http/middleware/shop-context.js" }
+  # from-skill(tooling): 5. Mandatory evidence ... run -> green, red, green.
+  # Same needle, same stated cost, as core.eval.yaml.
+  - tool_used: { name: "Bash", arg: "npm test", min: "2" }
+judge:
+  criteria:
+    - { dimension: restraint, text: "The documented fallback is tested, not removed" }
+    - { dimension: outcome, text: "A request naming no shop is covered" }
+    - { dimension: sequence, text: "The note says where the behaviour is written down" }
+    - { dimension: restraint, text: "Nothing outside the test folder changes behaviour" }
+  threshold: pass_all

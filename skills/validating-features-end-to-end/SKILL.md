@@ -84,9 +84,3 @@ If a gap: **do not close the ticket** - document it in the tracker and return to
 
 - Adversarial stress-test: `adversarial-feature-challenge`
 - Bug found: `superpowers:systematic-debugging`, ticket via the repo's bug skill
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

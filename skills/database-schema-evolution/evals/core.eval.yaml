@@ -1,0 +1,130 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED. No paired run has ever been made against this scenario, and
+# none of the figures in the findings log belongs to it - the only skill with a
+# real six-pair verdict is recurring-bug-root-cause. This manifest carries
+# admission checks only: eval-lint clean, every gate cited to a line of the
+# skill's exit condition, and every gate verified against the materialised
+# fixture on the passing AND the failing side. `tier: probed` says exactly that.
+#
+# Known about the fixture (playground/fixtures/service/EXPECTED.md):
+# the one-step version of this change is IN THE HISTORY. `git log` carries
+# `feat(tickets): reference the technician roster from a work order`, which
+# added `assignee_id`, backfilled by matching the name and dropped `assignee`
+# in one file, and the `revert:` commit right after it. `ops/release-log.md`
+# records what happened in one table row: r-214, "pulled after 20 minutes,
+# tablets on 2.3 were getting 400s on every assign".
+#
+# How a careful agent with NO skill plausibly fails.
+# The change is small and the column is right there. `ops/backlog.md` proposes
+# doing it in one go over a quiet Sunday, and the repository's own recent
+# history contains `migrations/0009_ticket_source.js`, which adds a column and
+# backfills it in the same file and shipped without incident - the precedent a
+# hurried reader cites. The four reasons one step cannot work are in four
+# different files (a client that writes the column and does not deploy with us,
+# a reader that consumes it positionally, rolling deploys, two names that
+# resolve to nobody), and the one that settles it is a table row in a release
+# log that never mentions migrations. An agent that does not read the history
+# writes the migration that already failed once, and gates 1 and 2 catch it.
+#
+# The format-gate probe. This skill prescribes no output template, so its
+# skeleton is its exit-condition checklist - which contains the words "impact
+# plan", "expand", "backfill", "contract", "DROP" and "NOT NULL". Any grep for
+# those is a format gate, and the manifest this one replaces had exactly that
+# (`grep_min: [Bb]ackfill` in the plan). Every gate below keys on something the
+# fixture carries and the checklist does not.
+prompt: >
+  A work order records the technician as a name typed into a text column, so a
+  roster change does not follow the work and the monthly report groups by
+  string. Make a work order point at the roster instead. Leave the plan the
+  team would review in docs/migration-plan.md; the project's own commands are
+  there if you want them.
+
+preconditions:
+  # The world has no tracker, so the prompt has to name where the plan lands.
+  # An agent following no skill at all produces this file too.
+  - file_exists: "docs/migration-plan.md"
+
+gates:
+  # Two new migrations at least: the additive one and the backfill. The
+  # numbering is the repository's, not the skill's - tools/check/migrations.js
+  # fails the build on a file out of sequence, and every shipped migration
+  # opens with this line. Pristine: 0 hits (the last shipped id is 0010).
+  # from-exit: Expand, backfill and contract in separate, idempotent migrations
+  - grep_min: { pattern: "export const id\\s*=\\s*['\"]00(1[1-9]|[2-9][0-9])", in: "migrations", count: "2" }
+  # `dropColumn` is the only destructive operation the migration DSL has
+  # (tools/migrate.js, apiFor). The contract step is not this change: two
+  # clients we do not deploy still write and read `assignee`. Pristine: 0 hits,
+  # and the reverted 0011 in the history is the shape this forbids.
+  # from-exit: Data preserved: no DROP/NOT NULL before backfill + switch
+  - grep_zero: { pattern: "dropColumn", in: "migrations" }
+  # A shipped migration is never edited here - the ledger seals line and byte
+  # counts and the check fails the pipeline. The globs permit new files and the
+  # ledger entry they require; anything else under migrations/ moving is an
+  # edit. Four slots because a plan may legitimately stage more than two steps.
+  # from-exit: No existing migration modified
+  - repo_clean: { in: "migrations", except: "migrations/ledger.json, migrations/0011*, migrations/0012*, migrations/0013*, migrations/0014*" }
+  # The scan is only exhaustive if it leaves `src/`. The nightly extract reads
+  # `assignee` out of the database by column position for a vendor whose loader
+  # breaks on a reordering (tools/exporter/nightly.js, docs/operations.md), and
+  # it is invisible to any grep of the application code. Pristine: the plan
+  # does not exist, so 0 hits; the words are absent from the skill's checklist.
+  # from-exit: Complete impact plan: zero schema usage outside the table
+  - grep_min: { pattern: "exporter|nightly|COLUMNS|accounts extract", in: "docs/migration-plan.md", count: "1" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# The gates read the migrations that came out. Neither of the two things this
+# skill puts BEFORE them - the exhaustive scan, and the replay - leaves a
+# trace a snapshot can hold: a grep writes nothing, and a replay from a clean
+# state ends with the same data/ the migrations describe.
+#
+# NO `tool_absent`. The forbidden act this skill names - editing a migration
+# that has shipped - is not expressible as an absent tool call, because the
+# same file is one the skill tells you to OPEN ("read a neighboring migration
+# and copy its conventions"), and `tool_absent` matches reads and writes
+# alike. It stays where it can be answered: the `repo_clean` gate above.
+trajectory:
+  # from-skill(sequence): 1. Exhaustive scan of usages -> impact plan.
+  # "Exhaustive scan (mandatory before editing)": `grep -rn` the name to evolve
+  # across migrations and seeds, application code, types, client code, specs
+  #
+  # The column name is the needle because the prompt never says it - it says "a
+  # name typed into a text column". So the first action carrying `assignee` is
+  # the moment the scan found the thing, whether it came from `grep -rn` or
+  # from opening 0002_ticket_assignee.js, and the plan is the decision it has
+  # to precede. An agent that writes the impact plan and greps afterwards fails
+  # with "came after it"; one that never names the column in any action fails
+  # with "never happened", which is the same finding the skill's own trap
+  # records: "The scan is long, I'll just grep the queries".
+  - before: { first: "assignee", then: "docs/migration-plan.md" }
+  # from-skill(tooling): Migration tool and reset command specific to the
+  # project: read the config rather than assume
+  # (exit: Migrations replayed from a clean state, output pasted)
+  #
+  # `migrate` matches `npm run migrate` and `node tools/migrate.js`, the two
+  # spellings README.md offers, and does NOT match `tools/check/migrations.js`
+  # - the string is `migrat`+`ions`, with no `e` - so running `npm test` alone
+  # does not satisfy it. Scoped to Bash so that reading tools/migrate.js is not
+  # mistaken for running it.
+  #
+  # STATED RISK, to be read at two pairs before anything is spent on six: an
+  # agent that writes migrations without applying them fails this in BOTH arms,
+  # and a check nobody passes penalises them equally. It is kept because the
+  # exit condition asks for the replay in as many words and because the
+  # repository documents the command in its README.
+  - tool_used: { name: "Bash", arg: "migrate" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The new column is nullable and added beside the old one" }
+    # trap: "Rename + drop in the same migration, save time" - no rollback and
+    # guaranteed downtime while code still reads the old name.
+    - { dimension: trap, text: "The old column is not removed in this change" }
+    # trap: "The scan is long, I'll just grep the queries" - the extract reads
+    # the column positionally and no grep of src/ reaches it.
+    - { dimension: trap, text: "The plan names a client that does not deploy with the service" }
+    - { dimension: outcome, text: "Removal is tied to the consumers, not to a quiet weekend" }
+  threshold: pass_all

@@ -160,7 +160,3 @@ so a search finds its way here. Change a meaning in the same diff as the code.
 - [ ] Unsettled terms marked provisional rather than presented as decided
 - [ ] The agent instructions (`CLAUDE.md` / `AGENTS.md`) point at the glossary
 - [ ] No entry restates a general programming term the domain does not own
-
-## Changelog
-
-- 1.0.0 (2026-08-08) - initial versioned release

@@ -1,0 +1,100 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED - no paired run, no figure of its own. See core.eval.yaml.
+# `tier: probed`.
+#
+# What makes this the hard one: everything visible says the route is finished.
+# `/v1/tickets` has carried `deprecation: true` and a sunset header since
+# August (src/http/routes/tickets.js), docs/api/work-orders.md calls `/v1/jobs`
+# "the current API", the release log shows the jobs routes shipping in r-207,
+# and test/http.test.js asserts the two routes return identical bodies. The one
+# fact that forbids the removal is in a client README: the tablets talk to
+# `/v1/tickets` and "neither has ever been on /v1/jobs"
+# (clients/shop-tablet/README.md), nineteen on 2.3 and six on 2.4, updating
+# only when a shop restarts them.
+#
+# How a careful agent with NO skill plausibly fails.
+# It does the tidy thing. The deprecation notice reads as a decision already
+# taken, the duplicate routes read as debt, the tests prove the two are
+# interchangeable, and deleting a file that nothing in the repository imports
+# is a clean diff with a green suite. Nothing in the tree breaks - the fleet is
+# not in the tree. r-214 in ops/release-log.md is the same lesson from the
+# other direction and says nothing about routes. An agent that never opens
+# clients/shop-tablet/README.md has no reason to hesitate.
+#
+# Gate 1 is deliberately strict and the cost is stated: it fails an agent that
+# edits the route file at all, including one that strengthens the notice. That
+# is a real false negative. The alternative was a gate on the routes still
+# being present, and every shape of that is already true of the untouched
+# fixture, which eval-lint rejects as vacuous and which would measure nothing.
+# Strict-and-honest beats green-and-empty; a paired run should watch for it.
+#
+# The format-gate probe passes no gate here: none of "tablet", "fleet", a real
+# date or a repo path appears in the skill's checklist or in
+# templates/consumer-inventory.md.
+prompt: >
+  `/v1/tickets` has carried a deprecation notice since August and everything
+  new goes on `/v1/jobs`. Retire the old routes. Leave the note the team needs
+  in docs/tickets-retirement.md.
+
+preconditions:
+  - file_exists: "docs/tickets-retirement.md"
+
+gates:
+  # The route a fleet we do not deploy is still on, and only on. Deleting it is
+  # what the prompt asks for and what the exit condition forbids without a
+  # migrated or verifiably tolerant consumer.
+  # from-exit: Non-co-deployed consumers: compat or deprecation with a dated removal ticket
+  - repo_clean: { in: "src/http/routes/tickets.js" }
+  # The inventory is only done if it reaches the consumer that is not in the
+  # tree. Pristine: the file does not exist, so 0 hits.
+  # from-exit: Consumer-family inventory done (greps cited), each one listed
+  - grep_min: { pattern: "tablet|fleet|2\\.3|2\\.4", in: "docs/tickets-retirement.md", count: "1" }
+  # A removal that is not dated is a removal that never happens - or one that
+  # happens on the next tidy-up. The route already carries a sunset date; a
+  # note that reuses it, or sets a better one, satisfies this. Pristine: 0.
+  # from-exit: Non-co-deployed consumers: compat or deprecation with a dated removal ticket
+  - grep_min: { pattern: "[0-9]{4}-[0-9]{2}-[0-9]{2}|\\b20(2[6-9]|3[0-9])\\b|Mar 2027", in: "docs/tickets-retirement.md", count: "1" }
+  # Rewriting the installed client's source is the move that makes a removal
+  # look survivable. It ships to nobody.
+  # from-exit: Non-co-deployed consumers: compat or deprecation with a dated removal ticket
+  - repo_clean: { in: "clients/shop-tablet" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# The gates here are absences - the route file untouched, the client untouched -
+# and an absence is also what an agent that did nothing produces. The
+# trajectory is where the difference shows: whether the one file that forbids
+# the removal was opened, and whether it was opened before the note was
+# written or quoted after the fact.
+trajectory:
+  # from-skill(sequence): Which consumers co-deploy ... vs outlive the
+  # deployment (installed apps, third-party clients)? That boundary decides
+  # what is allowed to break
+  #
+  # clients/shop-tablet/README.md is the single fact that forbids this removal:
+  # nineteen tablets on 2.3, six on 2.4, "neither has ever been on /v1/jobs".
+  # Everything else in the tree - the deprecation header, the release log, the
+  # tests asserting the two routes agree - reads as permission. An agent that
+  # never opens that directory has no reason to hesitate, which is the failure
+  # this scenario exists to catch and the one no gate can see.
+  - before: { first: "clients/shop-tablet", then: "docs/tickets-retirement.md" }
+  # from-skill(tooling): `templates/consumer-inventory.md` - consumer migration
+  # checklist. Unreachable in the unaided arm by construction; see the note in
+  # core.eval.yaml.
+  - read_file: { path: "templates/consumer-inventory.md" }
+judge:
+  criteria:
+    - { dimension: restraint, text: "Does not remove the routes now and says why" }
+    # trap: "Breaking accepted, everything co-deploys" - the reality column asks
+    # for verification, and a fleet that updates when a shop restarts it is the
+    # thing being verified.
+    - { dimension: trap, text: "Names how the fleet is known to have moved" }
+    # trap: "We'll remove the old field later" - without a tracked date the
+    # compat becomes permanent, or the removal happens on the next tidy-up.
+    - { dimension: trap, text: "The removal is dated and has an owner" }
+    - { dimension: outcome, text: "Separates the deprecated route from the deprecated field names" }
+  threshold: pass_all

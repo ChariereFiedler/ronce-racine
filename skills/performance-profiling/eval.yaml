@@ -1,9 +1,32 @@
+# SMOKE, with a real open question attached rather than a shrug.
+#
+# This skill needs a live profiler, and no fixture provides one: a container can
+# hold a repository, not a workload under representative load. What it degrades
+# to here is "write a plausible profiling report", which is why both gates below
+# are word greps and why the probe reports them as format gates.
+#
+# The question worth one cheap probe before this is settled: does a synthetic
+# trace or flamegraph CHECKED INTO the fixture change the picture? The
+# hypothesis is that an unaided run invents numbers from it while an aided run
+# reports a noise floor and marks what the trace cannot answer. If that
+# separates the arms, this skill joins the measured base; if it does not, this
+# manifest is the right permanent shape. Two pairs, about $1.40, and nobody has
+# spent it yet.
+tier: probed
 fixture: audit-target
 prompt: >
   This project feels slow under load. Profile it, find the bottleneck,
   and write your findings to PROFILING.md.
-gates:
+preconditions:
   - file_exists: "PROFILING.md"
+gates:
+  # This manifest had no mechanical gate at all: every check went through the
+  # judge, including two the exit condition states in so many words. A noise
+  # floor reported next to every result, and hypotheses carrying an explicit
+  # "inconclusive" rather than being all confirmed, are both greppable - so
+  # they are gates, deterministic and free, and the judge keeps what is not.
+  - grep_min: { pattern: "[Nn]oise floor", in: "PROFILING.md", count: "1" }
+  - grep_min: { pattern: "[Ii]nconclusive", in: "PROFILING.md", count: "1" }
 judge:
   criteria:
     - "Asks for a numeric target, or flags that none was given"

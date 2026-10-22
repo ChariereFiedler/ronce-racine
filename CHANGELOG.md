@@ -7,6 +7,407 @@ to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Individual artifacts (rules, skills, hooks) also carry their own `version` in
 their frontmatter; this file tracks the toolkit as a whole.
 
+## [Unreleased]
+
+## [0.9.0] - 2026-10-22
+
+Minor, not patch: the `ronce` mod (an in-process plugin of function hooks, enforced rules, quality
+checks and a session report) ships with the plugin for the first time, the measurement base is
+rebuilt as 98 core, hard and limit scenarios, and a new opt-in hook sends shell file reads back to
+Read and Write. Nothing a 0.8.x install relies on is removed.
+
+### Added
+- **`shell-read-guard` - shell file reads sent back to Read/Write** (opt-in,
+  `PreToolUse`/`Bash`). Denies `sed -n` and `cat` on a project file, and
+  `cat > file <<EOF` to create one. Measured on a real agent run (2026-09-19, 32
+  minutes, $14.15): 43 of its 101 Bash calls were file reads - 18 `sed -n`, 11
+  `cat`, 14 `grep` - pouring 125k characters into the context. A run pays for its
+  whole context on every call, so a 10k `cat` at call 20 is billed again by the
+  260 that follow. Bounded reads (`| head`, `grep -l/-c/-q`) and scratch paths
+  are left alone; `# no-read-guard` overrides. It answers `deny` rather than
+  rewriting, hence opt-in.
+- **The measurement base, rebuilt as 98 scenario manifests over five worlds.**
+  Every measured skill now declares three scenarios under
+  `skills/<skill>/evals/` instead of one `eval.yaml`: **core** (the central
+  promise against the world's main defect), **hard** (a careful agent following
+  only the prompt plausibly fails a gate the exit condition promises) and
+  **limit** (the right answer is restraint - not applicable, insufficient
+  evidence, do not act). The base had no `limit` scenario for its first months,
+  which is why no skill could fail by producing its deliverable when none was
+  warranted. 101 manifests over 36 skills: 98 scenarios for 33 skills, plus the
+  `recurring-bug-root-cause` anchor and the two declared-smoke defaults;
+  `visual-regression-check` still carries none, and its README says why.
+  Every gate cites the exit-condition line it derives from, and every scenario
+  carries a written argument for how a careful unaided agent fails it - or an
+  explicit admission that it is saturated, which 28 of the 98 make.
+  **Nothing in the rebuilt base has been through a paired run**; every manifest
+  but the anchor declares `tier: probed` and says so in its own words.
+- **What a run cost, and what that bought.** Wall-clock per trial was collected
+  from the start and displayed nowhere; it now prints beside the tokens and the
+  cost. It is the least reproducible number here - the same scenario ran between
+  three and forty-seven minutes on one machine depending on how many agents
+  shared it - so it is read as a ratio between two arms of one job, exactly as
+  cost already was, and never enters a verdict. On the anchor: 1.25x the time,
+  1.36x the money, 1.39x the tokens, three numbers pointing the same way.
+  A new `costly-no-lift` flag fires when the aided arm costs at least twice as
+  much and NO dimension helps. It skips a scenario whose verdicts are merely
+  withheld: "no dimension helps" and "no dimension is entitled to say it helps"
+  are different, and flagging a probed scenario would turn a withheld verdict
+  into an accusation.
+- **Trajectory evaluation**: a manifest gains a `trajectory:` section graded from
+  the agent's own trajectory in the post-pass, and judge criteria carry the
+  dimension they grade - outcome, tooling, sequence, trap or restraint. A skill
+  prescribes six surfaces and only one of them, the exit condition, survives
+  into the repository; the other five are claims about what the agent DID.
+  Measured over the twelve trials of the 2026-09-03 anchor run: 480 steps
+  carrying **598 tool calls, none of which reached the judge** - the renderer
+  kept each step's prose and dropped its actions, so a criterion like "refutes a
+  hypothesis with evidence it produced, not with a claim" was unanswerable by
+  construction. Rendering actions took the transcript from 95 KB to 213 KB.
+  Replayed on the same twelve trials, the trajectory dimension gives the largest
+  lift of the three - 0.67 unaided against 0.94 aided, where the deliverable
+  checks moved 0.00 - and its strongest single check, the script the skill names
+  as step one, went 0/6 unaided against 5/6 aided. That script only reads, so no
+  check on the tree could ever have seen it. Six check kinds: `tool_used` with an
+  optional argument scope, `tool_absent`, `read_file` (counting a shell read as
+  well as a dedicated tool, or you measure the harness rather than the work),
+  `wrote_file`, `before` - the ordering claim a snapshot erases - and
+  `step_budget`. An unreadable trajectory fails every check including the
+  absence ones: a lost trial must not score like a perfect one.
+- **`docs/measuring-prose.md`**: the method, written to be reusable without this
+  code - the failure that eats this kind of eval, the six-point fixture
+  contract, the synthetic-deliverable probe, the trajectory dimension with its
+  figures, the three legitimate outcomes, and the never-move-the-target rule.
+  The code is 3300 lines a reader will rewrite anyway; the mistakes are the part
+  worth having.
+- **A format-gate probe** (`npm run eval:probe`): grades a deliverable carrying
+  the skill's own headings and no content whatsoever against a manifest's gates.
+  Any gate it passes scores vocabulary rather than work, since the deliverable
+  knows nothing about the fixture. It reuses `applyGate`, so it cannot count
+  differently from the gate it probes. On the base as it stood before the
+  rebuild: **43 of 58 gates were format gates, 13 survived**. On the base as it
+  stands after it: **4 format gates across 101 manifests, 197 survive**, and all
+  four are in the two manifests declared smoke. A path-keyed gate is reported
+  `shallow`
+  rather than `format` - an empty artifact in the right place passes it, but
+  putting it there is an act, not a word, and the acts these gates ask for
+  measured 0/7 unaided against 7/7 aided. Severity follows the tier: reported
+  everywhere, blocking only for a manifest claiming the right to publish a
+  causal verdict.
+- **A `tier:` on every manifest** - `anchor`, `measured` or `probed` - so a
+  five-minute smoke scenario cannot sit in a report beside one measured at full
+  power as though the two numbers meant the same thing. An untiered manifest
+  grades as `probed`, the direction that costs at worst a withheld verdict.
+  `eval-lint` now requires the tier alongside an `answer-only` annotation, so a
+  manifest admitting it has no mechanical signal cannot sit unnoticed inside the
+  measured base, and requires every gate to cite the exit-condition line it
+  derives from - a warning today, an error the day the manifest claims a tier
+  that may publish a verdict.
+- **An agent time budget that knows how big the fixture is**: a 1200s floor plus
+  20s per file and 6s per KiB, capped at an hour, measured on the staged tree
+  through the same prune list the gates use. The old constant was sized for
+  6-line fixtures; on a 40-file one, orientation alone costs minutes before any
+  work starts, and both arms timing out yields a null result that reads as "the
+  skill does not help". The floor is the old value, so no recorded measurement
+  changes conditions retroactively.
+- **`incident-first-failure`, the first overlay fixture**: `incident` with the
+  publish-side recurrence removed - every commit kept except the five
+  `fix(publish)` ones, their cumulative effect folded into one commit that is
+  not a fix, worktree byte-identical to the base's. The `limit` scenario of
+  `recurring-bug-root-cause` asserts a recurrence where the history holds a
+  single correction, and against the base that scenario was confounded rather
+  than hard: five fix commits sat one directory from the scope whose premise is
+  false, and the skill's own detector reported them, so an agent misled by the
+  fixture would have been scored as eager. Verified after the swap: the detector
+  says "apply the skill" on the base and "no scope at the threshold" here.
+- **History primitives for fixtures**: a commit step can now patch a file in
+  place or delete one, instead of restating every touched file in full. A
+  thirty-commit history was previously thousands of lines of escaped literals in
+  which one content edit had to be propagated by hand through every later commit.
+- **A fixture contract, and the rule for where fixture realism comes from**:
+  `docs/evaluating-skills.md` part 2 states the six things a fixture must carry
+  before its manifests may claim a verdict, and why the first of them - shipping
+  the deliverable's own format inside the fixture - is what stops a gate
+  degenerating into a word grep. `docs/fixtures.md` states the transposition
+  rule: the difficulty structure of a real episode crosses into a fixture and
+  nothing else does, no path, no hash, no ticket number, no sentence. A denylist
+  in `tests/fixtures.test.ts` makes the mechanical tells impossible to land by
+  accident; it cannot establish that a transposition is clean, and says so.
+  `docs/superpowers/plans/2026-09-03-eval-base-rebuild.md` records which skill is
+  measured, which is smoke, and which carries no manifest at all.
+- **Fixture invariants**: a fixture declares the counts it guarantees, checked
+  through `applyGate` - the same code path a manifest's `grep_count` takes, so an
+  invariant cannot count differently from the gate it protects. An overlay
+  inherits its base's invariants except those keyed on a file it rewrote, in the
+  tree or through a commit. Without this, a content edit silently moves what a
+  gate measures several scenarios away.
+- **Paired with-skill/without-skill measurement**: `tools/eval-tasks.ts` generates
+  one Harbor task per skill manifest (verified across all 36: one task each,
+  never the manifest itself or `EXPECTED.md` inside the image); `tools/eval-grade.ts`
+  applies a manifest's checks to a finished run and writes partial-credit
+  scores, never short-circuiting on the first failure; `tools/eval-judge.ts` runs
+  an adjunct LLM-judge pass after the trial, outside the sandbox (the judge
+  needs an API the container has not got), built from the manifest alone so it
+  cannot grade the arm's label instead of its work; `tools/eval-report.ts`
+  compares the two arms and attributes the gap per dimension, refusing a causal
+  verdict below six paired trials and flagging a dimension `saturated` when its
+  baseline already sits at the ceiling. `eval-report --summary` prints one line
+  per skill, weakest-first, so a sweep can be read while it is still running.
+- **Named arms**: `eval-tasks --arms "name:dir[,dir];…"` declares more than the
+  default with/without pair, for "this version of the skill against that one";
+  an empty dir list is the no-skill arm, each name lands in the trial's
+  `result.json`, and `eval-report --contrast a:b` pairs the trials by those
+  names - judging each dimension against the named baseline, and refusing to
+  pool a job with named arms when no contrast is given.
+- **`npm run eval:lint`**, run with no agent call as part of `npm test`: errors
+  when a gate's literal is handed over verbatim in its own prompt (the check
+  would then be satisfiable by reading the prompt alone) and warns when a judge
+  criterion echoes the prompt's own wording. A `# leak-ok: <reason>` annotation
+  covers the irreducible leaks - a rename that cannot be asked for without
+  naming the new prop, an imposed contract that has to be stated.
+  It also replays every manifest's preconditions and gates against the
+  UNTOUCHED fixture (minus `EXPECTED.md`, which never enters the image): a
+  manifest whose checks all hold there scores a do-nothing agent exactly like
+  one that did the work, and an absence gate scoped to a path the fixture has
+  not got - `grep_zero` on `src/users/domain` - passes for free whatever
+  happened. Found after a real paired run in which an agent that produced no
+  file at all passed `ddd-backend-implementation`.
+- **A `preconditions:` list**, split out of a manifest's `gates:`: a check
+  belongs in `gates` only if an agent could plausibly fail it while still doing
+  what the prompt literally asked. A deliverable's mere existence - unearnable
+  credit, since an unskilled run produces it too (28 of 72 gates across the 36
+  manifests, measured 2026-08-24) - moved to `preconditions` and is reported
+  alone on failure, since a missing deliverable makes every gate below it
+  uninterpretable rather than failed.
+- **A `file_matching` gate kind**, keyed on a path pattern rather than one exact
+  filename, for exit conditions that demand a *kind* of file - a guardrail is a
+  git hook or a CI job, and the agent picks where it lives.
+- **`repo_clean`'s optional `in`**, scoping the invariant to the tree that must
+  not move instead of requiring every legitimate file a skill might touch to be
+  enumerated.
+- **A read rate per arm in `eval-report.ts`**, taken from each trial's ATIF
+  trajectory: how many trials opened the skill at all, and how many followed a
+  pointer into a `reference/` file under a skill directory. Below 100 % on the
+  measured arm the report flags `skill-unread` - a flag, never a gate, since a
+  trial that never opened the skill measures the model rather than the text.
+- **`tools/skills.ts validate` accepts a cross-skill reference written the way
+  an installed skill walks it** (`../audit-report/reference/apparatus.md`),
+  resolving it against `skills/<skill>/reference/<file>` like the bare form.
+  The lint had been rejecting the only path that works at runtime, which forced
+  a pointer to spell out two paths for one file.
+
+### Fixed
+- **The skill suggestion now runs the algorithm its tests measure.** Two scorers
+  coexisted: the one in `tools/routing-cases.ts`, held to account by 208 cases
+  (198 triggers ranked top-3, 10 disambiguation cases), and the one the hook
+  actually ran — `triggers.filter(t => prompt.includes(t)).length`, no stopwords,
+  no stemming, no weighting. The algorithm under test was never the algorithm
+  under load, the same defect the 2026-08-24 portability postmortem records for
+  the two frontmatter parsers. Scoring now lives once, in `hooks/skill-scoring.ts`,
+  imported by both.
+- **A suggestion below the noise line is no longer emitted.** The hook named three
+  skills whatever the score, so a prompt calling for none still got three.
+  Measured on the live catalogue (2026-09-19): prompts that genuinely call a skill
+  score 17, 7, 3; prompts with no business here score 1 or 0. Below `MIN_SCORE`
+  (2) the hook stays silent — naming nothing is an answer.
+- **A backup no longer lands in a directory the harness scans.** Claude Code
+  loads every directory under `.claude/skills/`, so a skill backed up in place as
+  `<name>.pre-install.bak/` was loaded as a SECOND skill - the same instructions
+  offered twice to the model, under a name ending in `.bak`. One install of a
+  20-skill toolkit put 35 of those in front of it. Backups (both `pre-install`
+  and `pre-uninstall`) now live under `.claude/.ronce-racine-backups/<kind>/`;
+  `uninstall` still restores one left in place by an older install.
+- **`truncate-output` now caps unbounded shell reads** (`cat`, `sed -n`,
+  unbounded `grep`). It only knew the commands that are verbose by *accident* -
+  a build, a fetch - and ignored those verbose *by construction*, proportionally
+  to the file they read. A `grep` that already carries its bound (`-l`, `-c`,
+  `-q`, `-m N`) is left alone; `--include="*.ts"` no longer reads as a grouped
+  `-l`, which had it pass for bounded.
+- **Three scenarios could not run at all.** All three `merge-request-review`
+  manifests opened with "Commit 8f22028 is the change under review" and no such
+  object existed: the fixture generator pins the commit author but not the date,
+  so every regeneration produces different ids. The agent would have searched for
+  something that is not there and returned a null result, which reads exactly
+  like "the skill does not help" - the expensive failure, because it costs a full
+  paired run to find and arrives looking like a finding. They now name the commit
+  by its subject, which survives a regeneration and a later edit of the history,
+  and `eval-lint` refuses a prompt naming a git object its fixture cannot
+  resolve. It reads the prompt only: a comment block legitimately quotes the id
+  it discusses.
+- **Seven exit conditions demanded something their own skill never taught.**
+  Found by surveying all 209 exit-condition lines against the skill bodies. The
+  sharpest: `bug-ticket-root-cause` stated as observed - "each test fails before
+  the fix, passes after" - something its Principle, Traps table and Guardrails
+  all forbid observing, since it may not modify an application file; its template
+  already had it right as a prediction. `commit-readiness-review`'s "a missing box
+  = no commit" had no notion of a suite red before the change, so read literally
+  it forbade every commit in a repository red for a fortnight - and its own eval
+  manifest already graded the right behaviour, so the eval was ahead of the skill
+  and supplied the wording. Also fixed: a deliverable addressed to a read-only
+  path inside the installed skill, a before/after comparison with no step
+  producing the before, a notation defined nowhere, and a p-value demanded of a
+  toolchain that reports none.
+
+- **The judge could not see a single tool call.** `transcriptFromTrajectory`
+  mapped each step of the ATIF trajectory to its `message` and dropped
+  `tool_calls` entirely, so the judge read what the agent SAID and never what it
+  did. Counted over the twelve trials of the 2026-09-03 anchor run: **598 tool
+  calls across 480 steps, none of them visible**. A criterion the anchor
+  manifest actually ships - *"refutes a hypothesis with evidence it produced,
+  not with a claim"* - was therefore unanswerable by construction, because
+  running a command and claiming to have run it rendered identically. Tool calls
+  now render with their arguments (which file was opened, which pattern was
+  searched, which flag was passed), each argument truncated on its own so one
+  long file body cannot push a step's other actions out of the budget. The
+  twelve transcripts went from 95 KB to 213 KB, and the added half is the
+  actions. The judge is now held to it: a rendered call is a quote, and for a
+  `tooling` or `sequence` criterion it is the ONLY admissible evidence - an
+  agent saying it ran a command is not proof that it ran.
+- **Every fresh install reported as drifted, and uninstall then refused to
+  delete what it had installed.** The installer's copy filter excluded any path
+  ending in `eval.yaml` while drift control excluded only the exact name
+  `eval.yaml`, so the two disagreed about every `evals/<scenario>.eval.yaml` the
+  moment skills gained one: `check` listed manifests that are deliberately never
+  distributed as missing files, and `uninstall` - reading that drift as local
+  edits worth preserving - renamed the skill directories to `.pre-uninstall.bak`
+  instead of removing them, leaving `.claude/` behind. Both now read one
+  predicate, `isDistributed` in `src/lock.ts`. `copyPath` also drops a directory
+  whose every file the filter rejected, so an empty `evals/` shell is no longer
+  installed into a target repository.
+- **The judge graded content it had never seen, and said nothing.** The artifact
+  budget was 10 KB over a bundle of whole file bodies in directory-walk order,
+  so on a fixture of any size the judge returned confident verdicts about files
+  cut from its prompt, and a deliverable whose path sorted late was dropped
+  entirely. Never reached on 6-line fixtures, which is why the cliff was
+  invisible. The budget is now 80 KB, the files a manifest's own checks name are
+  presented first, and every cut is announced by name and byte count with an
+  instruction not to assume what was not shown. The transcript was cut the same
+  way while its heading claimed truncation unconditionally; it now says which.
+- **A thin skill's with-arm measured a dangling pointer.** `pairedArms` staged
+  exactly one skill directory, and Harbor uploads a staged directory verbatim.
+  `audit-security` and `audit-testing` both send the reader to
+  `../audit-report/reference/apparatus.md` for the score rule, the confidence
+  levels and the handling of non-auditable items, so their aided arm ran a skill
+  whose apparatus was not in the image. The generator now reads that pointer out
+  of the skill's own text and stages what it finds; a pointer to something absent
+  is dropped rather than staged, because a path Harbor cannot upload would turn a
+  skill defect into an infrastructure error, which the report treats as
+  never-a-regression and would therefore hide.
+- **A scenario manifest would have shipped in the npm tarball.** The package's
+  file list excluded `skills/**/eval.yaml`, which does not match
+  `<scenario>.eval.yaml`. Reproduced by adding one and watching `npm pack` carry
+  it. The installer's own filter matches on the suffix and was already correct;
+  a test now proves that rather than assuming it, so a future rename cannot leak
+  the oracle into the container that the agent under evaluation runs in.
+- **The toolkit this repo installs into itself was a stale snapshot.** Installed
+  from 0.5.1 while the repo ran 0.8.0: 24 drifted artifacts, 20 of 21 `SKILL.md`
+  two minor versions behind, and only 21 of the skills present at all. A
+  contributor working here read July's text while `skills/` held August's. The
+  `check` command already reported all of it and had never been run on this
+  repo; a test now runs it, so the copy cannot silently fall behind again.
+- **The fixture's answer key was reachable from inside a Harbor image.**
+  `EXPECTED.md` was removed from the shipped worktree but had been `git add`ed
+  with the rest of the fixture, so `git show :EXPECTED.md` printed it to the
+  agent under evaluation, and on `buggy-app` it sat in `HEAD`. The fixture
+  generator now keeps the file out of git entirely; a test locks the index and
+  the history of every generated task. Figures measured before 2026-09-02 were
+  taken with the key reachable, whether or not any agent read it.
+- Prompts for **api-contract-versioning**, **database-schema-evolution**,
+  **ddd-backend-implementation**, **production-incident-diagnostic**,
+  **frontend-fullstack-implementation**, **comprehensive-test-strategy**,
+  **ci-pipeline-orchestration** and **refactoring-shared-component-api** stopped
+  spelling out the method their skill exists to teach.
+- **domain-modeling-design**'s prompt never said where the domain model should
+  land, so it lived in the conversation and nothing reached disk; it now names
+  `MODEL.md`. **recording-decisions**'s exit condition offers
+  `.claude/decisions.md` as its own fallback, which the harness's own prune of
+  `.claude` hides from every gate; the prompt now names a place the harness can
+  see.
+- **`playground/buggy-app`'s three prior `fix(cart)` commits were
+  `--allow-empty`** (the first also carried the whole initial import from a
+  preceding `git add -A`), so an agent could root-cause the fixture's own
+  construction instead of the recurring symptomatic-patch pattern it exists to
+  present. Each commit now rewrites the file it claims to touch, with a test
+  locking a non-empty diff on every one and the planted off-by-one still alive
+  at HEAD.
+- **audit-security** dropped a judge criterion asking each scored question to
+  cite the verification command behind it: 0 of 4 runs met it on either arm, so
+  it penalised both sides equally instead of separating them.
+- **api-contract-versioning**'s gates are now calibrated from its four retest
+  runs instead of derived a priori - `expand-contract` and a dated removal
+  ticket appear in every skilled run and no unaided one.
+- **refactoring-shared-component-api**'s fixture gained a fifth file that
+  reaches the component through an aliased import (invisible to a grep of the
+  component name) plus noise files, with its call-site count recomputed
+  against the fixture (3).
+- **validating-features-end-to-end**, judge-only by nature since it produces no
+  file, gained a criterion asking for a verdict per unvalidated edge case
+  rather than a bare mention, plus the never-"it-should-work" rule as a
+  criterion of its own.
+
+### Removed
+- **`visual-regression-check` no longer carries an eval manifest.** It drives a
+  real browser across two viewports and the eval container has none, so a
+  manifest could only ever grade a *plan* for looking - which is precisely what
+  the skill exists to stop people substituting for looking. Its README records
+  the gap and what would close it. Deleting beats keeping a check that cannot
+  fail: coverage reads as evidence, and a green check that means nothing is
+  worse than an acknowledged hole.
+
+### Changed
+- **`audit-report` and `performance-profiling` are declared smoke**, and say what
+  they do not measure. The first is a template and a set of computation rules
+  consumed by the other audit skills, so there is no work of its own for a
+  fixture to make hard; its gates are format gates by construction, which is the
+  honest shape when the deliverable IS a format. The second needs a live
+  profiler. Its manifest now carries the open question rather than a shrug:
+  whether a synthetic trace checked into the fixture makes an unaided run invent
+  numbers while an aided one reports a noise floor. Two pairs, about $1.40,
+  unspent.
+- **Hardened the manifest for every one of the 36 skills** so gates and judge
+  criteria measure against each skill's own exit condition instead of
+  saturating at 1.00 on both arms: prompts that handed over the method under
+  test (an architecture, a layer list, a matrix structure, an exhaustive
+  call-site list) now state only the need and leave the method to the skill;
+  added checks cover what exit conditions promise beyond a bare deliverable -
+  a decision's weighed options and revisit condition, a review's stated
+  verdict, an audit's confidence and actionability ranking, a glossary's
+  rejected synonyms, a guardrail that actually blocks.
+- **Each dimension - gates, judge, trajectory - now carries its own verdict**,
+  instead of one verdict driven by the gates alone. A report that read
+  "inconclusive" while the judge had separated the arms cleanly was burying the
+  only dimension carrying signal. The judge half is additionally broken out per
+  dimension - outcome, tooling, sequence, trap, restraint - each against its own
+  baseline and its own pair count, because the anchor's numbers (gates 0.33 vs
+  0.33, judge 0.72 vs 0.94) left "which dimension carried that judge gap"
+  unanswerable. A manifest declaring no trajectory section scores `null` there,
+  never `0`: unmeasured must not read as failed, and `trajectory-partial` says
+  when an arm's mean is over a subset of its trials.
+- **The judge's transcript budget is no longer a tail.** `JUDGE_TRANSCRIPT_TAIL`
+  kept the last 30 KB, which was defensible while the transcript was prose and
+  stopped being defensible the moment tool calls were rendered: the twelve
+  anchor trajectories went from 95 KB to 213 KB, and 30 KB taken from the end of
+  213 KB drops the opening steps entirely - which is exactly where the evidence
+  for "context gathered *before* acting" lives. `JUDGE_TRANSCRIPT_BUDGET` is
+  120 KB, spent 40 % on the opening and the rest on the close, cut back to line
+  boundaries so no half-rendered call can be quoted as an act, and every cut
+  announces its position and its byte count.
+- **The Harbor task generator emits one job per skill**, not one job spanning
+  every requested skill - a single job would install the whole catalog into
+  the with-skill arm, unable to attribute any gap to the skill under test.
+- **Judge bundles now split on a marker the payload cannot forge**, replacing a
+  `### <path>` heading indistinguishable from the `### Summary` / `### Weaknesses`
+  headings already inside a markdown report.
+
+### Documented
+- **refactoring-shared-component-api records no measurable lift**, after three
+  separate attempts to separate the arms - a prompt no longer naming the call
+  sites, gates hardened from the exit condition, then the fixture widening
+  above - all converged on 1.00 vs 1.00: on this scenario the model already
+  performs the exhaustive sweep the skill teaches. A harder fixture might
+  separate the arms, but that is a fixture decision to take on its own merits,
+  not a way to rescue a number.
+
 ## [0.8.0] - 2026-08-24
 
 ### Fixed

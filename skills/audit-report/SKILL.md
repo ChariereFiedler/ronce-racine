@@ -1,9 +1,9 @@
 ---
 name: audit-report
 description: Use when consolidating audit results into a report or reformatting existing audit findings - template and scoring rules for the consolidated audit report. Standalone or as reference for the orchestrator. Triggers on "audit report", "rapport audit", "consolider audit", "consolidate audit", "reformat audit findings".
-version: 1.0.1
+version: 1.0.2
 metadata:
-  last-reviewed: 2026-07-20
+  last-reviewed: 2026-09-04
   category: audit
 ---
 
@@ -231,11 +231,5 @@ The generic deliverable is the **Markdown report**. A project that manages its a
 - [ ] Domain score = average of the scored questions (N/A excluded), weighted global score (weight table applied)
 - [ ] Maturity classification assigned per the grid
 - [ ] Each answer backed by evidence (no opinion without evidence)
-- [ ] Recommendations prioritized MUST/SHOULD/COULD + impact projection `(XX-01: current→projected)`
+- [ ] Recommendations prioritized MUST/SHOULD/COULD, each citing the question codes it addresses (`XX-01`) so the reader can trace it back to its evaluation
 - [ ] Markdown report produced (structured export only if the project requires it)
-
-## Changelog
-
-- 1.0.1 (2026-07-20) - weight table and thresholds no longer restated outside reference/scoring-model.md
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

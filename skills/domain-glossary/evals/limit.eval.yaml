@@ -1,0 +1,93 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED - no paired run, no figure of its own. `tier: probed`.
+#
+# The restraint scenario. The prompt asks for a synonym cluster to be resolved,
+# and there is no cluster: estimate and quote are two different things in this
+# domain and the fixture makes both real.
+#   estimate  `estimate_minor`, an integer a technician writes on a work order
+#             before anything is priced (migrations/0006_quotes.js,
+#             docs/api/work-orders.md, src/application/commands/open-work-order.js)
+#   quote     a priced document with lines from the rate book, a state machine
+#             (draft, sent, approved, declined, redraft) and an approval that
+#             gates closing the work - src/domain/quote.js, the quotes table,
+#             /v1/jobs/:id/quotes
+# ops/backlog.md records that the counter staff use the two words for each
+# other on the phone and that there is nothing to fix in the code. That entry
+# is the noise the prompt is quoting, not a definition.
+#
+# So the right answer is to write both terms down, kept apart, with what
+# separates them - and to decline the merge that was asked for. The old base
+# had no scenario in which producing the deliverable in the shape requested was
+# the failure, which is why nothing could measure restraint.
+#
+# How a careful agent with NO skill plausibly fails.
+# The instruction is explicit and the evidence for it is in the repository's
+# own backlog, written by somebody who works there. Two words, one meaning, a
+# named source: that is a synonym cluster by every surface test. Folding
+# estimate into quote produces a shorter, tidier glossary and satisfies the
+# request. It also erases the only number a technician writes before pricing,
+# and the next agent that reads the glossary will name the column wrong.
+# EXPECTED.md lists this as a wrong answer in its own right.
+#
+# The format-gate probe. The skill's fenced template supplies "We do not say",
+# "Not to be confused with" and "rejected", so the merge cannot be detected by
+# greping those words alone - gate 3 pairs one of them with `estimate`, which
+# no template line contains.
+prompt: >
+  The counter staff use estimate and quote for each other all day on the phone
+  and it costs us about one confused customer a month (ops/backlog.md). Pick
+  one word for it and write the vocabulary down so the code stops doing both.
+
+preconditions:
+  - file_exists: "GLOSSARY.md"
+
+gates:
+  # The estimate entry, anchored to the column that carries it. An agent that
+  # merged the two terms has nothing to anchor here. Pristine: 0, and the
+  # prompt says "estimate", never `estimate_minor`.
+  # from-exit: Every entry anchors to at least one type, table, route or module that exists
+  - grep_min: { pattern: "estimate_minor", in: "GLOSSARY.md", count: "1" }
+  # The quote entry, anchored to the module or the route that makes it a
+  # document rather than a number. Pristine: 0.
+  # from-exit: Every entry anchors to at least one type, table, route or module that exists
+  - grep_min: { pattern: "domain/quote|quote\\.js|/quotes", in: "GLOSSARY.md", count: "1" }
+  # The merge, in the words the skill's own template would use to record it.
+  # A correct entry says "not to be confused with estimate", which this does
+  # not match; a merged one says "we do not say estimate" or lists it as
+  # rejected, which it does. Pristine: 0 - there is no glossary - and the
+  # template's own rows carry no term, so the skeleton does not trip it.
+  # Known weakness, which eval-lint warns about: an absence gate over a file
+  # that does not exist yet is green for a run that writes nothing. The
+  # precondition above is what keeps it interpretable.
+  # from-exit: Every synonym cluster resolved to one name, the others listed as rejected
+  - grep_zero: { pattern: "(We do not say|we do not say|[Rr]ejected)[^\n]{0,60}estimate", in: "GLOSSARY.md" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+trajectory:
+  # from-skill(sequence): 1. Harvest the terms from the code, mechanically -
+  # "the candidate terms, from the code, not from memory"
+  #
+  # What separates an estimate from a quote is not in ops/backlog.md, which is
+  # where the prompt points: it is the state machine in src/domain/quote.js,
+  # against an integer column somebody types before anything is priced. Gate 2
+  # accepts the glossary naming the module; this asks whether the module was
+  # opened before the merge was decided. An agent that reads the backlog entry,
+  # agrees with it and writes the document fails here.
+  - before: { first: "src/domain/quote.js", then: "GLOSSARY.md" }
+  # from-skill(sequence): What the team already fixed elsewhere: ADRs ... A term
+  # already decided must not be reopened here.
+  #
+  # 0002-money-in-minor-units is the decision `estimate_minor` is named after,
+  # so the term the prompt asks to delete is one the team has already settled.
+  - read_file: { path: "docs/decisions" }
+judge:
+  criteria:
+    - { dimension: restraint, text: "Declines to merge the two words and says what separates them" }
+    - { dimension: outcome, text: "Both terms get their own entry" }
+    - { dimension: sequence, text: "The phone usage is named as noise, not as evidence" }
+    - { dimension: restraint, text: "No entry names a concept the tree does not carry" }
+  threshold: pass_all

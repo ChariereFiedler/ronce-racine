@@ -1,0 +1,110 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. The three previous no-lift measurements for this skill, and the
+# commitment not to keep adjusting if the null result repeats, are recorded in
+# evals/core.eval.yaml next door. `probed` until a six-pair run is recorded
+# here.
+#
+# THE SCENARIO - the right answer is to change nothing
+#
+# The prompt states a false premise flatly, without a hedge: nothing passes
+# `label` to StatusPill any more, so drop it. Two screens do:
+#
+#   src/pages/bookings.js:18   label: WORDS[booking.status]
+#   src/pages/notices.js:26    label: notice.tone
+#
+# Both are correct and both matter. The bookings ledger says "Held" where the
+# berth plan says "Reserved" - docs/pattern-library/status-pill.md records that
+# in the Note column of its call-site table - and the notices screen uses the
+# pill for something that is not a berth state at all, so its word comes from
+# the row rather than from the WORDS map. Removing the prop makes both fall
+# back to the domain vocabulary, silently, on two live screens.
+#
+# The correct answer is to refuse: name the two call sites, say what each one
+# would render instead, and leave the repository untouched.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# `label` is the noisiest word in this repository. Every DataTable column
+# descriptor is `{ label: ..., cell: ... }`, ActionBar actions carry a `label`,
+# FieldRow takes one, EmptyState takes one, and the CSS has `.field-row__label`,
+# `.tally__label`, `.pill__label` and `.callout__title`. A grep returns dozens
+# of lines across a dozen files, and the two that matter are two of them,
+# indistinguishable at a glance from the column descriptors on the same
+# screens. An agent that greps, sees a wall of unrelated hits, and concludes
+# the prompt's premise is about the pill's own prop rather than about the word
+# has done what the prompt literally asked - and the component's own signature
+# encourages it, because `label` is optional and defaulted, so removing it
+# neither breaks a type nor throws.
+#
+# SATURATION RISK, STATED IN ADVANCE - this one is real and material
+#
+# test/components.test.js contains "a screen can override the word without
+# changing the colour", which passes `label: 'Held'` and asserts /Held/. An
+# agent that removes the prop AND runs `npm test` gets a red suite and backs
+# out. So this scenario measures the arms only where they differ in whether the
+# sweep preceded the edit; the exit condition's "Tests + typecheck run, output
+# pasted" is the fair path and it is not being hidden. If both arms come back
+# clean because both ran the suite, that is the answer, and the honest reading
+# is that on this repository the tests do the skill's job.
+#
+# The gates are deliberately thin for the same reason. What restraint looks
+# like here is an unchanged repository plus a named refutation; there is no
+# artifact to grep beyond the report.
+fixture: surface
+tier: probed
+prompt: >
+  Nothing in the console passes a `label` to StatusPill any more - every screen
+  lets the pill derive its own word. Drop the prop from the component and from
+  its contract, and write what you found to REPORT.md at the repo root.
+preconditions:
+  - file_exists: "REPORT.md"
+gates:
+  # The restraint itself. The prop is passed by two live screens, so "each call
+  # site migrated or justified" resolves to zero migrations and zero removals:
+  # the correct sweep ends with nothing to change. REPORT.md is the only thing
+  # that may appear.
+  # from-exit: Each call site migrated or justified (not affected); grep of the old name = **0 occurrences** among consumers
+  - repo_clean: { except: "REPORT.md" }
+  # A refusal by luck is not a refusal with the call sites in hand. Pristine:
+  # REPORT.md does not exist. Neither screen name appears in the skill's own
+  # migration-checklist template, so the format probe cannot pass this.
+  # from-exit: Deliverable: list of call sites + status (migrated / removed / not affected, justified)
+  - grep_min: { pattern: "bookings|notices", in: "REPORT.md", count: "1" }
+  # The silent-contract half, and what makes this a wrong answer rather than an
+  # unrequested one: the component declares `label` as optional, so removing it
+  # produces no compile, type or runtime signal - the two screens simply start
+  # rendering another word. A report that stops at "the prop is still used"
+  # without saying what would change has not done the check.
+  # from-exit: Silent-contract check done (every prop passed is declared in the component's interface)
+  - grep_min: { pattern: "Held|Reserved|WORDS|tone", in: "REPORT.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Never
+# replayed.
+#
+# ONE CHECK. The correct answer changes nothing, so there is no act to order a
+# `before` against: every file this scenario touches it must read first, and
+# the only thing written is the report. The restraint the scenario measures is
+# an absence in the TREE, which `repo_clean` above already holds - a
+# `tool_absent` would only add the case of an edit made and reverted, and the
+# skill names no forbidden act to derive one from.
+trajectory:
+  # from-skill(tooling): `scripts/sweep-call-sites.ts <ComponentName> [rootDir]`
+  # - automatic sweep (casings, dynamic usages, spreads, suspicious wrappers
+  # highlighted, stories/mocks), output = markdown checklist
+  #
+  # The act that finds the two survivors. `label` is the noisiest word in this
+  # repository - every DataTable column descriptor carries one - so the sweep
+  # that matters is the one keyed on the COMPONENT, and the skill's script is
+  # the one the skill prescribes for it. Staged into the with-arm only, so the
+  # unaided arm cannot run it; counts the invocation, not the reading.
+  - tool_used: { name: "Bash", arg: "sweep-call-sites" }
+judge:
+  criteria:
+    - { dimension: restraint, text: "The component signature is left untouched" }
+    - { dimension: outcome, text: "Both surviving callers are named" }
+    # Trap table: "The typecheck passes, it's done" - fallthrough attrs,
+    # dynamic JS and untyped templates accept an unknown prop without
+    # complaint. `label` is optional and defaulted, so removing it produces no
+    # signal at all; the word each caller would render instead IS the signal.
+    - { dimension: trap, text: "The word each caller would render instead is stated" }
+  threshold: pass_all

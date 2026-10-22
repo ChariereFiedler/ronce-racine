@@ -24,10 +24,9 @@ Audit the security maturity of a project: encryption in transit and at rest, key
 
 ## Score calculation
 
-- Domain score = average of the scored questions (exclude N/A)
-- State "X questions scored out of Y total"
-- A question is N/A if the project profile makes it non-applicable (see [Variants by project type](#variants-by-project-type))
 - Sub-questions (SE-02a, SE-04a, SE-07a) count as full questions in the calculation
+- A question is N/A if the project profile makes it non-applicable (see [Variants by project type](#variants-by-project-type))
+- The score rule itself is in the shared apparatus (see [Report apparatus](#report-apparatus))
 
 ## Audit protocol
 
@@ -45,7 +44,7 @@ Audit the security maturity of a project: encryption in transit and at rest, key
 12. **Run `npm audit`** (if Node.js) or equivalent for a vulnerability snapshot
 13. **Run the verification commands** listed for each question
 14. **Assign a level** per question with justification and confidence level
-15. **Produce the report** using the output format below
+15. **Produce the report** using the shared output format (see [Report apparatus](#report-apparatus))
 
 ## Grids by section
 
@@ -81,49 +80,9 @@ Each file contains the statement, the items to analyze/check, the bash commands 
 ### Application without containers
 - **SE-13** (Containers) → **N/A**.
 
-## Output format
+## Report apparatus
 
-```markdown
-## Security - Overall score: X.X/4 (Y questions scored out of 16)
-
-### Summary
-[2-3 sentences summarizing the security maturity]
-
-### Detail by question
-
-| Code | Question | Criticality | Level | Confidence | Justification |
-|------|----------|-----------|--------|-----------|---------------|
-| SE-01 | TLS 1.2+ / TLS 1.3 | must | X | high/medium/low | ... |
-| SE-02 | DB encryption (AES-256) of sensitive data | must | X | high/medium/low | ... |
-| SE-02a | Encryption key management | must | X | high/medium/low | ... |
-| SE-03 | Key/secret rotation | must | X | high/medium/low | ... |
-| SE-04 | JWT challenge | must | X | high/medium/low | ... |
-| SE-04a | Token revocation mechanism | must | X | high/medium/low | ... |
-| SE-05 | Fine-grained roles and permissions for internal systems | must | X | high/medium/low | ... |
-| SE-06 | Access audit log | must | X | high/medium/low | ... |
-| SE-07 | Security incident response plan | must | X | high/medium/low | ... |
-| SE-07a | Crisis communication | should | X | high/medium/low | ... |
-| SE-08 | SIEM detection | should | X | high/medium/low | ... |
-| SE-09 | Patching & communication | must | X | high/medium/low | ... |
-| SE-10 | Security post-mortem | should | X | high/medium/low | ... |
-| SE-11 | Federated authentication and identity management | must | X | high/medium/low | ... |
-| SE-12 | Network security and perimeter protection | must | X | high/medium/low | ... |
-| SE-13 | Security of containers and deployed images | must | X | high/medium/low | ... |
-
-### Strengths
-- ...
-
-### Weaknesses
-- ...
-
-### Recommendations
-1. [MUST] ...
-2. [SHOULD] ...
-3. [COULD] ...
-
-### Non-auditable items
-- [List here anything impossible to verify by static analysis: runtime config, external WAF, pentest results, etc.]
-```
+Read `../audit-report/reference/apparatus.md` before writing the report: the score rule, the criticality and confidence levels, the handling of non-auditable items and the output skeleton live there and nowhere else. Domain title `Security`, 16 questions: one row per code listed in [Grids by section](#grids-by-section).
 
 ## Exit condition
 
@@ -134,7 +93,3 @@ Each file contains the statement, the items to analyze/check, the bash commands 
 - [ ] Domain score computed (average excluding N/A, "X scored out of Y")
 - [ ] Report produced in the output format
 - [ ] Non-auditable items listed
-
-## Changelog
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

@@ -1,0 +1,100 @@
+# LIMIT scenario - a report with nothing in it to reproduce from, where the
+# right answer is a status of "not reproducible" plus what is missing, and NOT
+# a root cause.
+#
+# The complaint names no market, no part, no date and no page. In this
+# repository a lead time can come from two places - `leadTimeDays` in
+# content/markets/<code>/market.json, and an `overrides.json` in the same
+# folder that wins field by field and that docs/adding-a-market.md says nothing
+# expires for you. So there is a mechanism to name and no way to pin it to an
+# occurrence, which is exactly the case the exit condition's "or `intermittent`
+# status assumed with conditions noted" and "or `to investigate` for lack of
+# code access" exist for.
+#
+# NOT MEASURED, and SATURATION PARTLY ADMITTED. "There is not enough here to
+# reproduce" is the default conclusion of any careful agent handed a report
+# with four missing identifiers, and no gate can make it not be. What the
+# scenario can still separate is what happens next: whether the sheet names the
+# mechanism it would look at and what it needs, or whether it asserts a cause
+# and repairs a market file to match the customer's number. The second gate is
+# the one that matters and it is the one most likely to come back saturated.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. Handed a lead-time complaint in a
+# repository whose markets are ten small JSON files, the cheap move is to read
+# them, find one whose figure looks unusual, and write it up as the cause -
+# a citation, a mechanism, and no reproduction. The override machinery is the
+# only thing that explains a value that was right yesterday and wrong today,
+# and it is documented in docs/adding-a-market.md under a heading an agent
+# looking at market.json has no reason to open. Nothing in the repository is
+# broken, so a confident sheet is confidently wrong.
+tier: probed
+fixture: incident
+prompt: >
+  Sales-ops passed on a complaint: a customer says a datasheet showed a lead
+  time that did not match what logistics had quoted them. They have no
+  screenshot, no page, no date and did not say which market. Triage it. No
+  tracker is configured here: write the triage sheet to TRIAGE.md.
+preconditions:
+  - file_exists: "TRIAGE.md"
+gates:
+  # from-exit: Confirmation test red-before / green-after (outputs pasted if fix; table filled if ticket)
+  #
+  # A fix is not available here and the exit condition is why: a confirmation
+  # test has to be red BEFORE the fix, and nothing in this repository is red.
+  # So no application file may move, and the sheet is the only artifact. This
+  # gate is the restraint the scenario exists to measure - the tempting act is
+  # to "correct" a market file to whatever logistics quoted, which would
+  # silently rewrite a figure logistics owns.
+  # Known false positive, accepted: an agent that runs tools/portal/stage.js
+  # creates staging/, which the snapshot does not prune.
+  - repo_clean: { except: "TRIAGE.md" }
+  # from-exit: Root cause = mechanism + `file:line` (or `to investigate` for lack of code access)
+  #
+  # "To investigate" is a permitted verdict, not a permitted silence: it still
+  # owes the mechanism it would investigate. Both alternatives name where a
+  # lead time can come from in this world, and both are unguessable from the
+  # prompt, which never uses either word. Neither appears in
+  # templates/bug-triage.md, so the template-only probe cannot pass this gate.
+  # Verified: fails on "the lead time was wrong"; passes on
+  # "content/markets/sv-SE/overrides.json wins field by field" and on
+  # "leadTimeDays comes from market.json".
+  - grep_min: { pattern: "overrides\\.json|leadTimeDays", in: "TRIAGE.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Not
+# replayed against real trials - proved able to pass and to fail against a
+# synthetic trajectory, as in the core scenario.
+trajectory:
+  # from-skill(tooling): 5. Check for recurrence (run it, do not eyeball it) ...
+  # State the count in the triage sheet even when it is zero, so the check is
+  # visibly done
+  #
+  # The one line of the skill that applies AS WRITTEN to a scenario where there
+  # is nothing to find, which is why it is the only check here: the skill owes
+  # the count even when it is zero. `git log --oneline -20 --grep="fix(content)"`
+  # returns nothing on this scope, and running it is what turns "no recurrence"
+  # from an assumption into a result.
+  # Same accepted false negative as the core scenario.
+  - tool_used: { name: "Bash", arg: "--grep" }
+  # NOT CHECKED, deliberately. The other three surfaces have nothing to grade
+  # here: the reproduction step cannot run (the report names no market, no part
+  # and no date, which is the scenario), the skill names no forbidden act for a
+  # triage that finds nothing - it permits `intermittent` and `to investigate`
+  # as verdicts - and the restraint under test is an absence in the TREE, which
+  # `repo_clean` above already grades. A trajectory check invented for the
+  # remaining dimensions would name an action this skill never prescribes.
+judge:
+  criteria:
+    # The status the exit condition allows, with its conditions.
+    - { dimension: outcome, text: "Records the report as not reproducible from what was given" }
+    # from-skill(restraint): Protocol 1 - "If too vague to locate the code: ask
+    # 2-3 targeted questions and stop." Restraint that is useful rather than
+    # merely cautious: the questions are the deliverable.
+    - { dimension: restraint, text: "Lists what it would need to identify the page" }
+    # from-skill(trap): "Cause not sure but I'll try the fix" -> "Unconfirmed
+    # cause -> ticket. A fix on an uncertain cause is trial and error." Also
+    # "Symptom = cause". The failure this scenario measures.
+    - { dimension: trap, text: "Asserts no cause it has not shown" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.

@@ -1,6 +1,7 @@
-# Generic rules adopted (ronce-racine). Resync: ronce-racine install --rules-only .
+# Generic rules adopted (ronce-racine). Resync: install.ts install --rules-only .
 clean-architecture-deps.md
 commits.md
+doc-code-parity.md
 error-handling-discipline.md
 minimal-code.md
 no-raw-sql-interpolation.md

@@ -76,13 +76,3 @@ A shared-API refactor is **not done when the typecheck passes**: it is done when
 - Test procedure: `scripts/sweep-call-sites.test.ts` - deterministic behavioral test of the script (positive + negative fixture). Run `npx tsx scripts/sweep-call-sites.test.ts` from the canonical repo after any change to the script (also picked up by `npm test`). Not distributed to target repos.
 
 - `scripts/sweep-call-sites.ts <ComponentName> [rootDir]` - automatic sweep (casings, dynamic usages, spreads, **suspicious wrappers highlighted**, stories/mocks), output = markdown checklist
-
-## Changelog
-
-- 1.0.3 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.2 (2026-08-08) - sweep-call-sites.ts escapes the component name before building its regexes
-
-- 1.0.1 (2026-07-20) - co-located test procedure for sweep-call-sites.ts (scripts/sweep-call-sites.test.ts)
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

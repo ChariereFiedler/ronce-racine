@@ -1,0 +1,124 @@
+# audit-testing / core - thirty-one unit tests and nothing over HTTP.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. This manifest replaces one whose two gates greped for the words
+# "confidence" and "non-auditable" and whose comment block inherited
+# audit-security's 2026-08-24 calibration rather than a figure of its own. That
+# fixture no longer exists and nothing here inherits from it. `tier: probed`:
+# the admission checks have been run, the six-pair run has not.
+#
+# STAGING NOTE
+# audit-testing delegates its apparatus to ../audit-report/reference/apparatus.md.
+# A paired run must stage that sibling into the with-skill arm, or the arm
+# measures a skill whose central pointer dangles.
+#
+# WHY THE GATES LOOK LIKE THIS
+# The fixture ships the house format and three filled reports, so the audit
+# vocabulary is free to both arms and no gate greps for it. What is gated is
+# one level against a world whose answer is known, and two facts that only come
+# out of reading the suite against src/.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# `npm test` is green: 31 tests, 30 passing, 1 skipped, and the CI file runs it
+# on every merge request. The suite is well written and covers the pure modules
+# properly, so a careful reader concludes the testing story is adequate. Two
+# things it does not surface: no test starts the server, so not one route is
+# exercised over HTTP - every route test calls the handler with a fake store -
+# and two of the four routes have no test file at all, which only shows up by
+# listing src/routes against test/ or by reading what `npm run gate` prints and
+# nobody reads. The single skipped test is parked with a comment that reads as
+# housekeeping and is in fact a third-party contract that has been open since
+# the works department changed their column order.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# PARTLY SATURATED, ADMITTED
+# The parked-test gate is a floor: `node --test` prints "skipped 1" to whoever
+# runs it, aided or not, and the pattern accepts that word. It is kept because a
+# report that never ran the suite fails it, which is worth knowing on its own.
+# The discrimination is expected from te-08's level and from the two routes with
+# no test file, neither of which surfaces from a green run.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Run a testing and validation audit of this project.
+  Write the report to AUDIT-TESTING.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: an agent following
+  # no skill produces it too, so it earns nothing among the gates.
+  - file_exists: "AUDIT-TESTING.md"
+gates:
+  # from-exit: Report produced in the output format
+  - repo_clean: { except: "AUDIT-TESTING.md" }
+  # from-exit: All 13 questions evaluated (or justified N/A)
+  # te-08 (integration test structure, must) is 0 or 1: nothing starts the
+  # process, nothing crosses a boundary, and the route tests inject a fake
+  # store. Reading the four route tests as integration coverage is the plausible
+  # half-answer this gate exists to separate from the answer.
+  - grep_min: { pattern: "te-08[^\n]*\|\s*[01]\s*\|", in: "AUDIT-TESTING.md", count: "1" }
+  # from-exit: Test frameworks detected, files counted by type
+  # The two routes with no test file. Reachable by listing src/routes against
+  # test/, or by running the repository's own rules; not reachable from a green
+  # `npm test`.
+  - grep_min: { pattern: "[Aa]ttachments[^\n]{0,80}(no test|not tested|untested|no file|missing)|(no test|not tested|untested|no file|missing)[^\n]{0,80}[Aa]ttachments", in: "AUDIT-TESTING.md", count: "1" }
+  # from-exit: Test frameworks detected, files counted by type
+  # The parked test. `node --test` prints "skipped 1" and the file says why.
+  - grep_min: { pattern: "export-csv|test\.skip|[Ss]kipped", in: "AUDIT-TESTING.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-TESTING.md" would match that todo
+# at step 1 and fail an ordering the agent in fact kept. A check nobody can
+# pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 2. **Count test files** by type (unit, integration,
+  # e2e) via the dedicated commands - step 12 of the same protocol is **Produce
+  # the report**.
+  #
+  # Counting test files against src/routes is what surfaces the two routes with
+  # no test file at all; a green `npm test` surfaces neither. The needle is the
+  # directory rather than one route file, because the act being graded is the
+  # listing and any of Glob, ls or a Read of a route matches it.
+  - before: { first: "src/routes", then: "file_path=AUDIT-TESTING.md" }
+judge:
+  criteria:
+    - { dimension: trap, text: "The parked csv test is read as an open contract, not as tidying" }
+    - { dimension: outcome, text: "The route tests are classed by what they actually start" }
+    - { dimension: restraint, text: "No coverage figure is stated for a repository that measures none" }
+  threshold: pass_all

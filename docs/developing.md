@@ -2,7 +2,7 @@
 
 How to work **on the toolkit itself**. To adopt it in a project instead, see
 [adopting-a-repo.md](adopting-a-repo.md); for the distribution model, see
-[architecture.md](architecture.md).
+[distribution-model.md](distribution-model.md).
 
 ## Setup
 
@@ -33,7 +33,7 @@ restore the published resolution.
 | Path | What it is |
 |---|---|
 | `install.ts` | the only user-facing CLI (`plan`/`install`/`check`/`detach`/`uninstall`), and the `bin` target |
-| `src/` | what the CLI is made of: `paths`, `lock`, `catalog`, `detect`, `settings`, `selector` |
+| `src/` | what the CLI is made of: `paths`, `lock`, `catalog`, `detect`, `settings`, `selector`, `uninstall` |
 | `tools/` | internal harnesses, never distributed |
 | `skills/` `rules/` `hooks/` `agents/` `scripts/` | the artifacts themselves, the actual product |
 | `tests/` | behavioral tests by domain (installer, hooks, selector, build, fixtures, eval, routing, properties) |
@@ -52,13 +52,21 @@ a hook that fires on every prompt, `npx tsx` costs 527 ms, node's own type
 stripping 99 ms, and built JS 38 ms. Building once also means an adopting
 repo needs Node and nothing else.
 
-The three harnesses under `tools/`:
+The harnesses under `tools/`, one line each:
 
 - `skills.ts` - static contract: frontmatter, semver, sections, links, trigger routing,
   disambiguation between neighbouring skills (`routing`, cases in `routing-cases.ts`),
   agent contract (`agents`), documented claims against the installer (`docs`)
 - `mutations.ts` - breaks the code on purpose and requires the tests to notice
+- `portability.ts` - the idioms that only break off Linux (separators, file URLs,
+  CRLF, a space in the project path); runs in `npm test` and in the Windows job
+- `build.ts` - compiles the hooks and the CLI into `dist/` (`prepare`)
 - `eval.ts` - plays a skill through a real agent and verdicts the result
+- `eval-tasks.ts` - generates the Harbor tasks and one job per skill, arms included
+- `eval-grade.ts` - applies a manifest's checks to a finished trial, partial credit
+- `eval-judge.ts` - the adjunct LLM-judge pass, run outside the sandbox
+- `eval-report.ts` - pairs the arms, attributes the gap per dimension, `--summary`
+- `eval-lint.ts` - rejects a gate whose literal its own prompt hands over
 
 The behavioral tests themselves run on **Vitest** (`tests/*.test.ts` plus the
 per-skill detection scripts), serially: they spawn the real CLI and the real
@@ -68,7 +76,7 @@ hooks against shared state, so a parallel run makes them race.
 
 ```bash
 npm run verify        # typecheck + lint + test, the one to run before a PR
-npm test              # contract harness + behavioral tests (Vitest)
+npm test              # the contract harness, eval-lint, portability, then Vitest
 npm run typecheck     # tsc --noEmit
 npm run lint          # biome check . (--write to fix)
 npm run coverage      # v8 coverage of the modules the tests IMPORT
@@ -104,8 +112,9 @@ Two consequences worth internalizing:
   test**, because it grants confidence it has not earned. That is the whole
   reason the mutation table exists; add an entry with every behavioral test.
 
-CI runs these as parallel jobs (validate on Node 18 and 22, coverage, mutation,
-plugin manifests, CodeQL, gitleaks), so a failure names itself instead of hiding
+CI runs these as parallel jobs (validate on Node 20 and 22, a Node 18 job proving
+the shipped CLI and hooks still run on the engines floor, a Windows job, coverage,
+the two mutation harnesses, plugin manifests, CodeQL, gitleaks), so a failure names itself instead of hiding
 behind a four-minute serial run. The plugin job is the only one that leaves the
 house: it runs `claude plugin validate --strict`, an external reader of the
 frontmatter our own lenient parser accepts too easily.
@@ -137,8 +146,8 @@ Needs the `claude` CLI on PATH (or `EVAL_CLAUDE_BIN`). Full guide:
 
 | Type | Guide | Also required |
 |---|---|---|
-| Rule | [writing-a-rule.md](writing-a-rule.md) | `docs/rules/<name>.md` (gated: same version, links its artifact), entry in the README table |
-| Skill | [writing-a-skill.md](writing-a-skill.md) | `README.md` + `eval.yaml` in the skill folder (neither is distributed), an entry in `CATALOG` (`src/catalog.ts`, gated by `tests/installer.test.ts`) and in the README table |
+| Rule | [writing-a-rule.md](writing-a-rule.md) | `docs/rules/<name>.md` (gated: same version, links its artifact), entry in the rules table in the README |
+| Skill | [writing-a-skill.md](writing-a-skill.md) | `README.md` + `eval.yaml` in the skill folder (neither is distributed), an entry in `CATALOG` (`src/catalog.ts`, gated by `tests/installer.test.ts`) and in [catalog.md](catalog.md) |
 | Hook | see below | `@version` and `@last-reviewed` in the file header |
 | Agent | copy an existing `agents/*.md` | entry in the README table |
 | Script | belongs to a skill (`skills/<name>/scripts/`) | a co-located `*.test.ts` and a mutation entry |

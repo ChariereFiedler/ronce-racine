@@ -10,7 +10,8 @@
       "tools/**",
       "tests/**",
       "playground/*.ts",
-      "skills/**/scripts/*.ts"
+      "skills/**/scripts/*.ts",
+      "mods/**"
     ]
   },
   "formatter": { "enabled": false },

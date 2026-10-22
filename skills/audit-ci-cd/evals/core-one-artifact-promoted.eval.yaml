@@ -1,0 +1,112 @@
+# audit-ci-cd / core - a strong release path with one question that is not ours.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. This manifest replaces one that carried no figure of its own: it
+# inherited audit-security's 2026-08-24 calibration on a fifteen-line fixture
+# that no longer exists, through gates that greped for the words "confidence"
+# and "non-auditable". Nothing here inherits from it. `tier: probed`: the
+# admission checks have been run, the six-pair run has not.
+#
+# WHY THE GATES LOOK LIKE THIS
+# Nine audit skills share this world, and this one's own house format ships
+# inside it - docs/audits/2026-03-05-netherby-billing-ci-cd.md is a filled
+# ci-01..ci-10 report for another project. So the codes, the table and the
+# vocabulary are all free to both arms, and a gate keyed on any of them would
+# measure notation. What is gated is which question is withheld and what the
+# delivery answers rest on.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# ci/pipeline.yml reads well and the natural report is a good one: trunk builds,
+# staging deploys automatically, live is a manual approval with two named
+# approvers. Two things sit outside that reading. The runner, its image and its
+# credentials belong to the platform group and are described nowhere here, so
+# pipeline security is not a zero and not a three - it is a question this
+# engagement cannot answer, and saying so costs something an absent-control zero
+# does not. And the delivery metrics are not an interview question in this
+# repository: ops/deploys.md records date, tag, environment, outcome and lead
+# hours for every release, which makes frequency, lead time and change failure
+# rate computable from a file an auditor has to think to open.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Run a CI/CD and release-management audit of this project.
+  Write the report to AUDIT-CI-CD.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: an agent following
+  # no skill produces it too, so it earns nothing among the gates.
+  - file_exists: "AUDIT-CI-CD.md"
+gates:
+  # from-exit: Report produced in the output format
+  - repo_clean: { except: "AUDIT-CI-CD.md" }
+  # from-exit: Non-auditable items listed
+  # ci-10 (pipeline security) is withheld: the runner, its image and its
+  # credentials are the platform group's and nothing in this repository
+  # describes them. Scoring it zero invents a finding about a system the audit
+  # cannot see; scoring it well invents a control.
+  - grep_min: { pattern: "ci-10[^\n]*([Nn]/[Aa]|non-auditable|not auditable)", in: "AUDIT-CI-CD.md", count: "1" }
+  # from-exit: Non-auditable items listed
+  # The owner, not just the withholding.
+  - grep_min: { pattern: "[Pp]latform group", in: "AUDIT-CI-CD.md", count: "1" }
+  # from-exit: Verification commands run for each scored question
+  # The deploy log is where three of the ten questions are answered. A report
+  # that grades delivery from the pipeline file alone never opens it.
+  - grep_min: { pattern: "deploys\.md|deploy log", in: "AUDIT-CI-CD.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-CI-CD.md" would match that todo at
+# step 1 and fail an ordering the agent in fact kept. A check nobody can pass
+# penalises both arms equally, which this repository has paid for once already.
+# Keying on the rendered argument matches the Write and the Edit and nothing
+# the agent merely says. Its honest limit: a report written through a shell
+# heredoc renders no `file_path=` at all, and the check then holds vacuously
+# instead of firing.
+trajectory:
+  # from-skill(sequence): 3. **Run the verification commands** for each
+  # question ci-01 to ci-10 - step 11 of the same protocol is **Produce the
+  # report**.
+  #
+  # Three of the ten questions are answered in ops/deploys.md and nowhere else.
+  # A report that grades delivery from ci/pipeline.yml alone never opens it,
+  # and a report that opens it afterwards has already decided.
+  - before: { first: "ops/deploys.md", then: "file_path=AUDIT-CI-CD.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The artifact reaching live is shown to be the one built on trunk" }
+    - { dimension: outcome, text: "The live approval is reported with its named approvers" }
+    - { dimension: restraint, text: "Pipeline security is withheld rather than scored from an absence" }
+  threshold: pass_all

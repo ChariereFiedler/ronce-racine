@@ -1,9 +1,9 @@
 ---
 name: performance-profiling
 description: Use when something is slow, memory-hungry or contended and the cause is not yet established - a latency or throughput target is missed, a benchmark regressed, a service grows in memory, or someone proposes an optimization that has not been measured. Triggers on "profile this", "why is this slow", "find the bottleneck", "optimize the hot path", "performance regression", "profile mon code", "pourquoi c'est lent", "trouve le goulot d'étranglement", "flamegraph", "benchstat".
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-07-29
+  last-reviewed: 2026-09-04
   category: audit
 ---
 
@@ -65,7 +65,7 @@ exists to prevent them:
 - [ ] 5. Add labels/zones to make the profile queryable
 - [ ] 6. Narrow down by dichotomy (ablation / bisection / bracketing)
 - [ ] 7. One falsifiable hypothesis + the micro-benchmark that isolates it
-- [ ] 8. A/B honestly: interleaved, count>=10, benchstat, read the p-value
+- [ ] 8. A/B honestly: interleaved, count>=10, delta read against the noise floor - p-value when the harness computes one
 - [ ] 9. Re-measure at macro level - a micro gain invisible at macro is not a gain
 - [ ] 10. Lock it in with a CI regression guard
 ```
@@ -151,6 +151,17 @@ uninterpretable result.
 drift maps straight onto your comparison), compare with a statistical tool, read
 the p-value.
 
+**Not every ecosystem gives you a p-value.** `benchstat` does (Mann-Whitney U on
+`go test -bench` output); the JS harnesses this skill recommends - `tinybench`,
+`mitata` - report ops/s with a relative margin of error or a coefficient of
+variation, and no significance test at all. Where there is no p-value, the claim
+is carried by the noise floor from step 1 instead: report the delta, the sample
+count, and the noise floor measured on the same machine the same day, and claim
+nothing whose delta does not clear that floor. That is the same decision the
+p-value makes, from the measurement you already had to take. What is never
+acceptable is a claim with neither - a delta with no p-value and no noise floor
+is an anecdote.
+
 **Never re-run until it becomes significant.** At p<0.05 one run in twenty is
 significant by chance; re-rolling manufactures exactly that false positive. "No
 measurable effect" is a valid, publishable result.
@@ -178,7 +189,7 @@ Report one line per hypothesis, and make the verdict explicit:
 |---|---|
 | **Verdict** | confirmed / refuted / inconclusive |
 | **Measured** | <numbers, with units and sample count> |
-| **Significance** | p=<value>, n=<samples>, noise floor <x>% |
+| **Significance** | n=<samples>, noise floor <x>%, p=<value> where the tool computes one |
 | **Command** | `<verbatim, re-runnable>` |
 | **Consequence** | <what this changes - or explicitly: nothing> |
 ```
@@ -205,7 +216,7 @@ Report one line per hypothesis, and make the verdict explicit:
 - [ ] Macro profile collected under representative load, before any micro work
 - [ ] Off-CPU checked, not only CPU
 - [ ] Every hypothesis carries an explicit verdict: confirmed / refuted / **inconclusive**
-- [ ] Every A/B claim reports sample count and p-value, from interleaved runs
+- [ ] Every A/B claim comes from interleaved runs and reports its sample count, plus a p-value where the harness computes one and otherwise the noise floor the delta had to clear
 - [ ] Every reported number has a verbatim, re-runnable command
 - [ ] Any gain confirmed at macro level, not only in the micro-benchmark
 - [ ] Regression guard added, or its absence explicitly accepted
@@ -217,7 +228,3 @@ Report one line per hypothesis, and make the verdict explicit:
 - `reference/node-web.md` - `--cpu-prof`, clinic, heap snapshots, event loop delay, Web Vitals
 - `reference/native.md` - perf, flame graphs, differential flame graphs, hardware counters, callgrind
 - `reference/tracy.md` - when Tracy is the right tool, its MCP server, and when to stay away
-
-## Changelog
-
-- 1.0.0 (2026-07-29) - initial versioned release

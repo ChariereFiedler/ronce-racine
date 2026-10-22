@@ -1,15 +1,15 @@
 ---
 name: recurring-bug-root-cause
 description: Use when fixing a bug in a scope that already received 2+ similar fixes recently, when a second bug of the same class appears elsewhere, or when noticing "this bug again" / "encore ce bug" / repeated fix commits on the same area. Use BEFORE writing the Nth one-line fix.
-version: 1.0.1
+version: 1.0.2
 metadata:
-  last-reviewed: 2026-07-20
+  last-reviewed: 2026-08-08
   category: bug
 ---
 
 # Root-causing a recurring bug
 
-> If the current repo has a dedicated anti-recurrence skill or process (e.g. acme-app → `recidive-root-cause` + `retro-fixes.ts`), it wins.
+> If the current repo has a dedicated anti-recurrence skill or process, it wins.
 
 ## This skill vs. others
 
@@ -85,9 +85,3 @@ Under pressure, the reflex is: ship the one-line fix, promise yourself "I'll cre
 - [ ] **Blocking, deterministic** guardrail added, sweeping the existing code (check output pasted)
 - [ ] One test per fixed occurrence + a test/check covering the class
 - [ ] Trace delivered: postmortem + a real ticket per deferred action
-
-## Changelog
-
-- 1.0.1 (2026-07-20) - co-located test procedure for detect-recurring-fixes.ts (scripts/detect-recurring-fixes.test.ts)
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

@@ -73,6 +73,18 @@ To reassess if: the genericity scope changes, or an infra constraint requires ke
 
 **Consequences**: no force-push, existing clones pull normally, `git log` on the public repo reads as one commit per release. The squash is deliberate: public history granularity is the release, not the work commit.
 
+**Amended 2026-08-24**: the published tree is not the work tree. `ardente-forge.yml` and `.claude/project.json` are tracked here and on the GitLab remote, and must not reach the public repository. `git commit-tree $(git rev-parse master^{tree})` publishes them; the v0.8.0 release nearly did. Build the tree with both paths removed instead:
+
+```sh
+export GIT_INDEX_FILE=$(mktemp)
+git read-tree master
+git rm --cached -q ardente-forge.yml .claude/project.json
+PUBTREE=$(git write-tree); unset GIT_INDEX_FILE
+git commit-tree "$PUBTREE" -p github/main -m "release: vX.Y.Z"
+```
+
+Then push `main` **before** the tag: pushing the tag first leaves it pointing at a commit the remote does not have. Check the result with `git diff --stat github/main <newcommit>` before pushing anything - it must show the release's changes and nothing else.
+
 **Status**: Done (v0.2.0 published this way).
 
 ## 2026-08-08 - The 2026-07-10 decisions have shipped

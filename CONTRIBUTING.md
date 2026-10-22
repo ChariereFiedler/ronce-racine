@@ -25,7 +25,15 @@ The repository is **English-facing**: rules, skills, docs, and user-facing tooli
 ## Contribution workflow
 
 1. Fork + branch from `main`.
-2. Add or modify your artifact, following its type's contract (frontmatter, semver `version`, `metadata`).
+2. Add or modify your artifact, following its type's contract (frontmatter, semver `version`, `metadata`). What each type ships with:
+   - a **skill**: `SKILL.md` + `README.md` + an `eval.yaml` manifest (see
+     [`docs/evaluating-skills.md`](docs/evaluating-skills.md)), plus an entry in
+     `CATALOG` (`src/catalog.ts`) and in [`docs/catalog.md`](docs/catalog.md);
+   - a **rule**: the rule file + its human page `docs/rules/<name>.md` (gated:
+     same version, links its artifact) + a line in the README table;
+   - any of them: a line under `## [Unreleased]` in
+     [`CHANGELOG.md`](CHANGELOG.md), which is what the release notes are built
+     from.
 3. Run the local checks:
    ```bash
    npm install
@@ -39,7 +47,7 @@ The repository is **English-facing**: rules, skills, docs, and user-facing tooli
 
 ## Versioning
 
-Every rule and skill carries a semver `version` and a `metadata.last-reviewed` date in its frontmatter, validated by `npm test`. Any behavior change must bump the version and add a line to the artifact's `## Changelog`.
+Every rule and skill carries a semver `version` and a `metadata.last-reviewed` date in its frontmatter, validated by `npm test`. Any behavior change must bump the version and add a line to the artifact's `CHANGELOG.md`, which sits beside it and is never distributed - a SKILL.md is a procedure, its history is not.
 
 ## Commit messages
 

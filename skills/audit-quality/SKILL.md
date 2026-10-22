@@ -118,9 +118,3 @@ Each grid contains, per question: statement, criticality (must/should/could), it
 - [ ] Verification commands executed for every scored question
 - [ ] Section scores and global score calculated (N/A excluded)
 - [ ] Report produced in the output format
-
-## Changelog
-
-- 1.0.1 (2026-07-20) - scoring aligned with scoring-model.md: flat mean only; criticality kept for remediation priority, weights removed from the score
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

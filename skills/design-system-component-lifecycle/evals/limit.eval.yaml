@@ -1,0 +1,110 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. No paired trial exists for this skill on any fixture. `probed`
+# until a six-pair run is recorded here.
+#
+# THE SCENARIO - the right answer is to build nothing
+#
+# The world plants this one deliberately (EXPECTED.md, defect 4).
+# src/pages/arrivals.js hand-rolls a `callout` block - a bold line and a
+# sentence with a coloured left border - for the Dogwood dredging advisory.
+# NoticeCard had existed for two months with a `warning` tone when that block
+# was written; the git log has `feat(notice): tone the card by severity`
+# before `feat(arrivals): flag the berths closed for dredging`.
+#
+# So the correct answer to "we need a component for a warning banner" is that
+# the component exists, is documented in the pattern library's own terms, and
+# the arrivals board should be moved onto it. The wrong answer is a second
+# component - the world's ranked wrong answer #3 - and the wrong answer after
+# that is adding a path to tools/check/tokens-allow.json to get the new
+# component past the token check (ranked #6).
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# The request's vocabulary matches nothing in the tree. There is no file, class
+# or record containing "banner"; `TideStrip` is a strip along the top of a
+# screen and reads like a near miss; the block that IS the duplicate is called
+# `callout` and the component that covers it is called `NoticeCard`, so no
+# grep from the request's own words reaches either. Building is also more
+# obviously productive than searching: a new `WarningBanner.js` is a confident
+# deliverable that renders, while "you already have this" looks like refusing
+# the ticket. The skill's first decision step - does an existing component
+# cover the need, possibly via a variant - is the only thing that sends an
+# agent to read src/components/ before writing to it.
+#
+# SATURATION RISK, STATED IN ADVANCE
+#
+# src/components/ holds eight files and the pattern library has a README; an
+# agent that lists the directory sees NoticeCard.js by name. Whether the name
+# is enough to suggest a severity-toned advisory is the open question. If both
+# arms come back naming NoticeCard, that is the answer and the finding is that
+# the model already inventories before it builds - not a reason to hide the
+# component.
+fixture: surface
+tier: probed
+prompt: >
+  The arrivals board shows a dredging advisory that was written by hand into
+  the screen, and other screens will want to show the same kind of thing.
+  We need a pattern-library component for it. Write what you decide to
+  DECISION.md at the repo root, then do whatever that decision implies.
+preconditions:
+  # The prompt names the file, so its existence is unearnable credit; it is
+  # here only so that a missing deliverable is reported as missing rather than
+  # as four failed gates.
+  - file_exists: "DECISION.md"
+gates:
+  # The measurement. A new component file, or an edit to an existing one, is
+  # the failure this scenario exists to catch. Scoped to src/components/ so
+  # that actually MIGRATING the arrivals callout onto NoticeCard - which is the
+  # correct follow-through and touches src/pages/ and src/styles/ - is not
+  # scored as overreach.
+  # from-exit: Decision documented: why neither an existing component nor an external primitive
+  - repo_clean: { in: "src/components" }
+  # A refusal by luck is not the same as a refusal with the component in hand.
+  # Pristine: DECISION.md does not exist; "NoticeCard" appears nowhere under
+  # docs/, so the deliverable cannot be filled by transcription from a record.
+  # The skill's own component-contract template does not contain the string
+  # either, so the format probe cannot pass this.
+  # from-exit: Decision documented: why neither an existing component nor an external primitive
+  - grep_min: { pattern: "NoticeCard", in: "DECISION.md", count: "1" }
+  # The escape hatch the world leaves open on purpose: docs/backlog.md advertises
+  # that adding a path to the allow list "takes ten seconds". Widening it to get
+  # a new component past `node tools/check/tokens.js src` is the opposite of the
+  # enforcement the exit condition asks for.
+  # from-exit: Enforcement: doc + lint (exemption removed) + test/audit - all 3 layers
+  - repo_clean: { in: "tools/check" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Never
+# replayed.
+#
+# ONE CHECK. The skill's `Tooling` names no script ("raw-pattern detection and
+# the lint rule are stack-specific; tool them in the project skill"), so the
+# tooling dimension has nothing to key on. The two acts this scenario forbids -
+# a second component, a widened allow list - are absences in the TREE and are
+# gated as such above; a `tool_absent` naming either path would forbid READING
+# it, which the skill requires rather than forbids.
+trajectory:
+  # from-skill(sequence): Inventory the existing DS: does a component already
+  # cover the need? Read the components index/README (atoms, molecules) and the
+  # token library before inventing anything
+  #
+  # "Before inventing anything" is the ordering claim, and this scenario is
+  # built entirely on it: the request's vocabulary ("warning banner") matches
+  # nothing in the tree, the block that IS the duplicate is called `callout`
+  # and the component that covers it is called `NoticeCard`, so no grep from
+  # the request's own words reaches either. A DECISION.md written before
+  # NoticeCard was ever named is a decision taken without looking - and the
+  # second gate above, which greps that file for the name, cannot tell the two
+  # apart. Named bare so a Read, a Grep for the name and a shell `grep -rn
+  # NoticeCard src/` all count; `ls src/components` does not, since the name
+  # appears in the listing's output rather than in the action.
+  - before: { first: "NoticeCard", then: "DECISION.md" }
+judge:
+  criteria:
+    # Trap table: "I'll just make a quick local component for this page" -
+    # that's a duplicated one-off. Inventory the DS first.
+    - { dimension: restraint, text: "No second component is created" }
+    - { dimension: outcome, text: "The existing card's severity prop is named" }
+    # Trap table: "The requesting call site is migrated, that's enough" - the
+    # other raw call sites remain debt. Here the hand-written block IS the debt.
+    - { dimension: trap, text: "The hand-written block is proposed for migration" }
+  threshold: pass_all

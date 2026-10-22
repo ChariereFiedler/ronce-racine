@@ -1,0 +1,127 @@
+# CORE scenario - a coverage matrix over a real build tool with a real suite.
+#
+# NOT MEASURED. No paired run has been executed against this manifest or
+# against any scenario of this skill. Its previous manifest gated
+# `Covered|Partial|Absent` and `P0` - both of which are literal strings of this
+# skill's own exit-condition checklist, so both are passed by a deliverable
+# that carries the checklist and nothing else. The template-only probe reports
+# them as format gates, and they are the reason this manifest gates neither.
+#
+# WHAT THE WORLD ACTUALLY CONTAINS. Seven source modules under tools/ and five
+# test files: content, pipeline, plan, render and retention are covered;
+# tools/sheetmill/cli.js, tools/sheetmill/index-writer.js, tools/check/links.js
+# and tools/portal/stage.js have no test of their own at all. `npm test` passes
+# 15 tests, and everything it exercises runs against test/fixtures/mini - two
+# markets, three parts, a 64 KB budget - so the suite is structurally incapable
+# of seeing a plan grow. That is not a gap in what is tested; it is a gap in
+# what the tests can observe, which is the distinction the exit condition's gap
+# analysis is for.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. Asked for a test strategy in a repository
+# with a green suite, the default output is a matrix of the modules that have
+# test files, classified by how important they look, with "increase coverage"
+# as the action. The four modules with no test file are the easy half of the
+# discrimination and an agent that lists the directory will find them. The hard
+# half is that the covered modules are the ones that failed: plan.js has a test
+# file, it passes, and it asserts that a five-unit plan has five units. A
+# matrix that marks plan.js Covered because plan.test.js exists is the failure
+# this scenario measures, and it is the same failure that let the publish job
+# break four nights running under a green suite.
+tier: probed
+fixture: incident
+prompt: >
+  We have never sat down and worked out what this build tool needs by way of
+  tests - it grew a file at a time. Define the test strategy for everything
+  under tools/. No tracker is configured here: write the matrix to STRATEGY.md
+  and any follow-up tickets under tickets/.
+preconditions:
+  - file_exists: "STRATEGY.md"
+gates:
+  # from-exit: Complete matrix: all testable surfaces listed and classified by risk
+  #
+  # "Complete" is checkable here because the fixture is finite and known: four
+  # of the modules under tools/ have no test file at all - cli.js,
+  # index-writer.js, links.js and stage.js. Three of them are named in this
+  # pattern; the count of 2 asks for at least two of the three on separate
+  # lines, which a matrix with one row per module produces and a matrix built
+  # only from the existing test files does not.
+  # `grepHits` counts MATCHING LINES, not occurrences, so a single row naming
+  # two of them scores 1 - the count is deliberately 2 rather than 3 so that
+  # one merged row does not fail an otherwise complete matrix.
+  # None of the three file names appears in SKILL.md, in reference/ or in the
+  # prompt, so the template-only probe fails this gate.
+  - grep_min: { pattern: "stage\\.js|links\\.js|cli\\.js", in: "STRATEGY.md", count: "2" }
+  # from-exit: Surfaces to cover delegated to the right skill (never write the tests here)
+  #
+  # The exit condition's own line, and the one act that would void the
+  # deliverable. It is genuinely tempting in this world: the missing tests are
+  # small, the runner is `node --test` with no dependencies to install, and the
+  # suite is right there to copy a shape from.
+  # `tickets/` is permitted because the prompt asks for the follow-ups there.
+  # Known false positive, accepted: an agent that runs tools/portal/stage.js
+  # while surveying creates staging/, which the snapshot does not prune.
+  - repo_clean: { except: "STRATEGY.md, tickets/" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# NOT REPLAYED against real trials: the only trajectories this repository holds
+# are the twelve of the 2026-09-03 anchor run, on another skill. Both checks
+# below were instead proved able BOTH to pass and to fail against a synthetic
+# trajectory rendered the way `actionsOf` renders a real one.
+#
+# This skill's `Tooling` section names one reference file and no script, and
+# says to read it only "when the strategy must rely on automated safeguards" -
+# a conditional the manifest cannot turn into a check without inventing an
+# obligation the skill did not make. So there is no `tool_used` here. What it
+# does have is a `Context to gather (before acting)` section with four bullets,
+# and "before acting" is the ordering claim no snapshot can hold: the same
+# matrix exists whether the suite was read first or classified from its file
+# names.
+trajectory:
+  # from-skill(sequence): Context to gather (before acting) - Framework(s) +
+  # commands: read `package.json` / `Cargo.toml` / `Makefile` / `pyproject.toml`
+  # / CI config
+  #
+  # The act, in a scenario whose deliverable is a document, is writing the
+  # matrix. A strategy that names a framework it never looked up is the failure
+  # this bullet exists to prevent, and here the answer is unusual enough to
+  # matter: the runner is `node --test` with no dependencies at all, which is
+  # what makes writing the missing tests tempting rather than costly.
+  # Expected to be a floor rather than a discriminator.
+  - before: { first: "package.json", then: "STRATEGY.md" }
+  # from-skill(sequence): Context to gather (before acting) - Existing tests:
+  # locate them (`*.spec.*`, `*.test.*`, `tests/` folders), read a neighbour to
+  # copy its conventions
+  #
+  # The gap analysis rests entirely on this: five of the seven modules under
+  # tools/ have a test file and four have none, and a matrix that marks a
+  # module Covered because a file with a matching name exists has classified
+  # the directory listing rather than the suite. The tree cannot tell those two
+  # runs apart.
+  # The needle is the directory, so any read of any of the five test files
+  # counts - by the dedicated tool, by a Grep scoped there, or by a shell that
+  # does not write to it. Two accepted leaks, stated: a follow-up ticket
+  # written before the matrix and naming a path under test/ satisfies `first`
+  # without a read, and a matrix skeleton written before the survey fails the
+  # check having done the work later.
+  - before: { first: "test/", then: "STRATEGY.md" }
+judge:
+  criteria:
+    # The pyramid line, applied to a tool whose failures are all integration-shaped.
+    - { dimension: outcome, text: "Justifies the level it picks for each surface rather than defaulting to unit" }
+    # from-skill(trap): "Coverage is at 85%, so it's covered" -> "The % does not
+    # tell you whether the risky path is exercised. A test that does not break
+    # when you break the code covers nothing." plan.js has a passing test and
+    # broke the job six times.
+    - { dimension: trap, text: "Distinguishes a surface with no test from a surface whose test proves little" }
+    # from-skill(restraint): Exit - "Surfaces to cover delegated to the right
+    # skill (never write the tests here)". Cheap to violate: `node --test`
+    # needs no install and the suite is there to copy a shape from.
+    - { dimension: restraint, text: "Hands the writing of the tests to somewhere else" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.
+#
+# Rejected here, all measured `format`: `Covered|Partial|Absent` and `P0` (the
+# two gates the manifest this replaces shipped), `[Pp]yramid`, and `risk`.

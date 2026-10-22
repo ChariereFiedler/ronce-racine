@@ -1,0 +1,106 @@
+# LIMIT scenario - the premise is false and the right answer is to say so and
+# stop. The skill's whole apparatus (a class, a guardrail sweeping the existing
+# code, a postmortem, a ticket per deferred action) is warranted only when there
+# IS a class; this scenario asserts one where the history has a single fix.
+#
+# Its fixture exists as of 2026-09-03: `incident-first-failure`, an overlay that
+# keeps every commit of `incident` except the five `fix(publish)` ones and folds
+# their cumulative effect into one commit that is not a fix. The worktree is
+# byte-identical to the base's - same ceiling, same pool size, same preview job -
+# and the history holds no chain.
+#
+# The overlay exists because running this scenario against the base was
+# CONFOUNDED, not merely hard. Five `fix(publish)` commits sat one directory from
+# the scope whose premise is false, and the skill's own step 1,
+# `scripts/detect-recurring-fixes.ts`, reported them: an agent that ran it, read
+# "root-cause REQUIRED" and built a class out of the publish job would have been
+# misled by the fixture rather than by its own eagerness, and this manifest would
+# have scored it as the eager failure it is not. Verified after the swap: the
+# detector says "Apply the recurring-bug-root-cause skill" on the base and "No
+# scope at the threshold" here.
+#
+# What remains true and is what the scenario turns on: `git log --oneline
+# content/parts/` on this fixture returns exactly ONE correction,
+# `fix(parts): correct the drive pulley mass`. The refutation is one command.
+#
+# NOT MEASURED. No paired run exists for any scenario of this skill other than
+# the default manifest.
+tier: probed
+fixture: incident-first-failure
+prompt: >
+  The technical office says we keep having to correct figures on the
+  datasheets, and one went out last month with the wrong mass. Work out what
+  keeps producing these and deal with it before the next one. No tracker is
+  configured here: write any postmortem to POSTMORTEM.md and any deferred
+  action to ops/backlog.md.
+preconditions:
+  # Named by the prompt, produced by both arms, carries no signal. It is what
+  # makes the two gates below readable: the restraint under test is what the
+  # agent did NOT do around this file, and a run that wrote nothing at all
+  # would score the same as a correct refusal.
+  - file_exists: "POSTMORTEM.md"
+gates:
+  # from-exit: Trace delivered: postmortem + a real ticket per deferred action
+  #
+  # The exit condition names exactly two artifacts. This gate says nothing else
+  # moved - and what "nothing else" excludes here is the eager act the scenario
+  # exists to catch: a blocking check swept over content/parts/ to enforce a
+  # class that the history does not support, or a "corrective" edit to the
+  # datasheets themselves. Both are wrong, not merely unrequested.
+  # Known false positive, accepted: an agent that runs `node tools/portal/stage.js`
+  # while exploring creates staging/ and trips this gate for a reason that has
+  # nothing to do with the scenario. dist/ is pruned by the snapshot; staging/
+  # is not.
+  - repo_clean: { except: "POSTMORTEM.md, ops/backlog.md" }
+  # from-exit: Class named (property common to the N fixes), not just the Nth symptom
+  #
+  # There is no property common to N fixes, because N is one. The deliverable
+  # has to say so with the count rather than narrate a class into existence.
+  # The alternation is deliberately about the COUNT and the refusal, never
+  # about the word "class": the skill's exit-condition checklist is part of the
+  # template-only probe's synthetic deliverable, so any grep for its own
+  # vocabulary is a format gate. Checked against the probe.
+  - grep_min: { pattern: "(one|1|a single|only one) (prior |previous |earlier |recent )?(fix|correction)|no (prior|previous|earlier|other) (fix|fixes|correction|corrections|pattern)|not a (recurrence|pattern|class)|premise", in: "POSTMORTEM.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Not
+# replayed against real trials on THIS fixture - both checks proved able to
+# pass and to fail against a synthetic trajectory rendered the way `actionsOf`
+# renders a real one.
+trajectory:
+  # from-skill(tooling): Step 1. Map the class, not the symptom - Detection:
+  # `scripts/detect-recurring-fixes.ts`, then list the N fixes on the scope
+  #
+  # The check this scenario was waiting for, and the manifest header already
+  # argues why: the overlay exists so that the detector gives the RIGHT answer
+  # here - "No scope at the threshold" on this history against "Apply the
+  # recurring-bug-root-cause skill" on the base, verified after the swap. The
+  # premise is false and the skill's own step 1 is what establishes that it is
+  # false. An agent that declines from a reading of the log has the right
+  # answer; one that ran the detector has it for the reason the skill gives.
+  # Measured on the anchor, on the base of this overlay: 0/6 unaided against
+  # 5/6 aided. It is the one act the unaided arm cannot perform at all - the
+  # script does not exist in a repository that never installed the skill.
+  - tool_used: { name: "Bash", arg: "detect-recurring-fixes" }
+  # from-skill(restraint): Guardrails - **Never** mix the urgent fix and the
+  # root-cause refactor in the same commit
+  #
+  # `repo_clean` above grades what the run left in the worktree; it prunes .git
+  # and cannot see a commit. In a scenario whose whole subject is apparatus
+  # deployed for a class that is not there, committing is the last step of
+  # deploying it. See the hard scenario for why the needle carries `-m`.
+  - tool_absent: { name: "git commit -m" }
+judge:
+  criteria:
+    # `git log --oneline content/parts/` is one command and it settles it.
+    - { dimension: outcome, text: "States that the history contains a single correction" }
+    # from-skill(restraint): Guardrails - "**Never** fix the Nth symptom and
+    # declare the recurrence handled" has no N here. The failure this scenario
+    # measures is the mirror image: apparatus deployed for a class that is not
+    # there, or a guardrail imposed on content nobody has broken twice.
+    - { dimension: restraint, text: "Declines to install a guardrail for a class it could not establish" }
+    # Restraint is not silence: the one real correction still deserves an answer.
+    - { dimension: outcome, text: "Handles the single correction on its own terms" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.

@@ -6,17 +6,17 @@
  * quoted triggers + the words of the name against the prompt.
  * NEVER blocks (exit 0 no matter what); emits nothing if there is no match.
  *
- * settings.json wiring (see hooks/README.md):
- *   "UserPromptSubmit": [{ "hooks": [{ "type": "command",
- *     "command": "npx tsx $CLAUDE_PROJECT_DIR/.claude/hooks/skill-reminder.ts" }] }]
+ * settings.json wiring (see hooks/README.md) - exec form, no shell involved:
+ *   "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "node",
+ *     "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/skill-reminder.mjs"] }] }]
  *
- * @version 1.0.0
- * @last-reviewed 2026-06-25
+ * @version 1.1.0
+ * @last-reviewed 2026-08-24
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { rankSkills } from "./skill-scoring.mjs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-const MIN_TRIGGER_LEN = 4; // ignore triggers that are too short (noise)
 const MAX_SUGGESTIONS = 3;
 function readStdin() {
     try {
@@ -35,14 +35,6 @@ function skillsDir() {
     ].filter((p) => Boolean(p));
     return candidates.find((p) => existsSync(p));
 }
-/** A skill's triggers: quoted strings from the description + words of the name. */
-function triggers(name, description) {
-    const quoted = [...description.matchAll(/"([^"]+)"|«\s*([^»]+?)\s*»/g)].map((m) => m[1] || m[2]);
-    const nameWords = name.split("-").filter((w) => w.length >= MIN_TRIGGER_LEN);
-    return [...quoted, ...nameWords]
-        .map((t) => t.toLowerCase().trim())
-        .filter((t) => t.length >= MIN_TRIGGER_LEN);
-}
 function loadSkills(dir) {
     const out = [];
     for (const name of readdirSync(dir)) {
@@ -50,10 +42,15 @@ function loadSkills(dir) {
         if (!existsSync(p))
             continue;
         const raw = readFileSync(p, "utf8");
-        const fm = /^---\n([\s\S]*?)\n---/.exec(raw);
-        const desc = fm && /description:\s*(.*)/.exec(fm[1]);
+        // \r?\n, not \n: with core.autocrlf=true (the Git default on Windows) a
+        // checkout materializes SKILL.md as CRLF, and an LF-only delimiter matched
+        // none of them - the hook then suggested only the skills that happened to
+        // stay LF. Same reason the capture is bounded to the line rather than `.*`,
+        // which would keep a trailing \r.
+        const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw);
+        const desc = fm && /description:\s*([^\r\n]*)/.exec(fm[1]);
         if (desc)
-            out.push({ name, triggers: triggers(name, desc[1]) });
+            out.push({ dir: name, description: desc[1] });
     }
     return out;
 }
@@ -70,14 +67,12 @@ function main() {
     }
     if (!prompt)
         return;
-    const scored = loadSkills(dir)
-        .map((s) => ({ name: s.name, hits: s.triggers.filter((t) => prompt.includes(t)).length }))
-        .filter((s) => s.hits > 0)
-        .sort((a, b) => b.hits - a.hits)
-        .slice(0, MAX_SUGGESTIONS);
+    const scored = rankSkills(prompt, loadSkills(dir), MAX_SUGGESTIONS);
+    // Naming nothing is a legitimate answer: a hook that always names three skills
+    // spends its credibility on the prompts that call for none.
     if (!scored.length)
         return;
-    const list = scored.map((s) => s.name).join(", ");
+    const list = scored.map((s) => s.dir).join(", ");
     console.log(`Skills potentially relevant to this request: ${list}. Invoke them via the Skill tool if they apply.`);
 }
 try {

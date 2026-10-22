@@ -1,0 +1,124 @@
+# audit-performance-frontend / core - sixty-nine lines of browser code.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. This manifest replaces one that carried no figure of its own: it
+# inherited audit-security's 2026-08-24 calibration on a fifteen-line fixture
+# that no longer exists, through gates that greped for the words "confidence"
+# and "non-auditable". Nothing here inherits from it. `tier: probed`: the
+# admission checks have been run, the six-pair run has not.
+#
+# WHY THE GATES LOOK LIKE THIS
+# This skill's output format ships twenty-nine PF- rows, so the codes and the
+# table are free to any agent that opens the skill, and a gate keyed on them
+# would measure notation rather than work. What is gated is one level against a
+# defect that is really there, one piece of evidence that requires the file to
+# be opened, and the restraint the grid's specialisation forces.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# There is very little code and it looks harmless: three files, no framework, no
+# build step, one stylesheet and a table. The two defects are ordinary enough to
+# read past. public/index.html loads /console.js from a plain <script> tag in
+# the head, with neither defer nor async, so the parser stops for it on a page
+# whose whole job is to be up on a wall; and public/console.js rebuilds the
+# entire table body by string concatenation into innerHTML every ten seconds,
+# discarding and recreating every row whether or not anything changed. Neither
+# shows up in a survey that looks for bundle sizes, image formats and font
+# loading, none of which this page has. The other half of the answer is
+# restraint: most of this grid is about JSC structures, compilation tiers, GC
+# pauses and GPU memory, and none of that can be established by reading
+# thirty-two lines of source with no profiler and no browser.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# PARTLY SATURATED, ADMITTED
+# `innerHTML` is one line of a thirty-two-line file and both arms will very
+# likely find it: as a gate it is a floor, not a discriminator. The two gates
+# expected to separate are PF-02's level - a synchronous script tag reads as
+# harmless on a page this small - and the count of questions kept at N/A, which
+# is where the specialisation of this grid actually bites.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Run a frontend performance audit of the duty officer's console.
+  Write the report to AUDIT-FRONTEND-PERF.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: an agent following
+  # no skill produces it too, so it earns nothing among the gates.
+  - file_exists: "AUDIT-FRONTEND-PERF.md"
+gates:
+  # from-exit: Report produced in the output format, with strengths/weaknesses, prioritized recommendations, and non-auditable items
+  - repo_clean: { except: "AUDIT-FRONTEND-PERF.md" }
+  # from-exit: All 29 questions reviewed (scored 0-4 or marked N/A with justification)
+  # PF-02 (eliminating render-blocking, MUST) is 0 or 1: the only script on the
+  # page is loaded synchronously from the head. It is the cheapest real finding
+  # here and it is invisible to anyone auditing bundles rather than markup.
+  - grep_min: { pattern: "PF-02[^\n]*\|\s*[01]\s*\|", in: "AUDIT-FRONTEND-PERF.md", count: "1" }
+  # from-exit: Verification commands run for each scored question
+  # The other real finding, by name: the whole table body is replaced on every
+  # poll. A report that never opens public/console.js does not have it.
+  - grep_min: { pattern: "innerHTML", in: "AUDIT-FRONTEND-PERF.md", count: "1" }
+  # from-exit: All 29 questions reviewed (scored 0-4 or marked N/A with justification)
+  # The restraint. At least three of the twenty-nine keep their row with N/A:
+  # the engine, memory and GPU questions cannot be answered from source with no
+  # profiler, and this page has no fonts, no images and no build step for
+  # several of the others to bite on.
+  - grep_min: { pattern: "\|\s*N/A\s*\|", in: "AUDIT-FRONTEND-PERF.md", count: "3" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-FRONTEND-PERF.md" would match that
+# todo at step 1 and fail an ordering the agent in fact kept. A check nobody
+# can pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 8. **Run the verification commands** for each
+  # question (see grids) - step 11 of the same protocol is **Produce the
+  # report**.
+  #
+  # Category 1 of the protocol is markup - blocking scripts and priority
+  # attributes - and the page's one real load defect is a plain <script> in the
+  # head. It is a floor rather than a discriminator, since the page is three
+  # files and both arms will open the markup; it is kept because a report
+  # written from a bundle-and-images survey never does.
+  - before: { first: "public/index.html", then: "file_path=AUDIT-FRONTEND-PERF.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The synchronous script tag in the head is named" }
+    - { dimension: outcome, text: "The ten-second rebuild of the whole table is the leading finding" }
+    - { dimension: restraint, text: "The engine questions are not answered from source reading alone" }
+  threshold: pass_all

@@ -1,0 +1,124 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. No paired trial exists for this skill on any fixture; the only
+# skill in the base with a real six-pair figure is recurring-bug-root-cause.
+# `probed` until a six-pair run is recorded here.
+#
+# Rebuilt on the `surface` world (2026-09-03). The manifest it replaces gated
+# four `data-testid` literals the prompt itself dictated, on a four-file
+# fixture; the base-wide probe classes that shape as a format gate.
+#
+# THE SCENARIO
+#
+# A new screen at /movements, listing every recorded vessel movement. The world
+# already answers every structural question the exit condition asks:
+#   - state comes from src/lib/store.js and reaches a screen as `state.phase`,
+#     `state.filter`, `state.selected`, `state.error`;
+#   - rows come from `load(name)` in src/lib/data.js, which is the only thing
+#     that touches the disk ("there is no server yet");
+#   - the four states are DataTable's, each under a testid derived from the
+#     caller's - documented in docs/pattern-library/data-table.md and in
+#     docs/changes/2026-06-30-data-table-empty-state.md;
+#   - a screen registers itself by being imported into ROUTES in src/main.js,
+#     and `route.nav` decides whether the sidebar lists it.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# The nearest neighbour is the wrong model. src/panels/vessel-history.js is
+# already a movement list, and it hand-rolls a `<ul>`, reads only
+# `state.selected`, and has exactly one state - an early-returned EmptyState.
+# It never looks at `state.phase`, so it can show neither loading nor error.
+# The pattern library actively points an agent that way: the 2026-06-30 change
+# record lists vessel-history as "left alone - a movement list is not a ledger,
+# and its sentence is deliberately different". An agent that copies the closest
+# existing file therefore ships a screen with one state out of four, and
+# nothing in the repository complains: test/pages.test.js asserts only that
+# each registered route renders something containing a `data-testid`.
+#
+# The second failure is orphaning. A screen module that is never imported into
+# src/main.js renders correctly when called directly and is unreachable from
+# the console; `npm test` iterates ROUTES, so an unregistered screen is not
+# tested and not missed.
+#
+# SATURATION RISK, STATED IN ADVANCE
+#
+# Eight of the nine existing screens follow the right shape, so an agent that
+# opens berths.js instead of vessel-history.js gets everything for free. The
+# discrimination expected here is which neighbour gets copied, which is a
+# weaker claim than the ones this world makes elsewhere. Two pairs will say
+# whether it separates anything at all before six are spent on it.
+fixture: surface
+tier: probed
+prompt: >
+  The duty staff want a movements screen: every recorded movement in the
+  harbour, newest first, with the vessel, when it happened and what kind of
+  movement it was. Put it at /movements in src/pages/movements.js and make it
+  reachable like the other screens. The rows are already on disk.
+preconditions:
+  # The prompt names the module path because the fixture has no tracker, so its
+  # existence is unearnable credit and carries no signal.
+  - file_exists: "src/pages/movements.js"
+gates:
+  # Not orphaned: the screen has to be wired into the route table, which is one
+  # import line plus one entry in ROUTES. Pristine: 0 hits for "movements" in
+  # src/main.js (the data file is src/data/movements.json, out of this scope).
+  # Floor of 2 = the import and the registration; a module that only imports is
+  # still unreachable.
+  # from-exit: No orphaned component; zero logic in templates
+  - grep_min: { pattern: "movements", in: "src/main.js", count: "2" }
+  # The four states. In this world `state.phase` is the ONLY route by which
+  # loading and error can reach a screen - the store sets it and nothing else
+  # produces it - so a screen that never mentions `phase` cannot render two of
+  # the four states whatever its markup says. Pristine 0 (the file does not
+  # exist). The skill prescribes no output template, so the format probe grades
+  # this against its exit-condition checklist, which contains no "phase".
+  # from-exit: The 4 states (loading/error/empty/success) handled, each with a distinct `data-testid`
+  - grep_min: { pattern: "phase", in: "src/pages/movements.js", count: "1" }
+  # The project helper. src/lib/data.js is the console's only reader; a screen
+  # that opens the JSON itself has bypassed it. Pristine 0 in the new file.
+  # from-exit: Every state mutation goes through an action; no raw fetch outside the project helper
+  - grep_min: { pattern: "lib/data\\.js", in: "src/pages/movements.js", count: "1" }
+  # The same promise from the other side, over the whole screen directory:
+  # nothing under src/pages/ reads the disk today (pristine 0), and nothing
+  # should start.
+  # from-exit: Every state mutation goes through an action; no raw fetch outside the project helper
+  - grep_zero: { pattern: "readFileSync|JSON\\.parse", in: "src/pages/" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Never
+# replayed for this skill on any fixture.
+#
+# ONE CHECK. The skill's `Tooling` section says "Reuse the current repo's
+# scripts and commands ... No generic tool provided here", so there is no
+# script to name; it states no forbidden act and no effort bound, so no
+# `tool_absent` and no `step_budget`. And deliberately NO check on
+# src/lib/data.js being opened: the skill prescribes copying a neighbouring
+# feature's conventions, so a screen that learns the helper from vessels.js has
+# followed the skill without ever opening the helper - and the third gate above
+# already requires the import to land.
+trajectory:
+  # from-skill(sequence): Read a neighbouring feature already shipped and copy
+  # its conventions (layer naming, authenticated fetch helper, empty states,
+  # i18n) before inventing
+  #
+  # "Before inventing" is the ordering claim, and the tree cannot hold it: the
+  # finished movements.js is the same file whether a neighbour was read first
+  # or never. Which neighbour is deliberately unnamed - berths, vessels and
+  # invoices are all ledgers and any of them teaches the conventions - so
+  # `first` is the directory.
+  #
+  # The subtlety worth writing down: the target's own write matches `first` too
+  # (`src/pages/movements.js` contains `src/pages/`), so the check reduces to
+  # "some other action under src/pages/ came first", and a trial whose first
+  # act in that directory is creating the new screen fails it. That is the
+  # clause, exactly. A `Bash(ls src/pages)` without the trailing slash does not
+  # count, which undercounts both arms equally.
+  - before: { first: "src/pages/", then: "src/pages/movements.js" }
+judge:
+  criteria:
+    # Trap table: "The subscription will clean itself up" - no, it leaks and
+    # triggers updates on an unmounted screen.
+    - { dimension: trap, text: "The mount function hands back its teardown" }
+    - { dimension: outcome, text: "Each of the four phases renders under its own testid" }
+    # Step 5: reuse an existing component before creating a new one - the
+    # absence of a rewritten ledger is what is being graded.
+    - { dimension: restraint, text: "An existing ledger component is reused rather than rewritten" }
+  threshold: pass_all

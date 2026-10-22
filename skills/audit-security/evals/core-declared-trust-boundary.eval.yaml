@@ -1,0 +1,139 @@
+# audit-security / core - a real finding, a declared risk, and a false positive.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. This manifest replaces one that carried a 2026-08-24 figure
+# (0.33 unaided against 1.00 aided over 6 pairs) taken on the deleted
+# `audit-target` fixture, on two gates that grepped for the words "confidence"
+# and "non-auditable". That figure is evidence about the instrument, not about
+# this scenario, and nothing here inherits it. `tier: probed`: the admission
+# checks have been run, the six-pair run has not.
+#
+# STAGING NOTE
+# This skill delegates its apparatus to ../audit-report/reference/apparatus.md.
+# A paired run must stage that sibling in the with-skill arm or the pointer
+# dangles in the image and the arm measures a broken skill; tools/eval-tasks.ts
+# now reads the pointer and stages what it finds. It also means the with-arm
+# carries a second invocable skill, which is a known cost of this architecture.
+#
+# WHY THE GATES LOOK LIKE THIS
+# The fixture ships the house format and three filled reports, two with
+# populated non-auditable sections, so "confidence" and "non-auditable" are free
+# to both arms by construction. No gate below greps for either. What is gated is
+# the decision: which question is withheld, and which claim is not made.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# The first move of any security audit is a grep for credential shapes, and here
+# it lands on tools/quality/secret-scan.js - which holds an AKIA pattern, a
+# BEGIN PRIVATE KEY pattern and a bearer-token pattern because they are the
+# scanner's own rules - and on .env.example, which holds shapes in angle
+# brackets. Both are wrong answers with a citation, and `npm run scan` (0
+# findings, exit 0) is what tells them apart. The second trap is the opposite
+# one: docs/architecture.md states that TLS is terminated by the platform
+# group's ingress and that the service trusts what reaches it. An agent reading
+# prose either scores TLS 0 ("no TLS here") or waves the trust boundary through
+# as a design decision. The honest answers are that TLS cannot be judged from
+# this repository, and that the absent authentication is still the finding.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Run an application security audit of this service.
+  Write the report to AUDIT-SECURITY.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: an agent following
+  # no skill produces it too, so it stays out of the gates.
+  - file_exists: "AUDIT-SECURITY.md"
+gates:
+  # from-exit: Report produced in the output format
+  - repo_clean: { except: "AUDIT-SECURITY.md" }
+  # from-exit: Non-auditable items listed
+  # SE-01 (TLS) is not scorable from this repository: the ingress that
+  # terminates it is the platform group's and no certificate or cipher
+  # configuration exists here. Withholding it is the decision; scoring it 0 with
+  # a recommendation to enable TLS is the wrong answer, and so is scoring it 3
+  # because the deployment note says the ingress handles it.
+  - grep_min: { pattern: "SE-01[^\n]*([Nn]/[Aa]|non-auditable|not auditable)", in: "AUDIT-SECURITY.md", count: "1" }
+  # from-exit: Level (0-4) + confidence + justification per question
+  # The real secrets finding: a service started without INTAKE_SIGNING_SECRET
+  # boots and signs with a known value, and nothing fails fast. Reachable by
+  # reading src/config.js; the credential scanner does not match it.
+  - grep_min: { pattern: "dev-signing-secret|INTAKE_SIGNING_SECRET", in: "AUDIT-SECURITY.md", count: "1" }
+  # from-exit: Verification commands run for each scored question
+  # The false positive, both orders. tools/quality/secret-scan.js contains
+  # credential patterns because they are its rules, and .env.example holds
+  # shapes in angle brackets with .env ignored. Reporting either as a hardcoded
+  # credential is a wrong answer with a citation, and running the scanner is
+  # what settles it. This gate cannot be passed by silence alone in the
+  # direction that matters: it fails only on the affirmative wrong claim.
+  - grep_zero: { pattern: "(secret-scan\.js|\.env\.example)[^\n]{0,80}([Hh]ardcoded|[Hh]ard-coded|[Ll]eaked|[Ee]xposed|committed secret)|([Hh]ardcoded|[Hh]ard-coded|[Ll]eaked|[Ee]xposed) [^\n]{0,60}(secret-scan\.js|\.env\.example)", in: "AUDIT-SECURITY.md" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# An ordering and a command. This skill is the only one of the nine whose
+# protocol names a tool outright, which is why it carries a `tool_used` the
+# other eight cannot; it states no `Guardrails` and no step budget, so
+# `tool_absent` and `step_budget` are left out rather than invented. The
+# ordering is the half a repository snapshot cannot hold: the report is
+# byte-for-byte the same file whether the evidence was opened before the
+# verdict was written or after it. The one act all nine DO prescribe - "each
+# reference/<section>.md read" - is deliberately not gated: the arm with no
+# skill installed has no such file to open, so a check on it would move this
+# dimension by construction rather than by behaviour, and tools/eval-report.ts
+# already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-SECURITY.md" would match that todo
+# at step 1 and fail an ordering the agent in fact kept. A check nobody can
+# pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(tooling): 12. **Run `npm audit`** (if Node.js) or equivalent for
+  # a vulnerability snapshot.
+  #
+  # The one command any of the nine skills names outright, and the only
+  # `tool_used` in this world. It is written as an act and not as a finding on
+  # purpose: this service declares no dependencies, so the snapshot is empty
+  # and the command may even error - what is being graded is whether the
+  # protocol's step 12 was carried out, not what it printed. THE RISK, written
+  # down before any money is spent on it: if a paired run shows both arms at
+  # zero here, this check comes out. A gate nobody can pass penalises both arms
+  # equally, and this repository has already reverted one criterion for exactly
+  # that.
+  - tool_used: { name: "Bash", arg: "npm audit" }
+  # from-skill(sequence): 13. **Run the verification commands** listed for each
+  # question - step 15 of the same protocol is **Produce the report**.
+  #
+  # The real finding is one line of src/config.js: a service started without
+  # INTAKE_SIGNING_SECRET boots and signs with a known value. The credential
+  # grep that opens every security audit does not reach it, so a report written
+  # before that file was opened is a report about the scanner's own patterns.
+  - before: { first: "src/config.js", then: "file_path=AUDIT-SECURITY.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The absent authentication is a finding despite the documented boundary" }
+    - { dimension: trap, text: "The scanner's own patterns are not reported as credentials" }
+    - { dimension: outcome, text: "The declared attachment size is trusted without being measured" }
+  threshold: pass_all

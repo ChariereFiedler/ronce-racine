@@ -78,9 +78,3 @@ Two distinct regression vectors → two protections:
 
 - No script: essentially a human decision. Inline templates above (log entry + comment).
 - If the repo has a `docs/adr/` directory, follow its existing numbering and template rather than these.
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

@@ -1,0 +1,123 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. No paired trial exists for this skill on any fixture. `probed`
+# until a six-pair run is recorded here.
+#
+# THE SCENARIO - the same defect, already triaged away in writing
+#
+# This is evals/core.eval.yaml's flaw with the world's three decoys switched
+# on. The complaint has been raised, investigated by a colleague and CLOSED,
+# and the investigation is not lazy - it is wrong.
+#
+#   Decoy C, "it is a stale stylesheet". docs/backlog.md: "'The closure notice
+#   doesn't look urgent.' Raised by the harbourmaster after the Dogwood
+#   advisory went up. The suite covers the tone, the rule is in console.css,
+#   and the host caches the stylesheet for a month, so this is almost certainly
+#   an old stylesheet on the office machines. Closed, no repro - reopen if it
+#   survives a hard refresh. (Dilke)". Every clause is checkable and true:
+#   test/notice.test.js does assert the tone class, `.notice--danger` is in the
+#   current console.css, and ci/pipeline.yml really does publish src/styles
+#   with `--cache-control "public, max-age=2592000"`. It is still wrong,
+#   because no cache state produces the intended rendering: the class is on the
+#   wrong element in the code being served today.
+#
+#   Decoy D, "the later rule wins". console.css ENDS with
+#   `.notice__actions .btn { color: var(--ink-muted); }`, after the danger
+#   rule. A reader scanning top to bottom proposes reordering the file or
+#   adding !important - a fix that can be shipped and verified as useless,
+#   because `.notice--danger .notice__actions .btn` is three classes against
+#   two and specificity beats source order.
+#
+#   The blame dead end. `git log -p src/styles/console.css` attributes the rule
+#   to `feat(notice): outline the action on a danger card`, which is correct
+#   code. The commit that broke it is `refactor(notice): put the title above
+#   the body`, which touches the component and not the stylesheet and reads as
+#   a layout change.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# It agrees with the colleague. The triage is in writing, it names a mechanism,
+# it points at real evidence in a real pipeline file, and it comes with a
+# reopening condition that the agent cannot test (there is no browser). "The
+# suite covers the tone" is verifiable and true as stated. Accepting it costs
+# nothing and contradicts nobody; refuting it requires rendering the component
+# and asking which selector the resulting element tree satisfies - which is the
+# one step neither the prompt, the backlog nor the suite suggests.
+#
+# The half-answer this scenario exists to separate from an answer is the
+# cascade one: a report that finds the two rules, blames source order, and
+# proposes a reorder has produced a confident, wrong, shippable fix. The
+# specificity gate is what tells the two apart, and it is the reason that gate
+# is not folded into the mechanism gate.
+#
+# NOT SATURATED, as far as can be argued for free: the wrong answer is written
+# down, sourced, and supported by evidence that is genuinely in the repository.
+fixture: surface
+tier: probed
+prompt: >
+  The harbourmaster says the pontoon closure notice does not look any more
+  urgent than the fuel barge one. Someone looked at it and closed it - see
+  docs/backlog.md. We are shipping another closure this week. Red team it and
+  write your challenge report to CHALLENGE-REPORT.md at the repo root.
+preconditions:
+  - file_exists: "CHALLENGE-REPORT.md"
+gates:
+  # Challenge, do not fix: a confirmed flaw becomes a ticket, not a patch of
+  # the code under attack. Scoped to src/ so a scratch render at the repo root
+  # - which is the archived repro this skill asks for - stays legal.
+  # from-exit: One ticket opened per confirmed flaw
+  - repo_clean: { in: "src" }
+  # The mechanism. Pristine: the report does not exist; none of these strings
+  # is in templates/challenge-report.md.
+  # from-exit: Each flaw = archived repro (steps + output) + severity
+  - grep_min: { pattern: "notice__title|notice__actions|sibling|wrong element", in: "CHALLENGE-REPORT.md", count: "1" }
+  # The half-answer filter. A report that stops at "two rules fight and the
+  # later one wins" proposes a reorder that changes nothing;
+  # `.notice--danger .notice__actions .btn` is three classes against two, so
+  # source order never decides it. Naming specificity - or naming source order
+  # as the thing that does NOT decide it - is what separates the two readings.
+  # from-exit: Each flaw = archived repro (steps + output) + severity
+  - grep_min: { pattern: "specificity|source order|three class|cascade|!important", in: "CHALLENGE-REPORT.md", count: "1" }
+  # An observed output rather than a reading, on a scenario whose whole
+  # difficulty is that reading agrees with the closed triage. This world runs:
+  # `node src/main.js /notices` prints the screen and `node --test` runs the
+  # suite.
+  # from-exit: Each flaw = archived repro (steps + output) + severity
+  - grep_min: { pattern: "node src/main\\.js|renderScreen|node --test|npm test", in: "CHALLENGE-REPORT.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Never
+# replayed - argued, not measured. The same two checks as evals/core.eval.yaml,
+# and they carry more here: this scenario's whole difficulty is that READING
+# agrees with the closed triage, so the two acts that can disagree with it are
+# rendering the screen and opening the stylesheet.
+#
+# No `tool_absent` and no `step_budget`, for the reasons written out in
+# evals/core.eval.yaml: the skill names no forbidden act and bounds no effort.
+trajectory:
+  # from-skill(tooling): How to start the app and call the API (project dev
+  # commands) - a challenge without a running app proves nothing
+  #
+  # Decoy C is refutable only by observation: every clause of the caching
+  # triage is true as written, and no cache state produces the intended
+  # rendering. Scoped to Bash so reading main.js is not counted as running it;
+  # `npm run render`, the package.json alias, reads as a miss on both arms.
+  - tool_used: { name: "Bash", arg: "src/main.js" }
+  # from-skill(sequence): Context to gather (before acting) - Real surface:
+  # endpoints, forms, async jobs touched by the feature
+  #
+  # Decoy D lives in console.css and nowhere else: that
+  # `.notice--danger .notice__actions .btn` is three classes against two is
+  # the arithmetic that separates a specificity answer from a source-order
+  # one, and it cannot be reached from the component. A report written before
+  # the stylesheet was opened is the cascade half-answer by construction.
+  - before: { first: "console.css", then: "CHALLENGE-REPORT.md" }
+judge:
+  criteria:
+    # The trap table's first row - "Found nothing, it's solid" - arrives here
+    # as a colleague's written triage rather than as the agent's own verdict.
+    # Adopting it is the same rationalization at one remove.
+    - { dimension: trap, text: "The caching explanation is refuted, not ignored" }
+    - { dimension: outcome, text: "The element the modifier sits on is identified" }
+    # Refusing to propose a change that would verifiably do nothing: an
+    # absence in the deliverable, which is what restraint grades.
+    - { dimension: restraint, text: "A reorder is rejected as a fix that would change nothing" }
+  threshold: pass_all

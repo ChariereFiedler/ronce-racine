@@ -82,7 +82,23 @@ Two corollaries:
 
 ## `skill-reminder.ts` - skill suggestion (UserPromptSubmit)
 
-On prompt submit, reads the descriptions of the skills present and suggests those whose triggers match. Self-maintained (no hardcoded list), silent when there is no match, never blocks.
+On prompt submit, reads the descriptions of the skills present and suggests those
+whose vocabulary the prompt actually matches. Self-maintained (no hardcoded
+list), silent when nothing scores, never blocks.
+
+Scoring lives in `skill-scoring.ts`, which ships alongside it: `overlap + 5 ×
+quoted`, with stopwords, naive stemming, and an anti-borrowing rule (a
+description that redirects to another skill does not inherit its vocabulary).
+That algorithm was already held to account by 208 test cases in
+`tools/routing-cases.ts` — while the hook that actually ran carried a poorer one,
+`triggers.filter(t => prompt.includes(t)).length`, and emitted three suggestions
+whatever the score. One implementation now, measured in the lint, executed here.
+
+**A score below `MIN_SCORE` (2) says nothing.** Measured on the live catalogue
+(2026-09-19): prompts that genuinely call a skill score 17, 7, 3; prompts with no
+business here score 1 or 0. Naming nothing is a legitimate answer — a hook that
+always names three skills spends its credibility on the prompts that call for
+none.
 
 Locates skills in this order: `$CLAUDE_PROJECT_DIR/.claude/skills`, `./.claude/skills`, `./skills`.
 
@@ -95,6 +111,25 @@ Locates skills in this order: `$CLAUDE_PROJECT_DIR/.claude/skills`, `./.claude/s
   }
 }
 ```
+
+---
+
+## `skill-scoring.ts` - the scoring behind the suggestion (no wiring)
+
+**Not a hook**: a module shipped alongside `skill-reminder.ts`, which is the only
+thing the harness runs. It is listed here because it ships, and because what it
+decides is visible to whoever reads a suggestion.
+
+Exports `scorePrompt` (`overlap + 5 × quoted`), `words`, `quotedPhrases`,
+`rankSkills` and `MIN_SCORE`. `tools/routing-cases.ts` imports the same module
+for the two lints that hold it to account — 198 triggers ranked top-3, and 10
+disambiguation cases judged against their declared neighbours. Keeping one
+implementation is the point: the previous split had the tested algorithm and the
+running one diverge silently, the same defect the 2026-08-24 portability
+postmortem records for the two frontmatter parsers.
+
+It is lexical overlap, not a model of how Claude routes: a floor that catches two
+descriptions no wording can tell apart, never a promise about live behaviour.
 
 ---
 
@@ -139,6 +174,47 @@ Leaves interactive `npm install <pkg>` calls (adding a dependency) untouched.
       { "matcher": "Bash",
         "hooks": [{ "type": "command",
           "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/truncate-output.mjs"] }] }
+    ]
+  }
+}
+```
+
+---
+
+## `shell-read-guard.ts` - shell file reads back to Read/Write (PreToolUse)
+
+**Event**: `PreToolUse` · **Matcher**: `Bash` · **Opt-in**
+
+Denies reading a project file through the shell (`sed -n`, `cat`) and creating
+one with a heredoc (`cat > file <<EOF`), where Read and Write already do the job.
+
+Why it is worth a blocked turn. Measured on a real agent run (2026-09-19, 32
+minutes, $14.15): 43 of its 101 Bash calls were file reads - 18 `sed -n`, 11
+`cat`, 14 `grep` - pouring 125k characters into the context. A run pays for its
+whole context on **every** call, so a 10k `cat` at call 20 is billed again by the
+260 calls that follow. Read with offset/limit reads the same lines without that
+tail.
+
+`cat > file <<EOF` carries a second, quieter cost: a file created that way never
+triggers the PostToolUse hooks scoped on `Write|Edit`, so it sees neither
+formatter, nor linter, nor secret scan.
+
+Left alone: already-bounded reads (`| head`, `| tail`, `grep -l/-c/-q`) and
+scratch paths (`/tmp`, `scratchpad`) - this guard is about project files.
+
+Unlike `bash-npm-silent` and `truncate-output`, this hook answers
+`permissionDecision: "deny"`: it refuses a call rather than rewriting it, which
+is why it is opt-in rather than installed by default.
+
+**Bypass**: add `# no-read-guard` in the command.
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash",
+        "hooks": [{ "type": "command",
+          "command": "node", "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/shell-read-guard.mjs"] }] }
     ]
   }
 }

@@ -1,5 +1,7 @@
 # Skill Evaluation Harness Implementation Plan
 
+> Historical design record, kept for the reasoning it carries. It describes the state at the date in its filename and may be stale; the current behavior is what the code and `docs/` say.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A replayable harness that plays each prose skill through headless `claude -p` against a fixture and verdicts it with mechanical gates + an adjunct LLM judge (spec: `docs/superpowers/specs/2026-07-20-skill-eval-harness-design.md`, build steps 1-2: runner + 4 pilot manifests).
@@ -811,7 +813,7 @@ judge:
 `eval.ts` plays a skill through headless `claude -p` inside a throwaway
 fixture and verdicts the result: mechanical gates first (from the skill's exit
 conditions), an adjunct LLM judge for what stays subjective.
-Design: [the spec](superpowers/specs/2026-07-20-skill-eval-harness-design.md).
+Design: [the spec](../specs/2026-07-20-skill-eval-harness-design.md).
 
 ## Commands
 

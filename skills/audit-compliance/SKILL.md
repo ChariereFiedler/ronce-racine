@@ -170,7 +170,3 @@ Each grid details, per question: statement, criticality, conditions, bash verifi
 - [ ] Level + confidence + justification provided per question
 - [ ] Per-section scores and overall score computed (excluding N/A)
 - [ ] Report produced in the format above, including strengths/weaknesses, recommendations and non-auditable items
-
-## Changelog
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

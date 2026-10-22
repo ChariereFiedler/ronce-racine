@@ -1,0 +1,122 @@
+# platform / core - fourteen remarks, six network errors, eleven captures, and
+# roughly four tickets in them.
+#
+# WHAT IS KNOWN: nothing measured on this world. What is known about the SHAPE
+# of this manifest is a format-gate finding from the probe, and it is why none
+# of the gates below greps a word: this skill's exit condition is its entire
+# prescribed format, and it names "severity", "ignored: <reason>", "unused
+# screenshots", "areas not covered" and "de-duplication" in so many words. A
+# gate keyed on any of those is passed by a deliverable carrying the checklist
+# and nothing else. Three such candidates were probed and dropped before this
+# file was written. Every gate here keys on a fixture fact instead - a ticket
+# id, a capture filename, an endpoint.
+#
+# THE SUBJECT. ops/qa/2026-08-27-console/ holds the bundle;
+# ops/qa/2026-07-21-console/ is the house format, filled; ops/qa/open-tickets.md
+# is what de-duplication runs against. The ground truth:
+#   - 00:02:10 duplicates the open qa-0029; 00:31:00 duplicates the open qa-0033
+#   - 00:06:40 + 00:08:20 + 00:11:05 are ONE defect, not three
+#   - 00:19:55 is a preference; 00:27:15 was judged in July as a cold cache
+#   - 00:23:30 is real and is a configuration defect, not a code one
+#   - 00:14:20 is the export defect the contract stage has been red on
+#   - three of the six network errors are the export's evidence, three must be
+#     marked ignored with a reason
+#   - six of the eleven captures belong to no new ticket
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. The bundle is three files and reads in five
+# minutes, so the failure is not that anything is missed but that everything is
+# transcribed. Fourteen timeline rows become fourteen findings; the three export
+# remarks at 00:06:40, 00:08:20 and 00:11:05 become three, because they are three
+# rows with three screenshots; the picker complaint and the staff-filter
+# complaint become two more, because nothing in the bundle mentions that both are
+# already open - the ids are one directory up in ops/qa/open-tickets.md and the
+# request does not point there. The two quiet promises go the same way for the
+# same reason: a capture that correlates with nothing costs nothing to leave out,
+# and a 401 that is the capture proxy's own token refresh is not something a
+# transcription notices it has skipped. All three of those - the de-duplication,
+# the unused captures, the errors nobody voiced - are things the exit condition
+# asks for and the bundle does not, and each is reachable only by reading
+# something the session did not come with.
+#
+# FORMAT GATES CAUGHT AND DROPPED, with the probe's verdict. Five candidates were
+# written and probed, one per promise this skill makes, and the template-only
+# probe passes ALL FIVE: [Uu]nused|[Uu]nmatched|not attached, [Ss]everity,
+# [Ii]gnored|ticket #, not covered|areas tested, and [Dd]e-?duplicat|already
+# open. This skill's exit condition IS its prescribed format and it names every
+# one of those words, so a deliverable carrying the checklist and nothing else
+# scores each of them. That result is why the three gates below key on a ticket
+# id, three capture filenames and three endpoints instead.
+tier: probed
+fixture: platform
+prompt: >
+  The QA session from the 27th is in ops/qa/2026-08-27-console/. Turn it into
+  what we keep for a session - the July one next door is the shape - and write
+  it under ops/qa/2026-08-27-console/.
+preconditions:
+  # The prompt names the destination and the format, so producing something
+  # there proves nothing about the skill; it tells you the deliverable landed.
+  # Verified: no path in the untouched fixture matches, so a run that produces
+  # nothing is reported as a missing deliverable rather than as a pass.
+  - file_matching: { pattern: "^ops/qa/2026-08-27-console/(summary\\.md|tickets/.+\\.md)$" }
+gates:
+  # from-exit: De-duplication done against open tickets
+  #
+  # "It's gone back to this week again. It does that." at 00:02:10 is qa-0029,
+  # open since July and reproduced. Nothing in the bundle says so - the id is
+  # in ops/qa/open-tickets.md, one directory up, and reaching it is a step the
+  # obvious flow skips. Producing the id is the only verifiable trace that the
+  # de-duplication was done against the list rather than asserted.
+  #
+  # Verified: 0 hits inside ops/qa/2026-08-27-console/ on the pristine fixture
+  # (the id lives in the July directory and in open-tickets.md), and the
+  # template-only probe leaves it at 0 - the skill's checklist names no ticket.
+  - grep_min: { pattern: "qa-0029", in: "ops/qa/2026-08-27-console", count: "1" }
+  # from-exit: Unused screenshots listed with a reason
+  #
+  # Six of the eleven captures belong to no new ticket. Three of them are named
+  # here: the second week-summary shot, the shift-colours shot behind a
+  # preference, and the print preview at the end of the session. A summary that
+  # never mentions any of them dropped evidence silently, which costs nothing
+  # visible and is exactly why the exit condition asks for it.
+  #
+  # Count computed against the fixture: these three filenames appear on 3 lines
+  # already, in the bundle's own screenshots.md, which is inside the scope. 4
+  # therefore requires one line the agent wrote. Keyed on filenames rather than
+  # on the word "unused", which the skill's checklist supplies for free.
+  - grep_min: { pattern: "0019-shift-colours|0016-week-summary|0034-print-preview", in: "ops/qa/2026-08-27-console", count: "4" }
+  # from-exit: Annotated trace: each network error marked `ticket #N` | `ignored: <reason>` - verifiable
+  #
+  # Three of the six captured errors belong to no ticket and must be accounted
+  # for rather than left out: the 401 on /session/refresh is the capture proxy's
+  # own token refresh, the 404 on /draft-lock is documented polling behaviour -
+  # both already judged that way in the July summary - and the 404 on the print
+  # icon is a real miss nobody in the session noticed. "Each" is the word that
+  # matters in that line: the annotation is only verifiable if the quiet ones
+  # are in it too.
+  #
+  # Count computed against the fixture: these three endpoints appear on 3 lines
+  # already, in the bundle's own network-errors.log, which is inside the scope.
+  # 4 therefore requires one line the agent wrote.
+  - grep_min: { pattern: "/session/refresh|/assets/icons/print\\.svg|/draft-lock", in: "ops/qa/2026-08-27-console", count: "4" }
+# WHAT THE AGENT DID, graded in the post-pass.
+trajectory:
+  # from-skill(sequence): Guardrails - De-duplication: search open tickets
+  # before creating
+  #
+  # An ordering in the skill's own words, and the thing gate 1 cannot be:
+  # `qa-0029` is written in ops/qa/2026-07-21-console/ as well as in
+  # ops/qa/open-tickets.md, so a deliverable can carry the id without the open
+  # list ever having been opened - and the prompt points at the July directory
+  # while saying nothing about the list. This reads whether the list was opened,
+  # and whether it was opened BEFORE the first ticket was written.
+  #
+  # Vacuous when no ticket is created - `before` treats an act that never came
+  # as never early - and that is correct rather than lenient: the promise is
+  # about what precedes filing, and a summary that files nothing skips nothing.
+  - before: { first: "ops/qa/open-tickets.md", then: "ops/qa/2026-08-27-console/tickets" }
+judge:
+  criteria:
+    - { dimension: trap, text: "The three export remarks become one entry, not three" }
+    - { dimension: restraint, text: "The colour request and the momentary pause are not filed" }
+    - { dimension: outcome, text: "The areas the session never reached are named" }
+  threshold: pass_all

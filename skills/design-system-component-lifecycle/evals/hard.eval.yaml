@@ -1,0 +1,107 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. No paired trial exists for this skill on any fixture. `probed`
+# until a six-pair run is recorded here.
+#
+# THE SCENARIO
+#
+# src/components/TideStrip.js is the one component still carrying its own
+# colour: `style: 'background:#eef2f4'`. It is legal only because
+# tools/check/tokens-allow.json exempts the file, with a reason that says the
+# cleanup is not scheduled. Bringing it onto the tokens therefore has three
+# parts, and only the first is obvious:
+#
+#   1. the literal moves into src/styles/tokens.css and the component uses it;
+#   2. the inline `style:` attribute goes too - tools/check/tokens.js flags
+#      `style: '` as well as colours, so a component that swaps `#eef2f4` for
+#      `var(--x)` inside an inline style is still a violation the moment the
+#      exemption is gone;
+#   3. the TideStrip entry comes OFF the allow list. Until it does, the raw
+#      pattern stays legal for that path and the check cannot see the work.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# Nothing punishes stopping after part 1. `node tools/check/tokens.js src`
+# exits 0 before the change and exits 0 after it, because the file is exempt
+# either way - the check is structurally blind to the file the task is about.
+# `npm test` never looks at colours. So the agent edits the component, runs
+# both commands, sees green, and reports done, leaving a stale exemption that
+# keeps the raw pattern legal in exactly the directory that was just cleaned.
+# This is the shape that measured 0/7 unaided against 7/7 aided on
+# recurring-bug-root-cause's blocking-guardrail gate: an enforcement artifact
+# nothing in the repository asks for and nothing in the run output misses.
+# The exit condition names it in as many words - "lint (exemption removed)".
+#
+# The second failure is quieter: the allow list also carries `src/print/`, for
+# a real and permanent reason. An agent that clears the file rather than the
+# entry breaks the token check on the billing sheet. That one is the judge's.
+#
+# NOT SATURATED, as far as can be argued for free: the allow-list entry is not
+# mentioned by the prompt, not reachable from the component file, and not
+# reported by any command the repository offers.
+fixture: surface
+tier: probed
+prompt: >
+  The tide strip is the last component that still paints itself instead of
+  using the palette. Bring it onto the design tokens and give it a record
+  under docs/pattern-library/, like the other components have.
+gates:
+  # Pristine: 1 line, src/components/TideStrip.js:12. The regex is the token
+  # check's own COLOUR pattern, so it cannot disagree with the repository about
+  # what a literal colour is. Verified against that line in node.
+  # from-exit: Contract defined: consistent two-way API, tokens (zero hardcoded value), testid as pass-through
+  - grep_zero: { pattern: "#[0-9a-fA-F]{3,6}\\b", in: "src/components/" }
+  # The half a colour swap leaves behind. tools/check/tokens.js flags `style: '`
+  # independently of the value, so a component keeping an inline style is still
+  # a violation once the exemption goes. Pristine: 1 line, the same one.
+  # from-exit: Contract defined: consistent two-way API, tokens (zero hardcoded value), testid as pass-through
+  - grep_zero: { pattern: "style: '", in: "src/components/" }
+  # The exemption itself, and the reason this scenario exists. Pristine: 1 line
+  # in tools/check/tokens-allow.json. Scoped to the file rather than to
+  # `tools/`, so an agent that keeps the src/print/ entry - which it must -
+  # still passes. Nothing about a location is dictated: the entry is the only
+  # place this exemption can live, because the check reads that file and no
+  # other.
+  # from-exit: Enforcement: doc + lint (exemption removed) + test/audit - all 3 layers
+  - grep_zero: { pattern: "TideStrip", in: "tools/check/tokens-allow.json" }
+  # The doc layer. Pristine 0 across docs/pattern-library/, and neither string
+  # appears in the skill's component-contract template, so a content-free
+  # deliverable cannot pass it.
+  # from-exit: Enforcement: doc + lint (exemption removed) + test/audit - all 3 layers
+  - grep_min: { pattern: "TideStrip|tide-strip", in: "docs/pattern-library/", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Never
+# replayed.
+#
+# ONE CHECK. The other two parts of this scenario's work - the literal moving
+# into tokens.css and the allow-list entry coming off - are both visible in the
+# tree and already gated above; a trajectory check on either would be a strict
+# duplicate, since a `sed -i` on the allow list names the file just as an Edit
+# does. What no gate can see is whether the enforcement was TESTED.
+trajectory:
+  # from-skill(tooling): Lint | prevent recurrence | Remove the raw pattern
+  # from the exemptions and give it a dedicated error message ... Test the rule
+  # on a witness file then on the whole `<src>`
+  #
+  # `node tools/check/tokens.js src` is this project's lint layer, and the
+  # scenario is built on the fact that it exits 0 before the change and 0 after
+  # it while the file stays exempt - so the agent that never runs it cannot
+  # know its own work is invisible. The judge criterion below grades the quoted
+  # output; this grades the run, and the pair separates a quoted output from a
+  # produced one.
+  #
+  # `npm run check` is the same checker under an alias and reads as a miss. The
+  # skill asks for the rule to be tested on a witness file FIRST, and the alias
+  # hard-codes `src`, so the witness half is only reachable through the direct
+  # form - which is the form the file's own docstring and ci/pipeline.yml both
+  # print. Both arms pay the same when a trial takes the alias.
+  - tool_used: { name: "Bash", arg: "tokens.js" }
+judge:
+  criteria:
+    # The other entry on the allow list is permanent and for a real reason;
+    # clearing the file rather than the entry breaks the billing sheet.
+    - { dimension: restraint, text: "The src/print/ exemption is kept, with its reason" }
+    - { dimension: tooling, text: "The token check was run and its output is quoted" }
+    # Trap table: "This exact hex/px isn't in the tokens" - either the token
+    # exists and must be used, or it is missing and must be added.
+    - { dimension: trap, text: "The strip's remaining values are named by token" }
+  threshold: pass_all

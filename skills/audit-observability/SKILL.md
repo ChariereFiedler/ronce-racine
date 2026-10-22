@@ -128,7 +128,3 @@ The audit is complete when:
 - [ ] Overall score computed excluding N/A
 - [ ] Strengths, weaknesses and prioritized recommendations (MUST/SHOULD/COULD) filled in
 - [ ] Non-auditable items listed explicitly
-
-## Changelog
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

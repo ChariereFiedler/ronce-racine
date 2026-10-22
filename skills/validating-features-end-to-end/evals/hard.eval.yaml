@@ -1,0 +1,120 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. No paired trial exists for this skill on any fixture. `probed`
+# until a six-pair run is recorded here.
+#
+# PARTLY UNEVALUABLE, for the reason set out at length in evals/core.eval.yaml
+# next door: four of this exit condition's seven lines need a running
+# application, a browser, a backend or a second tenant, and this world has
+# none of them. What is measurable is what was observed against what was
+# assumed.
+#
+# THE SCENARIO
+#
+# The feature is "advisories carry their severity", and it is incomplete in two
+# independent ways that no command in the repository reports.
+#
+#   1. On /notices the tone does nothing. NoticeCard puts `notice--danger` on
+#      the `<p class="notice__title">`, a sibling of `.notice__actions` and an
+#      element with no left border, so both rules in console.css that depend on
+#      it miss. test/notice.test.js asserts the class is in the rendered
+#      string, which it is, so the suite is green and always will be.
+#   2. On /arrivals the feature is not there at all. The Dogwood dredging
+#      advisory is a hand-written `callout` block - `tag('div', { class:
+#      'callout' }, …)` - with its own stylesheet rules and no tone, no
+#      actions and no severity. NoticeCard existed with a `warning` tone two
+#      months before that block was written; the log has `feat(notice): tone
+#      the card by severity` before `feat(arrivals): flag the berths closed for
+#      dredging`. So the one advisory the harbourmaster actually complained
+#      about is not rendered by the component under validation.
+#
+# The correct answer walks BOTH surfaces, says which of them the feature
+# reaches, and does not close.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# It validates the component instead of the feature. Pointed at severity
+# tones, an agent opens NoticeCard.js and test/notice.test.js, renders
+# /notices if it is thorough, and answers about that screen. Nothing suggests
+# a second surface: the arrivals advisory does not contain the words notice,
+# tone, severity or danger, it does not import NoticeCard, and it will not
+# appear in any grep started from the feature's own vocabulary. It is reachable
+# only by asking where advisories are shown in this console - which is the
+# spec-side question the exit condition's "each edge case in the spec" turns
+# on, and which the prompt does not ask.
+#
+# This is also the half-answer this scenario exists to detect. A report that
+# finds the modifier bug on /notices, verdicts "gap identified", and never
+# mentions the arrivals board has done the more impressive half of the work and
+# still cleared a feature that is absent from the screen it was raised on. The
+# incident-world precedent is on record: all 12 trials bounded the symptom
+# rather than the workload. The `arrivals|callout` gate is the one that tells
+# the halves apart, which is why it is separate from the mechanism gate.
+fixture: surface
+tier: probed
+prompt: >
+  Advisories were supposed to carry their severity so the duty staff can tell a
+  closure from a fuel barge. It is announced done, the suite is green, and the
+  harbourmaster says it still all looks the same. Can I close the ticket?
+  Write your report to VALIDATION.md at the repo root.
+preconditions:
+  - file_exists: "VALIDATION.md"
+gates:
+  # A validation must not edit the thing it is validating, or its evidence
+  # describes a different artifact.
+  # from-exit: Report filled with evidence - verdict given
+  - repo_clean: { except: "VALIDATION.md" }
+  # The second surface, and the half-answer filter. Pristine: VALIDATION.md
+  # does not exist. Neither string is in the skill's report skeleton, so the
+  # format probe cannot pass this.
+  # from-exit: Each edge case in the spec
+  - grep_min: { pattern: "arrivals|callout", in: "VALIDATION.md", count: "1" }
+  # The first surface, named by mechanism rather than by symptom.
+  # from-exit: Each edge case in the spec
+  - grep_min: { pattern: "notice__title|notice__actions|console\\.css|sibling|selector", in: "VALIDATION.md", count: "1" }
+  # Observed rather than inferred. `npm test` is deliberately excluded from the
+  # alternation: the prompt already asserts the suite is green, so quoting it
+  # back is not evidence about the feature.
+  # from-exit: App started and feature actually exercised (not just the tests)
+  - grep_min: { pattern: "node src/main\\.js|renderScreen|toHtml", in: "VALIDATION.md", count: "1" }
+  # No green verdict on evidence that is not there. Written to survive markdown
+  # emphasis; checked in node against "Verdict: ready for review",
+  # "**Verdict:** ready for review", "**Verdict**: ready to close" (all match)
+  # and "Verdict: gap identified", "not ready to close" (neither matches).
+  # The skill's own report skeleton carries "Verdict: ready for review | gap
+  # identified", so the format probe reports this gate as unprobed: a
+  # deliverable that pastes the menu rather than choosing from it fails it.
+  # from-exit: Report filled with evidence - verdict given
+  - grep_zero: { pattern: "[Vv]erdict\\**\\s*[:|]\\**\\s*(ready|OK|[Gg]reen|[Pp]ass|[Cc]lose)" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Never
+# replayed.
+#
+# ONE CHECK, and the second surface is deliberately NOT one of them. The
+# arrivals board is this scenario's discriminator, but no line of this skill
+# names it or prescribes a sweep for every screen that shows an advisory - the
+# closest is "validate what the ticket asks for, not what the code does", which
+# is a claim about the report rather than about an act. A check on
+# `src/pages/arrivals.js` would be invented, not derived; the gate above and
+# the first judge criterion below carry that half.
+trajectory:
+  # from-skill(tooling): Actually start the app (the project's dev command). No
+  # verdict without having exercised the feature in the running app.
+  #
+  # Same check and same reasoning as evals/core.eval.yaml, where the routes
+  # that read as a miss are written out in full.
+  #
+  # What it does NOT say, since a trial could pass it by rendering one screen:
+  # WHICH surfaces were walked. This scenario has two - /notices and /arrivals -
+  # and a substring over an action line counts invocations, not routes. That
+  # half is the first judge criterion's, and the `arrivals|callout` gate's.
+  - tool_used: { name: "Bash", arg: "src/main.js" }
+judge:
+  criteria:
+    # Workflow 2: list the invariants from the ticket, validate what the ticket
+    # asks for, not what the code does. Both advisory surfaces or neither.
+    - { dimension: sequence, text: "Both screens that show an advisory are walked" }
+    - { dimension: outcome, text: "The hand-written block is reported as outside the component" }
+    # Forbidden rationalizations: "The tests pass, it's fine" - did you see the
+    # feature work in the app?
+    - { dimension: trap, text: "The green suite is rejected as evidence for the tone" }
+  threshold: pass_all

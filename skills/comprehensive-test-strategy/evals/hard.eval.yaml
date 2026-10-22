@@ -1,0 +1,103 @@
+# HARD scenario - the suite is green, it has always been green, and it is green
+# because of how it is set up rather than because the code works.
+#
+# Every test in this repository runs against test/fixtures/mini: two markets
+# (de-DE, en-GB), three parts, a 64 KB retention budget, a pool of two.
+# test/plan.test.js asserts that the plan holds five units. The production plan
+# holds 157 and grows whenever sales-ops merges a folder, and the retention
+# guard is a fixed number - so the one interaction that has broken this job six
+# times in 29 days is the one the suite is built never to reach. A strategy
+# that reads the suite and the sources without reading the FIXTURE the suite
+# runs on cannot see that, and will mark the planner covered.
+#
+# NOT MEASURED. No paired run has been executed against this manifest or
+# against any scenario of this skill.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. The prompt says the suite was green
+# throughout, which invites the obvious answer: the coverage has holes, here
+# are the modules without tests, add tests there. That answer is not wrong and
+# it is not the one that would have caught this - the modules without tests are
+# cli.js, index-writer.js, links.js and stage.js, none of which is implicated.
+# The module that IS implicated has a test file that passes. Reaching the real
+# gap means opening test/fixtures/mini, counting its markets, and noticing that
+# the assertion is `units.length === 5` against a constant fixture, at which
+# point "Covered" becomes indefensible. Nothing points there: the mini fixture
+# is three directories deep under test/, and no document in the repository
+# mentions it.
+tier: probed
+fixture: incident
+prompt: >
+  The publish job broke four nights ago and the suite was green through all of
+  it, so somebody has asked what our tests are actually worth. Work out what
+  the test strategy for everything under tools/ should be, so that the next one
+  is caught. No tracker is configured here: write the matrix to STRATEGY.md and
+  any follow-up tickets under tickets/.
+preconditions:
+  - file_exists: "STRATEGY.md"
+gates:
+  # from-exit: Gap analysis produced (Covered / Partial / Absent) with actions
+  #
+  # The gap this world hides, and the reason the previous manifest's grep for
+  # the words "Covered / Partial / Absent" measured nothing: those three words
+  # are in the exit-condition checklist, so a deliverable made of the checklist
+  # passes that gate with no analysis behind it at all. What cannot be written
+  # without having done the analysis is the fixture the analysis turns on.
+  # Verified: fails on "the suite is green"; passes on "test/fixtures/mini
+  # holds three parts", on "the mini fixture never grows", on "the suite only
+  # ever sees two markets" and on "covered against 2 markets". The string
+  # `fixtures/mini` occurs nowhere in SKILL.md, in reference/testing-advanced.md
+  # or in the prompt, so the template-only probe fails this gate.
+  - grep_min: { pattern: "fixtures/mini|mini fixture|(two|2) markets", in: "STRATEGY.md", count: "1" }
+  # from-exit: Complete matrix: all testable surfaces listed and classified by risk
+  #
+  # The easy half of the discrimination, kept as a floor: the four modules with
+  # no test file. Same pattern and same count reasoning as the core scenario -
+  # `grepHits` counts matching lines, so 2 asks for two of the three names on
+  # separate rows.
+  - grep_min: { pattern: "stage\\.js|links\\.js|cli\\.js", in: "STRATEGY.md", count: "2" }
+  # from-exit: Surfaces to cover delegated to the right skill (never write the tests here)
+  #
+  # Sharper here than in the core scenario: the prompt says the next failure
+  # must be caught, and writing the missing test is a ten-line act with a
+  # runner that needs no install. The exit condition says the strategy hands
+  # that on.
+  - repo_clean: { except: "STRATEGY.md, tickets/" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Not
+# replayed against real trials - both checks proved able to pass and to fail
+# against a synthetic trajectory, as in the core scenario, whose note on why
+# this skill gets no `tool_used` applies here too.
+trajectory:
+  # from-skill(sequence): Context to gather (before acting) - Framework(s) +
+  # commands: read `package.json` ... / CI config
+  - before: { first: "package.json", then: "STRATEGY.md" }
+  # from-skill(sequence): Context to gather (before acting) - Existing tests:
+  # locate them (`*.spec.*`, `*.test.*`, `tests/` folders), read a neighbour to
+  # copy its conventions
+  #
+  # This scenario turns on one directory. Every test here runs against
+  # test/fixtures/mini - two markets, three parts, a 64 KB budget - and
+  # test/plan.test.js asserts a five-unit plan while production carries 157 and
+  # grows. Reading the suite is not enough; the fixture the suite runs on is
+  # what makes "Covered" indefensible, and nothing in the repository points at
+  # it: it is three directories down and no document mentions it.
+  # The first gate above asks the matrix to name it, which a lucky sentence can
+  # do. This asks whether it was opened, and before the matrix was written.
+  # The needle matches a read, a `ls`, or a Grep scoped there. Same two
+  # accepted leaks as the core scenario: a ticket written first and naming that
+  # path, and a matrix skeleton written before the survey.
+  - before: { first: "test/fixtures/mini", then: "STRATEGY.md" }
+judge:
+  criteria:
+    # from-skill(trap): "Coverage is at 85%, so it's covered" -> "A test that
+    # does not break when you break the code covers nothing." The planner's
+    # test passes against a constant five-unit fixture.
+    - { dimension: trap, text: "Says why the planner's existing test could not have caught this" }
+    # The level the failure actually lives at.
+    - { dimension: outcome, text: "Puts the growth of the workload at a level a unit test cannot reach" }
+    # The exit condition's ordered plan, ranked by risk rather than by file list.
+    - { dimension: outcome, text: "Ranks the work by what would have failed the build" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.

@@ -1,0 +1,109 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. No paired trial exists for this skill on any fixture. `probed`
+# until a six-pair run is recorded here.
+#
+# THE SCENARIO
+#
+# "Give the long-stay moorings ledger a proper home" sounds like a new screen.
+# It is not. src/pages/moorings.js exists, is imported into ROUTES in
+# src/main.js, and renders at /moorings today. What it lacks is a `nav` key -
+# every other screen's route object carries `nav: true` and moorings' does not
+# - so NAV, which src/main.js derives with `ROUTES.filter(s => s.route.nav)`,
+# omits it. Its only incoming link is one anchor on the berth plan:
+#
+#   src/pages/berths.js:  tag('a', { href: '/moorings',
+#                                    'data-testid': 'berths-moorings-link' }, ...)
+#
+# And the decision is already open, in writing, with a name against it:
+# docs/backlog.md says "Reached from the berth plan and from nowhere else.
+# Either it belongs in the sidebar or it belongs inside the berth screen;
+# nobody has decided. (Wren)".
+#
+# So the ticket that should come out of this audit is a NAVIGATION ticket with
+# a decision to make - one line of route metadata, or a move into the berth
+# screen - not a build ticket for a page that already renders.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# The request's vocabulary is a feature request, and the skill's template is a
+# feature-ticket template: Context, audit, Scenario 1, Scenario 2 (edge case
+# 0/1/N), Scenario 3 (error case), Technical specifications, Estimate. Filling
+# it in without auditing produces a coherent, entirely fictional ticket - a
+# route to add, a ledger to build, empty and error states to design - for a
+# screen whose ledger, empty state and error state all shipped in May. Every
+# line of it reads as diligence and none of it is earned. Point 3 of the
+# skill's audit ("incoming links to the route" and the global navigation) is
+# the only step that catches it, and it is the step a ticket written from the
+# request alone has no reason to take.
+#
+# The second failure is subtler and is what the `nav:` gate is for: an agent
+# that does notice the screen exists can still write "add it to the sidebar"
+# without seeing that the omission may be deliberate and is recorded as
+# undecided. The exit condition asks for global navigation to be AUDITED, and
+# an audit that does not surface an open decision has not audited it.
+#
+# NOT SATURATED, as far as can be argued for free: nothing in the prompt
+# suggests the screen exists, the route is one entry among nine in a file the
+# prompt does not name, and the backlog entry is three files away from the
+# ledger.
+fixture: surface
+tier: probed
+prompt: >
+  The office says the long-stay moorings ledger is hard to get to and wants it
+  given a proper home in the console. Write the ticket to TICKET.md at the repo
+  root. Do not change the console.
+preconditions:
+  - file_exists: "TICKET.md"
+  - repo_clean: { except: "TICKET.md" }
+gates:
+  # The incoming link. One anchor, on one screen, with its own testid. Pristine:
+  # TICKET.md does not exist; the string appears once in the repository, in
+  # src/pages/berths.js, and in no document. Absent from the skill's ticket
+  # template, so the format probe cannot pass it.
+  # from-exit: Audit of the 6 points complete, **grep results cited** in the ticket (call sites, incoming links, global navigation)
+  - grep_min: { pattern: "berths-moorings-link|src/pages/berths\\.js|berth plan", in: "TICKET.md", count: "1" }
+  # The navigation mechanism. `NAV` is derived from `route.nav` in src/main.js,
+  # and moorings' route object is the one without the key. A ticket that says
+  # "add a sidebar entry" without naming what a sidebar entry IS in this
+  # console has audited nothing; a ticket that names it has read the file.
+  # from-exit: Audit of the 6 points complete, **grep results cited** in the ticket (call sites, incoming links, global navigation)
+  - grep_min: { pattern: "route\\.nav|nav:|NAV|main\\.js", in: "TICKET.md", count: "1" }
+  # The open decision. docs/backlog.md records it with an owner, and an audit
+  # that reports "no sidebar entry" as an oversight has contradicted a written
+  # decision nobody has taken. Pristine 0 in TICKET.md.
+  # from-exit: No acceptance criteria drafted before the audit
+  - grep_min: { pattern: "backlog|undecided|not been decided|nobody has decided|Wren", in: "TICKET.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Never
+# replayed. The caveat on the script check - it sits in `Tooling` rather than
+# in the audit checklist, so an aided trial that greps by hand reads as a miss
+# - is written out in evals/core.eval.yaml and applies here unchanged.
+trajectory:
+  # from-skill(tooling): `scripts/audit-entry-points.ts <ComponentName|-> <route|->
+  # [rootDir]` - pre-fills the audit: call sites, incoming links to the route,
+  # navigation files (sidebar/header/menu) to check
+  #
+  # This scenario is the script's own question, in its own arguments: a route
+  # with no component (`- /moorings`), whose incoming links are the thing to
+  # find. Staged into the with-arm only.
+  - tool_used: { name: "Bash", arg: "audit-entry-points" }
+  # from-skill(sequence): Router + navigation files: read the route config, the
+  # sidebar/header/global menu to know where an entry gets added
+  #
+  # THE discriminator of this scenario, and unreachable from the tree. The
+  # screen already exists and already renders; the one fact that turns a build
+  # ticket into a navigation ticket is that moorings' route object has no `nav`
+  # key while every other one carries `nav: true`, and that fact exists in
+  # src/main.js and nowhere else. A ticket drafted before that file was opened
+  # is the fictional ticket described above, however diligent it reads.
+  - before: { first: "src/main.js", then: "TICKET.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The ledger is reported as already built and routed" }
+    # An open decision surfaced rather than taken: the backlog records it with
+    # an owner, and an audit that answers it for them has overreached.
+    - { dimension: restraint, text: "The choice between a sidebar entry and a move is put to the office" }
+    # Trap table: "I'll write the criteria, we'll audit at implementation" -
+    # criteria for a table that already renders are exactly that.
+    - { dimension: trap, text: "No criterion asks for a table that already renders" }
+  threshold: pass_all

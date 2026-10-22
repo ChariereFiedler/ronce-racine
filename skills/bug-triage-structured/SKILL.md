@@ -96,11 +96,3 @@ If the scope has already had 2+ recent fixes → apply `recurring-bug-root-cause
 ## Tooling
 
 - `templates/bug-triage.md` - triage sheet / tracker-agnostic ticket body
-
-## Changelog
-
-- 1.1.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.1.0 (2026-07-21) - recurrence check made mechanical (git log command, count stated even when zero); eval runs showed agents skipping it
-
-- 1.0.0 (2026-06-19) - initial release: project-agnostic generalization of the add-bug workflow into full triage (repro → root-cause → decision → confirmation)

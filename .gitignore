@@ -1,6 +1,14 @@
 .env
 .env.*
 !.env.example
+# Private to this working copy and to the GitLab remote; they must never reach
+# the public GitHub repository. Both are already TRACKED, so these two lines are
+# a backstop for a fresh clone, not the thing that keeps them out of a release:
+# .gitignore has no effect on a tracked file. The public commit is built from a
+# tree with both paths removed - see docs/decisions.md, "Public releases are
+# linear, not orphan-per-release".
+ardente-forge.yml
+.claude/project.json
 coverage/
 dist/
 docs/chardon/
@@ -11,3 +19,9 @@ release-notes.md
 reports/
 .stryker-tmp/
 .superpowers/
+
+# Backups left behind by `install.ts install .` on the repo itself.
+.claude/**/*.bak
+
+# Declarations the engine lays beside a mod at every load.
+mods/*/.claude-plugin/types/

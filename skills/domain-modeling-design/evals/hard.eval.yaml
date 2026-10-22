@@ -1,0 +1,94 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED - no paired run, no figure of its own. See core.eval.yaml.
+# `tier: probed`.
+#
+# What makes this the hard one: the rule already exists in two places and the
+# question is where it belongs, which is the skill's central question and the
+# one a prompt cannot answer for you.
+#   src/domain/work-order.js  isOverdue(order, graceHours) - the rule, in the
+#                             domain, but reading the wall clock through
+#                             `import { now } from '../infrastructure/clock.js'`,
+#                             the one import in the tree pointing the wrong way
+#   src/infrastructure/read/dashboard-view.js  overdue(shopId) - looks the
+#                             grace period up, filters the open rows and counts
+#                             them, so half the rule lives here
+# The contrast is one file away: src/domain/quote.js takes the timestamp as an
+# argument (`approve(quote, at)`), which is what a domain rule that needs the
+# time looks like when it is placed correctly. `clock` is already a declared
+# port (src/application/ports.js), which is where the answer comes from.
+#
+# How a careful agent with NO skill plausibly fails.
+# It puts the growing rule where the growth is visible - the read model, which
+# already owns the grace lookup and the row filtering, and where adding a
+# condition is one line. That reads as cohesion. It leaves a business rule in
+# infrastructure, keeps the domain function that cannot be tested without the
+# wall clock, and gives the next reader two places to change when a shop asks
+# for a fourth condition. The other failure is subtler and likelier: the model
+# is written as though the time were free, so the placement is decided without
+# noticing that the domain currently reaches out for it.
+#
+# The format-gate probe. Skeleton is this skill's exit checklist, so "placement",
+# "rejected alternatives", "invariants" and "ports" are all unusable as gates.
+# Both content gates below key on paths and identifiers the checklist has never
+# heard of.
+prompt: >
+  The rule for what counts as late keeps growing: each shop has its own grace
+  period, cancelled work does not count, and now the shops want the clock to
+  stop while a job is waiting on a part. Work out where that rule belongs and
+  what owns it, before anybody writes it, and leave it in MODEL.md.
+
+preconditions:
+  - file_exists: "MODEL.md"
+
+gates:
+  # A placement decision, not a start on the code.
+  # from-exit: Spec produced, NO implementation started
+  - repo_clean: { in: "src" }
+  # The rejected alternative here is a real place with a real address: half the
+  # rule is in the dashboard read model today, and a decision that does not
+  # name it has not weighed anything. Pristine: 0 - MODEL.md does not exist.
+  # from-exit: Placement decided with rejected alternatives documented
+  - grep_min: { pattern: "dashboard-view|infrastructure/read|read model", in: "MODEL.md", count: "1" }
+  # The time is the whole difficulty. `clock` is a declared port in this
+  # codebase and the domain currently bypasses it; a model that never mentions
+  # the clock has placed a time-dependent rule without noticing it depends on
+  # time. Pristine: 0. The prompt says "the clock to stop", so `clock` alone
+  # would be echo - the pattern also accepts the two shapes that show the
+  # dependency was actually traced.
+  # from-exit: Commands/queries, ports and domain events defined
+  - grep_min: { pattern: "clock\\.js|infrastructure/clock|now\\(|approve\\(quote", in: "MODEL.md", count: "1" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+trajectory:
+  # from-skill(sequence): Map the existing landscape: which bounded contexts /
+  # modules already exist, where neighboring concepts live
+  #
+  # Half the rule is in the dashboard read model today, so the rejected
+  # alternative in this scenario is a real file with a real address. Gate 2
+  # asks the model to name it; this asks whether it was opened before the
+  # placement was decided, which is the difference between weighing an
+  # alternative and mentioning one.
+  - before: { first: "src/infrastructure/read/dashboard-view.js", then: "MODEL.md" }
+  # from-skill(sequence): Read an already-modeled neighboring aggregate and
+  # copy its conventions (naming, boundary, events) before inventing anything
+  #
+  # src/domain/quote.js is what a time-dependent domain rule looks like when it
+  # is placed correctly in THIS repository - `approve(quote, at)`, the
+  # timestamp arriving as an argument - one file away from the one that reaches
+  # out for the clock. The convention to copy is right there, and an agent that
+  # never opens it decides the placement from first principles instead.
+  - read_file: { path: "src/domain/quote.js" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The rule lands in one place, not two" }
+    - { dimension: outcome, text: "The time arrives as an argument or a port, not an import" }
+    # trap: "This validation rule, I'll put it in the controller / the
+    # application service" - business logic outside the domain, here wearing a
+    # read model's clothes.
+    - { dimension: trap, text: "The read model is left composing rather than deciding" }
+    - { dimension: outcome, text: "The rejected placement is named with its cost" }
+  threshold: pass_all

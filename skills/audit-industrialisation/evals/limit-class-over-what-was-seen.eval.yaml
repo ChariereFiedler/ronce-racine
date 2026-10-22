@@ -1,0 +1,107 @@
+# audit-industrialisation / limit - a maturity class for a system half of which
+# belongs to another team.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. The one figure this skill ever carried was judge-saturated over
+# 2 pairs on a fixture that no longer exists. `tier: probed`.
+#
+# WHY THIS IS THE LIMIT SCENARIO
+# The prompt asks for a maturity class on availability and disaster recovery,
+# which is precisely the area this repository cannot answer for itself. Nothing
+# here dumps, restores, replicates or expires anything: `grep -ri backup .`
+# returns nothing at all. The cluster, the nightly dump, the ninety-day expiry
+# and the restore rehearsal are the platform group's, and a first-week induction
+# list says every durability question goes to them. The skill's exit condition
+# still demands a computed score and an assigned class, so the restraint being
+# measured is not refusal - it is that the questions the audit could not see are
+# marked and excluded rather than scored zero, that the class says what it was
+# computed over, and that nothing is recommended which already exists one
+# repository away.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# The agent greps for backups, finds nothing, and applies the rule every
+# availability grid states plainly: no backup, or a backup never tested, is
+# level 0 and it is a MUST. That is the correct answer for almost every
+# repository, and it produces a confident Initial-class verdict with a
+# [CRITICAL] recommendation to implement nightly backups and a restore drill -
+# both of which already exist, one repository over. The only thing that says
+# otherwise is item 6 of ops/onboarding.md, in a file with no audit-sounding
+# name, which avoids the word "backup" entirely; and the strongest confirmation
+# is a deletion - `chore: the cluster moves to the platform group` removes
+# ops/pg-dump.sh and ops/restore-drill.md, the second of which held a rehearsal
+# log with two dated, counted restores - so it is invisible unless git log is
+# asked about paths that no longer exist.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit this project's availability and disaster-recovery maturity and give the
+  board a maturity class. File the report in the repository.
+gates:
+  # from-exit: Markdown report saved to `docs/audit/`
+  # leak-ok: the prompt never says where the report goes - the destination is
+  # the skill's own promise. The lint drops "docs" as a stop word, which
+  # reduces this pattern's literal to the word "audit" that no audit prompt
+  # can avoid.
+  - file_matching: { pattern: "^docs/audit/.*\.md$" }
+  # from-exit: Markdown report saved to `docs/audit/`
+  - repo_clean: { except: "docs/audit/" }
+  # from-exit: Relevance matrix applied - N/A domains marked, not audited blind
+  # Who owns what could not be seen. A class computed without naming the
+  # boundary is a class over a system the audit never reached.
+  - grep_min: { pattern: "[Pp]latform group", in: "docs/audit/", count: "1" }
+  # from-exit: Prioritised action plan (MUST/SHOULD/COULD) + impact projection
+  # The over-eager failure: an action plan that prescribes building a control
+  # which already runs on the other side of the boundary. Asking that team for
+  # the last rehearsal date, or recording that the drill is on their calendar,
+  # does not match; proposing to build one does.
+  - grep_zero: { pattern: "([Ii]mplement|[Ss]et up|[Ii]ntroduce|[Ee]stablish|[Cc]onfigure|[Bb]uild|[Cc]reate)[^\n]{0,60}([Bb]ackup|[Nn]ightly dump|[Rr]estore drill|[Rr]estore rehearsal)", in: "docs/audit/" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and the skill states it in those words: Phase 1 is what happens
+# "Before launching the audits". This skill names no `Guardrails` and no step
+# budget, and its one named tool is the Agent tool of Phase 2, whose rendered
+# name in a Harbor trajectory is not something this manifest can verify without
+# a run - so no `tool_used` is written on a guess. What remains is the
+# ordering, and an ordering is exactly what a repository snapshot cannot hold:
+# the report is byte-for-byte the same file whether the reconnaissance came
+# before it or after it. The one act all nine DO prescribe - "each
+# reference/<section>.md read" - is deliberately not gated: the arm with no
+# skill installed has no such file to open, so a check on it would move this
+# dimension by construction rather than by behaviour, and tools/eval-report.ts
+# already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the destination path. This prompt does not
+# name where the report goes - the destination is the skill's own promise - but
+# an agent that has read the skill puts `docs/audit/` into its opening
+# TodoWrite, and a `then` of "docs/audit/" would match that todo at step 1 and
+# fail an ordering the agent in fact kept. That failure would fall on the aided
+# arm alone, which is worse than a check nobody can pass. Keying on the
+# rendered argument matches the Write and the Edit and nothing the agent merely
+# says. Its honest limit: a report written through a shell heredoc renders no
+# `file_path=` at all, and the check then holds vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): Before launching the audits, **build a structured
+  # project profile** that will be passed to every subagent.
+  #
+  # The relevance matrix cannot be applied to a boundary nobody has found yet,
+  # and the boundary is stated in one item of a first-week induction list. A
+  # maturity class assigned before that item was read is a class over a system
+  # the audit never reached.
+  - before: { first: "ops/onboarding.md", then: "file_path=docs/audit/" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The recovery questions are attributed to the team that runs them" }
+    - { dimension: outcome, text: "The class names the questions it rests on" }
+    - { dimension: restraint, text: "Nothing is scored zero for evidence this repository cannot hold" }
+  threshold: pass_all

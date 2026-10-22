@@ -1,15 +1,15 @@
 ---
 name: commit-readiness-review
 description: Use before any Claude-initiated git commit - "ready to commit", "commit that", "quick commit", "prêt à commit", "commit ça", "vite un commit", time pressure to ship, diff containing test/debug leftovers or touching multiple stacks.
-version: 1.0.1
+version: 1.0.4
 metadata:
-  last-reviewed: 2026-07-20
+  last-reviewed: 2026-09-04
   category: process
 ---
 
 # Commit Readiness Review - self-review before committing
 
-> If the current repo has a project-specific pre-commit skill (e.g. acme-app → `pre-commit-self-review`), it wins - it knows the exact commands.
+> If the current repo has a project-specific pre-commit skill, it wins - it knows the exact commands.
 
 ## This skill vs. others
 
@@ -61,22 +61,16 @@ metadata:
 ## Exit condition
 
 - [ ] Format/lint/typecheck green on each touched stack (real output)
-- [ ] Targeted tests of the changed scope passed
+- [ ] Targeted tests of the changed scope passed - or, when the suite was already red before this change, that failure named and shown to predate it
 - [ ] Zero secret / sensitive file in the diff
 - [ ] Zero forbidden pattern (debug, hardcoded wait, disabled test, TODO) or explicitly justified
 - [ ] Files staged one by one, all legitimate
 - [ ] Message in the repo format + user confirmation obtained (unless autonomous mode)
 
-A missing box = no commit.
+A missing box = no commit. The one exception is a failure that predates the change: it does not block the commit, it has to be stated. Silently committing on a red suite and refusing to commit at all are both wrong, and the second is how a checklist read literally forbids every commit in a repository that has been red for a fortnight.
 
 ## Tooling
 
 - Test procedure: `scripts/precommit-scan.test.ts` - deterministic behavioral test of the script (positive + negative fixture). Run `npx tsx scripts/precommit-scan.test.ts` from the canonical repo after any change to the script (also picked up by `npm test`). Not distributed to target repos.
 
 - `scripts/precommit-scan.ts` - scans the staged diff (`npx tsx scripts/precommit-scan.ts`): secrets via gitleaks or regex fallback, sensitive files, debug leftovers. Read-only, exit 1 on a secret/sensitive file. Wireable as a hook (see `hooks/`).
-
-## Changelog
-
-- 1.0.1 (2026-07-20) - co-located test procedure for precommit-scan.ts (scripts/precommit-scan.test.ts)
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

@@ -1,0 +1,103 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED. No paired run against this scenario, no figure of its own; the
+# only skill with a real six-pair verdict in this base is
+# recurring-bug-root-cause. `tier: probed`.
+#
+# What the fixture gives the model to attach to.
+# `awaiting_parts` is already a state a work order can be in
+# (src/domain/work-order.js: NEXT and OPEN_STATES) and nothing behind it
+# records what was ordered, from whom or when it is due. The world also fixes
+# three constraints the design has to live inside: every row belongs to a shop
+# and is reached through repositories.forShop (src/infrastructure/repository/
+# scoped.js, docs/architecture.md), the ports a use case may ask for are
+# enumerated in src/application/ports.js, and nothing under src/domain may
+# import from src/infrastructure.
+#
+# How a careful agent with NO skill plausibly fails.
+# It writes a good generic parts-ordering model: a PartsOrder aggregate, a
+# supplier, a line item, a status enum, a repository interface. Every sentence
+# of it is defensible and none of it touches this repository - the state
+# machine it has to hang off, the tenancy the aggregate sits inside, or the
+# port list it has to join. The gates below ask whether the design met the
+# world: gate 2 for the state that already exists and is the cross-cutting
+# invariant (work in `awaiting_parts` is exactly work with an outstanding
+# part), gate 3 for the tenancy and port seam it has to enter through.
+#
+# The second failure is starting the code. The skill's last exit line says a
+# spec and NO implementation, and a model this concrete is one step from a
+# file under src/domain - which is the next skill's job
+# (ddd-backend-implementation) and a different measurement.
+#
+# The format-gate probe. This skill prescribes no output template - its fenced
+# block sits under "## Protocol", which the probe does not harvest - so its
+# skeleton is the exit checklist: "aggregates", "invariants", "bounded
+# contexts", "rejected alternatives", "ports". Every one of those is a format
+# gate, and the manifest this replaces gated on two ("[Ii]nvariant",
+# "[Rr]ejected|[Aa]lternative"). Nothing below greps for a word the checklist
+# contains.
+prompt: >
+  Work sits in the shop waiting on a part with nothing recording what was
+  ordered, who from, or when it is due back, so the counter rings the factor to
+  ask. Design the domain model for that, before any code is written, and leave
+  it in MODEL.md.
+
+preconditions:
+  # The world has no tracker, so the prompt names where the spec lands.
+  - file_exists: "MODEL.md"
+
+gates:
+  # A spec, not a start. Nothing under src/ moves - not a domain file, not a
+  # port, not a stub. Pristine: clean.
+  # from-exit: Spec produced, NO implementation started
+  - repo_clean: { in: "src" }
+  # The cross-cutting invariant is already half-written in the tree: a work
+  # order can be in `awaiting_parts`, and that state and the new aggregate have
+  # to agree about who moves it. A model that never names the state has
+  # designed beside the domain rather than into it. Pristine: 0 - there is no
+  # MODEL.md - and the prompt says "waiting on a part", never the identifier.
+  # from-exit: Own + cross-cutting invariants enumerated and attached to their aggregate
+  - grep_min: { pattern: "awaiting_parts", in: "MODEL.md", count: "1" }
+  # Every read and write in this world enters through repositories.forShop and
+  # the ports listed in src/application/ports.js. A port defined without that
+  # seam is a port for a different codebase. Pristine: 0.
+  # from-exit: Commands/queries, ports and domain events defined
+  - grep_min: { pattern: "forShop|ports\\.js|shop_id", in: "MODEL.md", count: "1" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# NO `tool_used`: this skill's Tooling section says "no script: manual design",
+# and a check on a script it declines to ship would fail every trial in both
+# arms. NO `tool_absent` either - the act this skill forbids is starting the
+# implementation, and `repo_clean: src` above already answers that from the
+# tree, which is the grading moment that can see it.
+trajectory:
+  # from-skill(sequence): Read an already-modeled neighboring aggregate and
+  # copy its conventions (naming, boundary, events) before inventing anything
+  #
+  # The neighbour here is not a stylistic reference, it is the constraint: the
+  # new aggregate has to agree with work-order.js about who moves a work order
+  # into `awaiting_parts`. Gate 2 asks the model to name that state; a
+  # `Grep(pattern=awaiting_parts)` hands over the string without the file,
+  # which is exactly the model written beside the domain rather than into it.
+  - before: { first: "src/domain/work-order.js", then: "MODEL.md" }
+  # from-skill(sequence): Map the existing landscape: which bounded contexts /
+  # modules already exist, where neighboring concepts live
+  #
+  # docs/architecture.md is where this world states its layering, its tenancy
+  # and the direction imports point - the three constraints the design has to
+  # live inside. A model that never opened it may still be right; it was not
+  # informed.
+  - read_file: { path: "docs/architecture.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "Says what one transaction may change and why" }
+    # trap: "I create the data structures, the logic will come after" - the
+    # anemic model. A model with fields and no invariants IS that answer.
+    - { dimension: trap, text: "Names the invariants the new aggregate holds at all times" }
+    - { dimension: outcome, text: "The placement is argued against a rejected alternative" }
+    - { dimension: restraint, text: "No implementation file is created" }
+  threshold: pass_all

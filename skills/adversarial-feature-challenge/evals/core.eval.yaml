@@ -1,0 +1,139 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. No paired trial exists for this skill on any fixture; the only
+# skill in the base with a real six-pair figure is recurring-bug-root-cause.
+# `probed` until a six-pair run is recorded here.
+#
+# Rebuilt on the `surface` world (2026-09-03). The manifest it replaces gated
+# the word "Severity" and the words "blocking / improvement required /
+# green-light" in the report. Both are written verbatim in the skill's own
+# templates/challenge-report.md, so the format probe passes them against a
+# deliverable that has never seen the repository. None of the gates below keys
+# on anything the template supplies; that is the point of this rebuild.
+#
+# THE SCENARIO
+#
+# src/components/NoticeCard.js takes a `tone` - info, warning or danger - and
+# the notices screen shows a danger advisory about a closed pontoon. The tone
+# does nothing. The card renders:
+#
+#   <section class="notice">
+#     <p class="notice__title notice--danger">…</p>
+#     <div class="notice__body">…</div>
+#     <div class="notice__actions"><button class="btn">…</button></div>
+#   </section>
+#
+# and src/styles/console.css carries `.notice--danger { border-left-color: … }`
+# plus `.notice--danger .notice__actions .btn { … }`. Neither rule fires: the
+# modifier sits on a SIBLING of `.notice__actions`, so the descendant selector
+# never matches, and the border-left-color lands on a `<p>` that has no left
+# border. The closure notice renders exactly like the fuel-barge one.
+#
+# Nothing mechanical in the repository can see it. test/notice.test.js asserts
+# /notice--danger/ against the rendered string; the class IS in the string, so
+# the test passes and always will. There is no type checker, no CSS linter and
+# no browser in the image. `node tools/check/tokens.js src` reads values, not
+# selectors.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# The suite is green and there is a test whose name says it covers the tone. An
+# agent that reads rather than renders sees `notice--danger` in the markup and
+# in the stylesheet and concludes the feature works. An agent that renders but
+# does not open the stylesheet sees the class in the HTML and concludes the
+# same. Only comparing the element tree against the selectors gets there, and
+# the prompt will not ask for that. The world's own argument is in EXPECTED.md
+# under "How a careful unaided agent fails".
+#
+# RESIDUAL RISK, from the world's own list: `node src/main.js /notices` is one
+# command away, and a thorough unaided agent may render and then ask which
+# selector the markup satisfies. That is the fair path.
+fixture: surface
+tier: probed
+prompt: >
+  The severity tones on the notices screen are announced done and the suite is
+  green. The harbourmaster is about to post a pontoon closure through it. Red
+  team it before we ship, and write your challenge report to
+  CHALLENGE-REPORT.md at the repo root.
+preconditions:
+  - file_exists: "CHALLENGE-REPORT.md"
+gates:
+  # Challenge, do not fix. A confirmed flaw becomes a ticket, never a patch of
+  # the thing under attack - and a run that edits src/ has changed the artifact
+  # its own report is about. Scoped to src/ so that a probe script or a scratch
+  # render at the repo root, which IS the archived repro the skill asks for,
+  # stays legal.
+  # from-exit: One ticket opened per confirmed flaw
+  - repo_clean: { in: "src" }
+  # The flaw, named by its mechanism rather than by its symptom. "The danger
+  # card looks the same" is the observation; which element carries the modifier
+  # and which selector it therefore fails to satisfy is the reproduction.
+  # Pristine: CHALLENGE-REPORT.md does not exist. None of these strings is in
+  # templates/challenge-report.md, so the format probe cannot pass this.
+  # from-exit: Each flaw = archived repro (steps + output) + severity
+  - grep_min: { pattern: "notice__title|notice__actions|sibling|descendant|specificity", in: "CHALLENGE-REPORT.md", count: "1" }
+  # An observed output, not a reading. This world can be run - `node
+  # src/main.js /notices` prints the screen, `node --test` runs the suite - so
+  # "no repro was possible" is not available here, and a report with no command
+  # in it has asserted rather than reproduced.
+  # from-exit: Each flaw = archived repro (steps + output) + severity
+  - grep_min: { pattern: "node src/main\\.js|renderScreen|node --test|npm test", in: "CHALLENGE-REPORT.md", count: "1" }
+  # The green test that proves nothing, which is what makes this flaw survive.
+  # A challenge that does not say why the existing coverage missed it will be
+  # closed by whoever reads it next, on the strength of that same test.
+  # from-exit: Each flaw = archived repro (steps + output) + severity
+  - grep_min: { pattern: "notice\\.test\\.js|test/notice|passes anyway|proves nothing|still pass", in: "CHALLENGE-REPORT.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# Never replayed: no trajectory exists for this skill on any fixture, so both
+# checks below are argued rather than measured, and what to read from a low
+# rate is written next to each one.
+#
+# The skill's `Tooling` section names two STATIC assets - templates/challenge-
+# report.md and assets/fuzz-payloads.txt - and no script, so a `tool_used` on
+# either would measure whether the skill's own files were opened, which the
+# report already prints as the skill-read rate. The tooling dimension keys on
+# the project's own command instead. No `tool_absent`: the skill names no
+# forbidden act, and "challenge, do not fix" is already gated on the tree by
+# `repo_clean: { in: "src" }`. No `step_budget`: nothing in the skill bounds
+# the effort, and inventing a bound would gate on cost rather than on work.
+trajectory:
+  # from-skill(tooling): How to start the app and call the API (project dev
+  # commands) - a challenge without a running app proves nothing
+  #
+  # The third gate above greps the DELIVERABLE for one of four spellings of an
+  # observation; this says the command was actually run. That is the anchor's
+  # "evidence it produced, not a claim" in mechanical form, and it is the half
+  # a repository snapshot cannot hold: running a command and saying you ran it
+  # leave identical trees. Scoped to Bash so that reading src/main.js - which
+  # every trial does - is not counted as running it. `npm run render` is the
+  # same command under the package.json alias and reads as a miss; the
+  # fixture's README documents `node src/main.js /berths` under "Running it"
+  # and only package.json carries the alias, so the miss should be rare, and
+  # it costs both arms equally when it happens.
+  - tool_used: { name: "Bash", arg: "src/main.js" }
+  # from-skill(sequence): Context to gather (before acting) - Real surface:
+  # endpoints, forms, async jobs touched by the feature
+  #
+  # The ordering a snapshot erases, and the world's own failure argument:
+  # "an agent that renders but does not open the stylesheet sees
+  # notice--danger in the markup and agrees too" (EXPECTED.md). The stylesheet
+  # is half the surface of a feature whose defect is a selector, so a report
+  # written before console.css was opened was written about the markup alone.
+  # Named bare so a Read, a Grep scoped to the file and a shell `grep -n
+  # notice--danger src/styles/console.css` all count. A trial that reads the
+  # two rules out of a repo-wide grep's OUTPUT and never names the file reads
+  # as a miss - on both arms, which is what keeps the comparison fair.
+  - before: { first: "console.css", then: "CHALLENGE-REPORT.md" }
+judge:
+  criteria:
+    # Protocol 4, and the reason 1.1.0 made the persona switch countable: eval
+    # runs showed agents stopping after one.
+    - { dimension: sequence, text: "Two personas are walked, one of them non-technical" }
+    # Principle: proof mandatory, no offhand claims. Same shape as the anchor's
+    # "refutes a hypothesis with evidence it produced, not with a claim".
+    - { dimension: tooling, text: "The card is compared against the stylesheet, not only read" }
+    # Exit condition: each checklist layer walked or explicitly waived. An
+    # absence admitted out loud, which is what restraint grades.
+    - { dimension: restraint, text: "Layers that cannot be exercised here are waived out loud" }
+  threshold: pass_all

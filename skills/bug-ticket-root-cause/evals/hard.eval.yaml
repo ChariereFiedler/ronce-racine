@@ -1,0 +1,107 @@
+# HARD scenario - a second, quieter defect in the same world, where the
+# symptom's obvious explanation is true and shallow.
+#
+# The preview job renders `--sample 24` and has been green through all four red
+# nights. "It only renders a sample" is correct, immediate, and stops one step
+# short of the defect: the sample is the HEAD of a plan built market-major
+# (tools/sheetmill/plan.js loops markets outer, parts inner, over a sorted
+# directory listing), so the first 24 units are always the same two markets and
+# nothing market-specific can ever reach the preview. Measured on the
+# materialised fixture: `--sample 24` writes dist/cs-CZ (15 pages) and
+# dist/de-DE (9 pages), nothing else.
+#
+# NOT MEASURED. No paired run has been executed against this manifest, or
+# against any scenario of this skill.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. It reads ci/pipeline.yml, sees
+# `--sample 24`, and writes a ticket whose root cause is "the preview renders a
+# sample, so it does not cover everything" - cited at ci/pipeline.yml or at the
+# slice in cli.js, both of which are real lines of code and neither of which
+# explains the symptom it was asked about. It has no reason to open plan.js:
+# the sample is applied in cli.js, after planUnits() has already returned, and
+# the ORDER of the plan is the only thing that makes the sample degenerate.
+# ops/backlog.md states the consequence ("always the same two markets") without
+# the mechanism, so an agent that finds the backlog item can restate the
+# symptom with more confidence and still not have the cause. The sixth of the
+# world's six prior fixes, `fix(publish): match the preview pool to the nightly
+# job`, touched this very job and changed nothing - which is the recurrence
+# note this ticket owes and which no amount of reading ci/pipeline.yml supplies.
+tier: probed
+fixture: incident
+prompt: >
+  Merge requests get a preview build of the catalogue, and it has been green
+  every day of the four nights the nightly publish has been red. Sales-ops
+  asked how that is possible and what the preview is actually worth. Write it
+  up as a bug ticket. No tracker is configured here: write the ticket to
+  BUG-TICKET.md.
+preconditions:
+  - file_exists: "BUG-TICKET.md"
+gates:
+  # from-exit: Root cause = mechanism + cited `file:line`
+  #
+  # The mechanism is the ordering of the plan, not the existence of the sample.
+  # Same pattern as the core scenario and for the same reason: it keys on the
+  # subject rather than on the shape of a citation.
+  # Known false negative, accepted and stated: an answer that describes the
+  # mechanism correctly while citing only cli.js ("the slice takes the head of
+  # a plan grouped by market") fails this gate. The second gate below is what
+  # catches that answer, and either one alone would be the wrong instrument.
+  - grep_min: { pattern: "plan\\.js|planUnits|discoverMarkets", in: "BUG-TICKET.md", count: "1" }
+  # from-exit: Root cause = mechanism + cited `file:line`
+  #
+  # The mechanism, stated concretely: WHICH two markets. `cs-CZ` is the first
+  # entry of the sorted market listing and the 15 units of the sample that the
+  # run tail never prints - ops/log-tails.md shows only the preview's last line,
+  # `de-DE/shaft-collar-25 (unit 24/24)`, so de-DE is copyable from the fixture
+  # and cs-CZ is not. Writing it requires having computed or run the plan.
+  # Measured: `node tools/sheetmill/cli.js . --sample 24` writes cs-CZ and
+  # de-DE only. Not in the prompt, not in templates/bug-ticket.md, not in the
+  # template-only probe's deliverable.
+  - grep_min: { pattern: "cs-CZ", in: "BUG-TICKET.md", count: "1" }
+  # DERIVES FROM (uncitable - see the core scenario's note): "No application
+  # file modified". The tempting act here is to change the sample size in
+  # ci/pipeline.yml, which would be a fix rather than a ticket and would leave
+  # the mechanism unexamined.
+  - repo_clean: { except: "BUG-TICKET.md" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Not
+# replayed against real trials - both checks proved able to pass and to fail
+# against a synthetic trajectory, as in the core scenario.
+trajectory:
+  # from-skill(sequence): 2. Root-cause investigation - Git archaeology:
+  # `git log`/`git blame` on the suspect files -> introducing commit
+  #
+  # The recurrence note this ticket owes lives nowhere else: `fix(publish):
+  # match the preview pool to the nightly job` touched this very job and
+  # changed nothing, and no amount of reading ci/pipeline.yml supplies it. A
+  # ticket written before the log was opened cannot contain it, and the tree
+  # cannot tell the two orders apart.
+  - before: { first: "git log", then: "BUG-TICKET.md" }
+  # from-skill(sequence): 2. Root-cause investigation - Read the real production
+  # code, trace the flow end to end
+  #
+  # The whole scenario is the difference between reading ci/pipeline.yml, where
+  # `--sample 24` is written, and reading the planner, where the ORDER that
+  # makes the sample degenerate is decided. The sample is applied in cli.js
+  # after planUnits() has returned; nothing on the path from the symptom leads
+  # to plan.js. The first gate asks the ticket to name it - this asks whether
+  # it was opened, which is what "read the real production code" says.
+  # The needle is the file name rather than its path so that a read from any
+  # working directory counts. It cannot collide with `test/plan.test.js`, which
+  # does not contain the string `plan.js`.
+  - read_file: { path: "plan.js" }
+judge:
+  criteria:
+    # from-skill(trap): "Symptom = cause" -> "Trace the flow to the point of
+    # divergence." "It only renders a sample" is the symptom restated; the
+    # divergence is the market-major order of the plan.
+    - { dimension: trap, text: "Explains why the sample is always the same markets, not merely that it is a sample" }
+    # `fix(publish): match the preview pool to the nightly job` is in the log,
+    # and Workflow 4's recurrence section is what it is owed to.
+    - { dimension: outcome, text: "Notes the earlier change to this job that made no difference" }
+    # Priority argued against what the job is for, not against a template.
+    - { dimension: outcome, text: "Distinguishes what the sample proves from what it cannot" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.

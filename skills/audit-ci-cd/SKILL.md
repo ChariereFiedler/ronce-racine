@@ -116,9 +116,3 @@ Each file contains the statement, the items to analyze/check, the bash commands,
 - [ ] Domain score computed (average excluding N/A + weighted score, "X scored out of Y")
 - [ ] Report produced in the output format
 - [ ] Non-auditable items listed
-
-## Changelog
-
-- 1.0.1 (2026-07-20) - scoring aligned with scoring-model.md: flat mean only; criticality kept for remediation priority, weights removed from the score
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

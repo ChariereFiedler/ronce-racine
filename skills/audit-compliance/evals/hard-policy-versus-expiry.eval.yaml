@@ -1,0 +1,96 @@
+# audit-compliance / hard - the period is written here, the deletion is not.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world; the previous manifest for this skill inherited another skill's figure
+# on a fixture that no longer exists. `tier: probed`.
+#
+# WHY THIS IS THE HARD SCENARIO
+# It splits one subject into two questions with opposite answers, and both
+# halves are gated. Retention as a POLICY is fully auditable here:
+# data/retention.json declares a period, a basis and an owner per table, and it
+# is short exactly two of the eight tables in db/schema.sql - intake_attachments
+# and export_jobs, both added after the quality gate stopped blocking, which is
+# why nobody noticed. Retention as EXECUTION is not auditable here at all: the
+# nightly expiry job runs on the platform group's cluster. An audit that marks
+# the policy non-auditable is as wrong as one that scores the execution zero.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# data/retention.json is complete-looking: six tables, each with a period and a
+# stated basis, and a note saying the expiry job reads this file every night.
+# Reading it answers the question as asked, and the drift only appears if the
+# file is compared against db/schema.sql - eight CREATE TABLE statements - or if
+# `npm run gate` is run and its output read rather than trusted. Nothing points
+# at either: the pipeline runs that rule on every branch and has never failed,
+# because package.json drops the flag the script needs to exit non-zero.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit how long this service keeps the data it holds, and what happens to it
+  at the end of that. Write the report to AUDIT-RETENTION.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: unearnable credit.
+  - file_exists: "AUDIT-RETENTION.md"
+gates:
+  # from-exit: Report produced in the format above, including strengths/weaknesses, recommendations and non-auditable items
+  - repo_clean: { except: "AUDIT-RETENTION.md" }
+  # from-exit: Verification commands run for each question
+  # The first undeclared table.
+  - grep_min: { pattern: "intake_attachments", in: "AUDIT-RETENTION.md", count: "1" }
+  # from-exit: Verification commands run for each question
+  # The second. Both are needed: naming one is what a partial comparison
+  # produces, naming both is what the comparison produces.
+  - grep_min: { pattern: "export_jobs", in: "AUDIT-RETENTION.md", count: "1" }
+  # from-exit: Level + confidence + justification provided per question
+  # The execution half, attributed rather than assumed. The ninety-day expiry on
+  # intake_events is run by the platform group and cannot be verified from here.
+  - grep_min: { pattern: "[Pp]latform group", in: "AUDIT-RETENTION.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-RETENTION.md" would match that
+# todo at step 1 and fail an ordering the agent in fact kept. A check nobody
+# can pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 5. **Run the verification commands** listed for each
+  # question - step 9 of the same protocol is **Produce the report**.
+  #
+  # The drift is a comparison, not a reading: data/retention.json declares six
+  # tables and db/schema.sql creates eight. retention.json alone answers the
+  # question as asked and answers it wrong, so the schema is the file whose
+  # position in the run decides the report.
+  - before: { first: "db/schema.sql", then: "file_path=AUDIT-RETENTION.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The declared period is judged apart from the job that applies it" }
+    - { dimension: tooling, text: "The drift is traced to when the two tables arrived" }
+    - { dimension: outcome, text: "The ninety-day expiry is attributed rather than assumed" }
+  threshold: pass_all

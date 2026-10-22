@@ -74,13 +74,3 @@ A scenario like "I click the card → I see the detail" says nothing about the s
 
 - `scripts/audit-entry-points.ts <ComponentName|-> <route|-> [rootDir]` - pre-fills the audit: call sites, incoming links to the route, navigation files (sidebar/header/menu) to check
 - `templates/ticket-frontend.md` - ticket skeleton with the blocking audit section
-
-## Changelog
-
-- 1.0.3 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.2 (2026-08-08) - audit-entry-points.ts escapes the component name before building its regex
-
-- 1.0.1 (2026-07-20) - co-located test procedure for audit-entry-points.ts (scripts/audit-entry-points.test.ts)
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

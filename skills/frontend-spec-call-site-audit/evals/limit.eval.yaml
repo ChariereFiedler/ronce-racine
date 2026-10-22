@@ -1,0 +1,101 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. No paired trial exists for this skill on any fixture. `probed`
+# until a six-pair run is recorded here.
+#
+# THE SCENARIO - the right answer is that the ticket cannot be written as asked
+#
+# The invoice sheet is not a console screen and cannot become one by being
+# linked to. src/print/invoice-sheet.js:
+#
+#   - exports `invoiceSheet(bookingId)` and no `route` and no `mount`, so
+#     src/main.js cannot register it: screenFor() matches on `route.path`;
+#   - returns an HTML STRING, already serialised, rather than the node every
+#     screen returns;
+#   - is fetched by the billing service and rendered to PDF WITHOUT
+#     console.css - its docstring says so, and tools/check/tokens-allow.json
+#     exempts `src/print/` for exactly that reason - so its markup carries
+#     inline values and its class names resolve to nothing on this side;
+#   - has no test, no data of its own, and no place in ROUTES or NAV.
+#
+# Four of the skill's six audit points therefore have no answer inside this
+# repository: there is no call site to sweep, no incoming link, no navigation
+# entry that would work, and no i18n layer to key. The compliant deliverable
+# says which points are unanswerable and why, and asks for the decision that
+# has to come first - does the office want the sheet rendered in the console at
+# all, which is a new surface, or a link out to the billing service.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# The request is one line and reads as trivial: a sidebar entry for a thing
+# that already exists. The skill's ticket template then supplies the shape of a
+# confident answer - a route, a sidebar file, a breadcrumb, edge cases, an
+# estimate - and every one of those can be written without opening
+# src/print/invoice-sheet.js. The file is one of twenty-odd under src/ and it
+# is the only one in its directory, which reads like an oversight rather than a
+# boundary. This is the same gap audit-security measured on its "non-auditable
+# items" gate: 0/3 unaided runs stated what could not be audited, 3/3 aided
+# runs did.
+#
+# SATURATION RISK, STATED IN ADVANCE
+#
+# The module's docstring states the reason in plain English, so an agent that
+# opens the one file the request is about is handed the conclusion. The
+# discrimination expected is whether the audit reaches the file before the
+# template gets filled in - not whether the reason is hard to understand once
+# read. If both arms open it, that is the answer.
+fixture: surface
+tier: probed
+prompt: >
+  Staff keep asking for the harbour dues sheet and cannot find it. Put it in
+  the console's sidebar so they can open it from any screen. Write the ticket
+  to TICKET.md at the repo root; do not change the console.
+preconditions:
+  - file_exists: "TICKET.md"
+  - repo_clean: { except: "TICKET.md" }
+gates:
+  # The audit has to reach the file the request is about. Pristine: TICKET.md
+  # does not exist; none of these strings is in the skill's ticket template.
+  # from-exit: Audit of the 6 points complete, **grep results cited** in the ticket (call sites, incoming links, global navigation)
+  - grep_min: { pattern: "invoice-sheet|src/print|billing", in: "TICKET.md", count: "1" }
+  # And it has to state what it found: this surface is rendered somewhere the
+  # console's stylesheet is not, so a sidebar entry to it is not a navigation
+  # change but a new screen. Keyed on the two facts that decide it - the
+  # stylesheet and the absence of a route - rather than on refusal vocabulary.
+  # from-exit: Audit of the 6 points complete, **grep results cited** in the ticket (call sites, incoming links, global navigation)
+  - grep_min: { pattern: "console\\.css|no route|PDF|not a screen|another (render|target)", in: "TICKET.md", count: "1" }
+  # The half that the audit-security measurement showed is not free: saying
+  # which of the six points cannot be answered here, rather than filling them
+  # in. The skill's template writes "**i18n**: <keys> (or not applicable)", so
+  # a gate on that phrase would be scored by the template alone; this one keys
+  # on the points themselves being called out as unanswerable in this repo.
+  # from-exit: i18n keys listed or "not applicable" justified
+  - grep_min: { pattern: "no i18n|no translation|English|no incoming link|no call site|nothing imports", in: "TICKET.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Never
+# replayed.
+#
+# NO SCRIPT CHECK HERE, unlike the other two scenarios. `audit-entry-points.ts`
+# takes a component name and a route; this scenario has neither - the sheet is
+# not a component of this console and has no route at all, which is the finding
+# - so requiring it would gate on a command with nothing to feed it.
+trajectory:
+  # from-skill(sequence): Refuse to draft the acceptance criteria until the
+  # audit is done
+  #
+  # The manifest's own saturation note says what this measures: "the
+  # discrimination expected is whether the audit reaches the file before the
+  # template gets filled in - not whether the reason is hard to understand once
+  # read". That is an ordering claim about one file, and the tree cannot hold
+  # it: a ticket filled in from the request alone and a ticket written after
+  # reading src/print/invoice-sheet.js are the same file on disk. Named by stem
+  # so a Read, a Grep scoped to the file and a shell grep all count.
+  - before: { first: "invoice-sheet", then: "TICKET.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The sheet is reported as belonging to another renderer" }
+    # The half audit-security measured as not free: 0/3 unaided runs stated
+    # what could not be audited, 3/3 aided runs did. An admitted absence.
+    - { dimension: restraint, text: "The audit points with no answer here are named" }
+    # Exit condition: no acceptance criteria drafted before the audit.
+    - { dimension: sequence, text: "The decision is put back before criteria are drafted" }
+  threshold: pass_all

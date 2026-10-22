@@ -1,9 +1,9 @@
 ---
 name: bug-ticket-root-cause
 description: Use when reporting or documenting an observed bug as a ticket (any tracker - GitLab, Jira, GitHub) - "report a bug", "signale un bug", "create a bug ticket", "crée un ticket de bug", "it doesn't work", "ça ne marche pas", a regression to document without fixing it now.
-version: 1.0.1
+version: 1.0.2
 metadata:
-  last-reviewed: 2026-08-08
+  last-reviewed: 2026-09-04
   category: bug
 ---
 
@@ -75,14 +75,8 @@ If the scope has already had 2+ recent fixes → a "Recurrence" section in the t
 ## Exit condition
 
 - [ ] Root cause = mechanism + cited `file:line` (or explicitly `to investigate` for lack of code access)
-- [ ] Confirmation-tests table filled - each test fails before the fix, passes after
+- [ ] Confirmation-tests table filled - each test named, with the failure it must show against the code as it stands and the pass it must show once fixed
 - [ ] 3 scenarios present (repro, nominal post-fix, related edge case)
 - [ ] Argued priority
 - [ ] No application file modified
 - [ ] Recurrence checked (section added + `recurring-bug-root-cause` if 2+ recent fixes)
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

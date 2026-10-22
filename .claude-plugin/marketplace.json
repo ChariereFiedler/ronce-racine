@@ -12,6 +12,13 @@
       "description": "Skills and agents for everyday engineering work, each evaluated against a real agent run before it ships.",
       "category": "engineering",
       "keywords": ["skills", "code-review", "testing", "frontend", "audit"]
+    },
+    {
+      "name": "ronce",
+      "source": "./mods/ronce",
+      "description": "Guardrails, output shaping and telemetry for Claude Code sessions, driven by a per-project policy.",
+      "category": "engineering",
+      "keywords": ["hooks", "guardrails", "telemetry", "mods"]
     }
   ]
 }

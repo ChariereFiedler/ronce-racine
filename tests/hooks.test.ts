@@ -12,7 +12,8 @@ import {
 } from "./helpers.js";
 import { buildMemo, persistMemo, repoSlug, branchSlug } from "../hooks/session-writer.js";
 import { truncateOutput, THRESHOLD } from "../hooks/truncate-bash-output.js";
-import { quoteForShell } from "../hooks/truncate-output.js";
+import { isBoundedGrep, quoteForShell } from "../hooks/truncate-output.js";
+import { CATALOG } from "../src/catalog.js";
 
 initWork();
 
@@ -60,6 +61,62 @@ test("truncate-output: wraps cargo with the runtime a target repo actually has",
 test("truncate-output: no longer touches `npm ci` (bash-npm-silent owns it)", () => {
   const cmd = updatedCommand(hook("truncate-output.ts", { tool_name: "Bash", tool_input: { command: "npm ci" } }));
   assert(cmd === null, `npm ci must not be double-handled, got ${JSON.stringify(cmd)}`);
+});
+
+// Reading files through the shell is verbose BY CONSTRUCTION, proportionally to
+// the file - unlike a build, which is verbose by accident. Measured on a real
+// agent run (2026-09-19, $14.15): 43 of its 101 Bash calls were `cat`/`sed -n`/
+// `grep` reads, 125k characters poured into a context that every later call
+// pays for again.
+test("truncate-output: wraps unbounded shell reads", () => {
+  for (const command of [
+    "cat scripts/ci/visual-diff.ts",
+    "sed -n '3111,3200p' .gitlab-ci.yml",
+    'grep -rn "pattern" --include="*.ts" .',
+  ]) {
+    const cmd = updatedCommand(hook("truncate-output.ts", { tool_name: "Bash", tool_input: { command } }));
+    assert(cmd !== null, `${command} should be wrapped`);
+  }
+});
+
+// A read that already carries its own bound is left alone: re-wrapping it would
+// cost readability for an output that would never reach the threshold.
+test("truncate-output: leaves bounded reads alone", () => {
+  for (const command of [
+    "cat f.ts | head -20",
+    "grep -l motif src/",
+    "grep -rl motif src/",
+    "grep -c motif src/",
+    "grep -m 5 motif src/",
+    "grep --max-count=5 motif src/",
+    "cat > f.ts <<'EOF'",
+  ]) {
+    const cmd = updatedCommand(hook("truncate-output.ts", { tool_name: "Bash", tool_input: { command } }));
+    assert(cmd === null, `${command} must stay untouched, got ${JSON.stringify(cmd)}`);
+  }
+});
+
+// `--include="*.ts"` contains `-incl`, which a naive "does it carry -l?" test
+// reads as a grouped `-l` - and a `grep -rn --include` is precisely the
+// unbounded form we want wrapped.
+test("truncate-output: a long flag is not a grouped short flag", () => {
+  assert(!isBoundedGrep('grep -rn "x" --include="*.ts" .'), "--include must not read as -l");
+  assert(isBoundedGrep("grep -rl x src/"), "-rl carries l");
+  assert(isBoundedGrep("grep --files-with-matches x src/") === false, "long form is not a short flag");
+});
+
+// Le hook émettait trois skills quoi qu'il arrive. Sur un prompt qui n'en appelle
+// aucune, il en nommait donc trois au hasard — et dépensait sa crédibilité. Le
+// seuil est mesuré sur le catalogue réel (2026-09-19) : les prompts qui appellent
+// vraiment une skill scorent 17, 7, 3 ; ceux qui n'ont rien à y faire, 1 ou 0.
+test("skill-reminder: names a skill when the prompt actually calls one", () => {
+  const out = hook("skill-reminder.ts", { prompt: "reproduis et analyse ce bug, faut-il corriger maintenant ou ouvrir un ticket" }).stdout;
+  contains(out, "bug-triage-structured", "the prompt names this skill's own territory");
+});
+
+test("skill-reminder: stays silent when nothing is relevant", () => {
+  const out = hook("skill-reminder.ts", { prompt: "quelle heure est-il" }).stdout;
+  assert(out.trim() === "", `no suggestion is a valid answer, got ${JSON.stringify(out)}`);
 });
 
 // ---- session memo trio ---------------------------------------------------
@@ -214,9 +271,16 @@ test("every built hook still fires when its own path holds a space", () => {
     { file: "bash-npm-silent.ts", input: { tool_name: "Bash", tool_input: { command: "npm ci" } }, expect: "--silent" },
   ];
   for (const c of cases) {
-    const built = join(ROOT, "dist", "hooks", c.file.replace(/\.ts$/, ".mjs"));
+    // Tous les fichiers du hook, pas seulement son point d'entrée : un hook
+    // multi-fichiers importe ses frères, et il meurt EXACTEMENT comme le défaut
+    // que ce test traque — exit 0, stdout vide — si l'un d'eux manque à côté de
+    // lui. C'est ce que l'installeur copie, via la même déclaration.
+    const entry = CATALOG.find((i) => i.kind === "hook" && i.name === c.file)!;
+    for (const file of entry.files ?? [c.file]) {
+      const built = join(ROOT, "dist", "hooks", file.replace(/\.ts$/, ".mjs"));
+      writeFileSync(join(spaced, file.replace(/\.ts$/, ".mjs")), readFileSync(built, "utf8"));
+    }
     const copy = join(spaced, c.file.replace(/\.ts$/, ".mjs"));
-    writeFileSync(copy, readFileSync(built, "utf8"));
     const r = spawnSync("node", [copy], { encoding: "utf8", input: JSON.stringify(c.input) });
     assert((r.stdout ?? "").trim().length > 0, `${c.file} produced nothing from a path with a space: its entry guard did not fire`);
     contains(r.stdout, c.expect, `${c.file} ran but did not do its job`);

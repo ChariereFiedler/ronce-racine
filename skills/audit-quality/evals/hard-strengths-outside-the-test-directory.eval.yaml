@@ -1,0 +1,113 @@
+# audit-quality / hard - the strengths that do not live in test/.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world; only `recurring-bug-root-cause`, on `incident`, carries a paired figure
+# and nothing here inherits it. `tier: probed` is the honest declaration - the
+# admission checks have been run (eval-lint, eval.ts --dry-run, eval-probe), the
+# six-pair run has not.
+#
+# WHY THE GATES LOOK LIKE THIS
+# The fixture ships the house format (docs/audits/TEMPLATE.md and three filled
+# reports), so the audit vocabulary is free to both arms and no gate greps for
+# it. What is gated is the level two questions carry, against a world whose
+# answer is known, and the file that answer rests on.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# Asked what happens to a change between merge and live, the natural sweep is
+# test/, ci/pipeline.yml and package.json. That sweep finds unit tests only, no
+# coverage tool and an advisory quality job, and produces a uniformly bleak
+# report. Two of this world's genuine strengths are outside it: the single
+# artifact is built once by tools/release/package.js and promoted unchanged by
+# ci/promote.sh, and tools/release/smoke.js runs after every promotion and fails
+# the deploy job. Both are questions on the grid (QA-03, QA-02) and neither is
+# in the directory the prompt points at. The uneven world is the point: an audit
+# that only finds what is missing scores this domain wrong in the other
+# direction.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit what happens to a change in this project between the merge and the
+  live service. Write the report to AUDIT-QA-DEVOPS.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: an agent following
+  # no skill produces it too, so it earns no credit among the gates.
+  - file_exists: "AUDIT-QA-DEVOPS.md"
+gates:
+  # from-exit: Report produced in the output format
+  # The deliverable is a report; the audit must not edit what it grades.
+  - repo_clean: { except: "AUDIT-QA-DEVOPS.md" }
+  # from-exit: The 16 QA questions scored 0-4 or N/A, with justification and confidence
+  # QA-02 (post-deployment smoke tests, must) is a real strength here: three
+  # checks run straight after each promotion and fail the job. Scoring it 0 or 1
+  # because there is no test/ file for it is the failure this scenario exists to
+  # catch. The gate keys on the level cell, not on any wording.
+  - grep_min: { pattern: "[Qq][Aa]-02[^\n]*\|\s*[234]\s*\|", in: "AUDIT-QA-DEVOPS.md", count: "1" }
+  # from-exit: The 16 QA questions scored 0-4 or N/A, with justification and confidence
+  # QA-03 (single artifact promotion) likewise: one tarball per tag, promoted
+  # unchanged to staging then live.
+  - grep_min: { pattern: "[Qq][Aa]-03[^\n]*\|\s*[234]\s*\|", in: "AUDIT-QA-DEVOPS.md", count: "1" }
+  # from-exit: Verification commands executed for every scored question
+  # The file the smoke answer rests on. A report that scores QA-02 from the
+  # pipeline's job names alone never opens it.
+  - grep_min: { pattern: "smoke\.js|smoke\.check|release/smoke", in: "AUDIT-QA-DEVOPS.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-QA-DEVOPS.md" would match that
+# todo at step 1 and fail an ordering the agent in fact kept. A check nobody
+# can pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 2. **QA & DevOps section**: read
+  # reference/qa-devops.md. For each question QA-01 to QA-14, run the listed
+  # bash commands - step 5 of the same protocol is **Produce the report**.
+  #
+  # QA-02 is a genuine strength and it lives outside test/, which is where the
+  # prompt points. tools/release/smoke.js is the file the level rests on; a
+  # report written from the pipeline's job names alone never opens it and
+  # scores the domain wrong in the generous-looking direction of bleakness.
+  - before: { first: "tools/release/smoke.js", then: "file_path=AUDIT-QA-DEVOPS.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "Post-deploy checks are credited with failing the deploy job" }
+    - { dimension: outcome, text: "The artifact reaching live is the one built on trunk" }
+    - { dimension: trap, text: "The advisory quality job is not counted as a barrier" }
+  threshold: pass_all

@@ -91,9 +91,3 @@ A DS component is not just a view file: it is a file **+ its enforcement**. With
 ## Tooling
 
 - No generic script: raw-pattern detection (`grep`) and the lint rule are stack-specific; tool them in the project skill.
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.0 (2026-06-19) - initial version generalized from a project-specific design-system-extension workflow

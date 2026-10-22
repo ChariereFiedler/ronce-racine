@@ -104,9 +104,3 @@ Pipeline still `failed` with no ticket and no fix = not done.
 ## Tooling
 
 - The CI provider's CLI depending on the project (`gh run view/rerun`, `glab ci`, REST API) - spot the available command before acting, do not hardcode a single provider.
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.0 (2026-06-19) - initial version, derived from a project workflow and decoupled from the CI provider

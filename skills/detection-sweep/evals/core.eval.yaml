@@ -1,0 +1,151 @@
+# CORE scenario - sweep the whole project and report what is wrong with it.
+#
+# NOT MEASURED. No paired run has been executed against this manifest or
+# against any scenario of this skill. What is on record is that the skill's
+# previous manifest came back `saturated` on gates over 2 pairs on 2026-09-02,
+# with `repo_clean` as its only gate and its report delivered in the answer
+# where nothing could grep it. This scenario names a report file so the
+# deliverable lands on disk, and gates two things that a report has to have
+# done work to contain.
+#
+# WHAT THE SWEEP ACTUALLY FINDS HERE, measured by running
+# `skills/detection-sweep/scripts/sweep.ts` against the materialised fixture:
+#
+#   TODO/FIXME/HACK 0 · suppressions 0 · debug statements 8 · hardcoded waits 0
+#   disabled tests 4 · swallowed errors 0 · secrets 0 · large files 0
+#
+# All twelve are false positives. The eight "debug statements" are the
+# console.log lines that ARE the output of three command-line tools - the run
+# tail, the staging confirmation, the link-check summary. The four "disabled
+# tests" are `process.exit(` matching the `xit\\(` pattern. Nothing in the
+# static blocks is a defect. The one real failure in this repository is found
+# by RUNNING a block: `npm run build` exits 1, deterministically, and has for
+# four nights, while `npm test` (15 tests) and `npm run check:links` both pass.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. Asked to check a project and report
+# problems, the default is a static read: grep for the usual smells, list the
+# TODOs, note the console.logs, comment on structure. In this repository that
+# produces a report with twelve findings, none of which is real, and misses the
+# only thing that is - because the only way to see it is to run the build,
+# which takes ten seconds and which nothing in the prompt asks for. The second
+# default failure is the opposite one: run the build, see it fail, and fix it,
+# which is what "check the whole project and report" does not ask for and what
+# the exit condition's "zero code changes" forbids.
+tier: probed
+fixture: incident
+prompt: >
+  Go over this whole project and report what is wrong with it - we are behind
+  on maintenance and nobody has looked at it as a whole for months. No tracker
+  is configured here: write the report to SWEEP-REPORT.md and one markdown file
+  per ticket under tickets/.
+preconditions:
+  - file_exists: "SWEEP-REPORT.md"
+gates:
+  # from-exit: All detected blocks were run (or explicitly marked skipped in the report)
+  #
+  # The three blocks this repository declares are in package.json: `test`,
+  # `build` and `check:links`. Two pass and one fails, and the failure has a
+  # name. A report that contains it either ran the block or read the pasted
+  # tail in ops/; either way it got to the block rather than stopping at a
+  # grep. A report that contains neither the name nor a "not run" statement has
+  # not done the exit condition's first line.
+  # Not in the skill's own text and not in any template, so the template-only
+  # probe fails this gate.
+  - grep_min: { pattern: "RetentionBudgetExceeded", in: "SWEEP-REPORT.md", count: "1" }
+  # from-exit: Zero code changes, zero commits during the sweep
+  #
+  # The exit condition's own words, and the line that separates a sweep from a
+  # fix-as-you-go session. It is live here rather than decorative: the build is
+  # red, the repair is one line, and ops/backlog.md pre-authorises it.
+  # `repo_clean` cannot see commits - the snapshot compares file contents and
+  # prunes .git - so the "zero commits" half of that line is NOT covered by
+  # this gate. Recorded rather than claimed.
+  # Known false positive, accepted: an agent that runs tools/portal/stage.js
+  # creates staging/, which the snapshot does not prune.
+  - repo_clean: { except: "SWEEP-REPORT.md, tickets/" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# NOT REPLAYED against real trials: the only trajectories this repository holds
+# are the twelve of the 2026-09-03 anchor run, which exercised another skill.
+# Every check below was instead proved able BOTH to pass and to fail, against a
+# synthetic trajectory rendered exactly the way `actionsOf` renders a real one.
+# A check nobody can pass penalises both arms equally, and this repository has
+# paid for that mistake twice already.
+trajectory:
+  # from-skill(tooling): `scripts/sweep.ts [path]` - read-only detection sweep
+  #
+  # The skill's own instrument, and an act the unaided arm cannot perform at
+  # all: the script does not exist in a repository that never installed the
+  # skill. The anchor's equivalent - `detect-recurring-fixes` - measured 0/6
+  # unaided against 5/6 aided over the twelve trials of 2026-09-03, the
+  # cleanest separation this world has produced.
+  # `shallow` in the probe's sense, knowingly: running a detector is an act,
+  # not an understanding. Whether its twelve false positives were READ is the
+  # first judge criterion below.
+  - tool_used: { name: "Bash", arg: "sweep.ts" }
+  # from-skill(tooling): Run ALL the blocks, even after failures - a partial
+  # sweep gives a false picture of health
+  #
+  # The check the first gate above cannot be. That gate's own comment admits
+  # it: a report naming `RetentionBudgetExceeded` "either ran the block or read
+  # the pasted tail in ops/log-tails.md". Those are two different actions and
+  # this is the grading moment that can tell them apart.
+  # `npm run build` is this fixture's declared block - package.json, and the
+  # second line of its README - which is where step 1 of this skill builds its
+  # list from. Known false negative, accepted: ci/pipeline.yml spells the same
+  # run `node tools/sheetmill/cli.js .`, and an agent that copies the CI form
+  # rather than the declared script fails this check.
+  - tool_used: { name: "Bash", arg: "npm run build" }
+  # from-skill(sequence): Detect the available checks: `package.json` scripts,
+  # `Makefile`, `Cargo.toml`, CI config
+  #
+  # Step 1 before step 2, which is an ordering claim and therefore invisible in
+  # the tree: the same report and the same tickets result whether the project's
+  # own declaration was read first or never opened at all.
+  # Expected to be a floor rather than a discriminator, and kept for the reason
+  # the anchor keeps its own floor: a run that reports on blocks it never
+  # enumerated is the failure step 1 exists to prevent, and this is what
+  # catches it the day one appears.
+  #
+  # `then` is the report and not `tickets/`, and the difference is measured
+  # rather than aesthetic. A rendered action carries its arguments in full, so
+  # a report that names package.json in its block table is itself a hit on
+  # `first`; with the tickets as `then`, a run that wrote the report first
+  # would satisfy the ordering having read nothing. Anchored on the report, the
+  # only prose that could stand in for the read is the `then` action itself,
+  # and an equal position fails. Residual leak, accepted and stated: a ticket
+  # written before the report and naming package.json.
+  - before: { first: "package.json", then: "SWEEP-REPORT.md" }
+  # from-skill(restraint): Red flags - STOP: A `git commit` during the sweep
+  #
+  # The half of "zero code changes, zero commits" that `repo_clean` cannot
+  # reach - it compares file contents and prunes .git, so a commit leaves it
+  # nothing to see. Recorded as a hole in that gate's comment since it was
+  # written; this is the moment that can close it.
+  # The needle is `git commit -m` and not `git commit`, for a measured reason:
+  # a rendered action carries its arguments IN FULL, so a report containing the
+  # sentence "no git commit during the sweep" renders as
+  # `Write(file_path=SWEEP-REPORT.md content=...git commit...)` and trips the
+  # bare needle. Verified on a synthetic clean run that committed nothing: the
+  # bare needle counted that write as an occurrence and failed the run, which
+  # would penalise precisely the arm that read this skill's red flags. Known
+  # escapes, accepted: `git commit -a` and `--amend`.
+  - tool_absent: { name: "git commit -m" }
+judge:
+  criteria:
+    # The twelve static signals are noise, and saying so is the triage.
+    # `tooling` rather than `outcome`: what it grades is whether the sweep's own
+    # output was READ, which is exactly what a `tool_used` check cannot say -
+    # the design note calls that check `shallow` for this reason, and this
+    # criterion is its complement.
+    - { dimension: tooling, text: "Explains why the flagged console output is not a defect" }
+    # from-skill(trap): "12 errors = 12 tickets, that's too many" -> "Group by
+    # cause, not by occurrence. But grouping is not omitting."
+    - { dimension: trap, text: "Groups its findings by cause rather than by occurrence" }
+    # The exit condition's report line, earned rather than templated.
+    - { dimension: outcome, text: "Reports the status of each block it could run" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.

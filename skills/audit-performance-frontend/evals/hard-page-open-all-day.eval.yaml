@@ -1,0 +1,113 @@
+# audit-performance-frontend / hard - a page that is never reloaded.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world; the previous manifest for this skill inherited another skill's figure
+# on a fixture that no longer exists. `tier: probed`.
+#
+# WHY THIS IS THE HARD SCENARIO
+# Everything about this page is small, and smallness is what makes the real
+# question invisible. Thirty-two lines, one fetch, one table. But the first line
+# of public/console.js says the duty officer keeps it open all day on the wall
+# screen, and setInterval fires every ten seconds with no visibility check and
+# no comparison against the previous payload, replacing the entire table body
+# through innerHTML each time. Over an eight-hour shift that is roughly three
+# thousand full rebuilds of a DOM subtree, on a page nobody reloads. The
+# questions that bite are the ones about allocation pressure and detached nodes
+# rather than about first paint, and they only bite once the session length is
+# taken as a fact about the workload.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# A performance review of a 69-line page reasonably concludes there is nothing
+# to say: no bundle, no images, no fonts, no framework, one request every ten
+# seconds against a local service. Load time is genuinely fine and load time is
+# what a frontend audit measures. Nothing in the prompt or in the markup forces
+# the question "what does this cost after eight hours", and the one sentence
+# that would - a comment on line 1 of the script - reads as context rather than
+# as a workload description. Bounding the symptom rather than the workload is
+# the plausible half-answer here, and it is the one this scenario has to be able
+# to tell from the answer.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  The duty officer's board runs on a screen that nobody reloads. Audit its
+  performance. Write the report to AUDIT-CONSOLE-PERF.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: unearnable credit.
+  - file_exists: "AUDIT-CONSOLE-PERF.md"
+gates:
+  # from-exit: Report produced in the output format, with strengths/weaknesses, prioritized recommendations, and non-auditable items
+  - repo_clean: { except: "AUDIT-CONSOLE-PERF.md" }
+  # from-exit: Verification commands run for each scored question
+  # The polling loop, by name. It is the mechanism the whole answer turns on.
+  - grep_min: { pattern: "setInterval", in: "AUDIT-CONSOLE-PERF.md", count: "1" }
+  # from-exit: All 29 questions reviewed (scored 0-4 or marked N/A with justification)
+  # One of the two long-session questions carries a level rather than being
+  # waved away as unprofilable: PF-20 (allocation pressure) or PF-21 (memory
+  # leaks and detached DOM). The pattern this page has is statically visible, so
+  # withholding both is a decision this gate refuses.
+  - grep_min: { pattern: "PF-2[01][^\n]*\|\s*[0-4]\s*\|", in: "AUDIT-CONSOLE-PERF.md", count: "1" }
+  # from-exit: All 29 questions reviewed (scored 0-4 or marked N/A with justification)
+  # The restraint is still required: no profiler, no browser, no build step, so
+  # several of the twenty-nine cannot be answered from here.
+  - grep_min: { pattern: "\|\s*N/A\s*\|", in: "AUDIT-CONSOLE-PERF.md", count: "3" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-CONSOLE-PERF.md" would match that
+# todo at step 1 and fail an ordering the agent in fact kept. A check nobody
+# can pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 8. **Run the verification commands** for each
+  # question (see grids) - step 11 of the same protocol is **Produce the
+  # report**.
+  #
+  # The workload is a sentence on line 1 of public/console.js and the mechanism
+  # is nine lines below it. Everything that makes this scenario hard - three
+  # thousand full rebuilds a shift - is downstream of having that file open
+  # before the verdict rather than after it.
+  - before: { first: "public/console.js", then: "file_path=AUDIT-CONSOLE-PERF.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The all-day session is what makes the redraw cost matter" }
+    - { dimension: outcome, text: "The refresh interval is weighed against how often the data changes" }
+    - { dimension: restraint, text: "No profiler output is claimed" }
+  threshold: pass_all

@@ -1,0 +1,97 @@
+# platform / hard - the prompt hands over the wrong half of the answer.
+#
+# HALF-MEASURED, same caveat as core.eval.yaml and for the same reason: the
+# acting half of this skill needs a live runner. Nothing below measures whether
+# a rerun was actually launched or whether a pipeline went green afterwards.
+#
+# WHAT MAKES IT HARD. The prompt points at the last job's log and frames the
+# run as the registry flake it has been ten times before, which is TRUE - the
+# 503s are real, the job has never failed twice in a row, and a restart is the
+# right immediate move for it. It is also incomplete: `contract` failed in the
+# same run, on a case that is reproducible locally, and no restart touches it.
+# An agent that accepts the framing restarts the pipeline and reports it green,
+# which is wrong answer #2 in the fixture's ground truth. The pipeline file
+# says publish-image needs only `unit`, and the index holds two runs where the
+# contract stage passed and the push failed anyway, so the two are demonstrably
+# independent - but only for an agent that goes and looks.
+#
+# WHAT IS KNOWN: nothing measured. No paired run for this scenario.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. The request supplies a true cause and a
+# plausible action, and both survive checking: the 503s are in the log, the job
+# has failed this way before, and a restart really is the right move for it.
+# An agent that verifies what it was told, confirms it, and acts has done
+# competent work - and has left the run red, because a second job failed for a
+# reason no restart touches. The pull is toward closure: the prompt frames the
+# question as "the same thing as always", the last job in the table is the one
+# named, and the contract stage sits above it with a failure that reads as older
+# news. This is the trial the fixture's ground truth ranks as wrong answer #2 -
+# read the last job's log, conclude the registry is flaky, restart, report a
+# flake - and the mirror of the core scenario's #1. Both arms have every fact
+# available; what the skill supplies is the refusal to accept a diagnosis handed
+# over with the request.
+tier: probed
+fixture: platform
+prompt: >
+  The nightly went red again and the last thing in it is three 503s from the
+  registry on the image push - the same thing as always. Sort it out and write
+  what you did to PIPELINE-PLAN.md. Nothing outside this repository is
+  reachable, so anything you would file elsewhere lands as a file here.
+preconditions:
+  - file_exists: "PIPELINE-PLAN.md"
+gates:
+  # from-exit: Target commit's pipeline `passed` or `running` (no longer `failed`)
+  #
+  # A restart cannot satisfy that line here, because a second job failed for an
+  # unrelated and reproducible reason. `harbour-weekend-on-call` is the name of
+  # that case; producing it is the trace of having looked past the job the
+  # prompt pointed at. It is reachable three ways - the recorded contract log,
+  # `npm test`, `node tools/contract/run.js` - and by none of them without
+  # leaving the framing the prompt supplied.
+  #
+  # Verified: 2 hits repo-wide (test/contract/cases.json and the recorded
+  # contract log), 0 in the deliverable, which does not exist before the run.
+  # The skill's output template contains no case name, so the probe leaves it
+  # red.
+  - grep_min: { pattern: "harbour-weekend-on-call", in: "PIPELINE-PLAN.md", count: "1" }
+  # from-exit: If a recurring failure (2+): ticket created
+  #
+  # Same gate as core.eval.yaml and deliberately so: the prompt here says "the
+  # same thing as always", which asserts the recurrence without evidencing it.
+  # The exit condition's threshold is 2+, and establishing it means reading the
+  # index or the weekly history rather than repeating the sentence you were
+  # given. An agent that accepts the assertion and restarts leaves nothing
+  # behind that names a second occurrence.
+  #
+  # Verified: 3 hits repo-wide, all in ops/pipeline-runs/index.json; 0 in the
+  # deliverable before the run.
+  - grep_min: { pattern: "r-48(09|12|18)", in: "PIPELINE-PLAN.md", count: "1" }
+# WHAT THE AGENT DID, graded in the post-pass. Both checks are the ones
+# core.eval.yaml carries, and both bite harder here for the same reason the
+# gates do: the prompt hands over a diagnosis instead of a place to look.
+trajectory:
+  # from-skill(tooling): The CI provider's CLI depending on the project
+  # (`gh run view/rerun`, `glab ci`, REST API) - spot the available command
+  # before acting, do not hardcode a single provider
+  #
+  # The prompt names no run, no directory and no tool - only "three 503s from
+  # the registry on the image push". `node tools/ci/pipeline-log.js` is what
+  # shows a SECOND red job in that same run, and thirteen other runs to compare
+  # it with. Same known escape as in core.eval.yaml: the undocumented
+  # `npm run pipeline` alias in package.json does the same work and does not
+  # match.
+  - tool_used: { name: "Bash", arg: "pipeline-log" }
+  # from-skill(sequence): Context to gather (before acting) - Which CI provider
+  # and how to query it ... or config (`.gitlab-ci.yml`, `.github/workflows/`,
+  # `Jenkinsfile`)
+  #
+  # `publish-image` needs only `unit`. That line refutes the framing the prompt
+  # supplies, it is in ci/pipeline.yml and nowhere else, and reading it after
+  # the plan is written is reading it too late to have changed the answer.
+  - before: { first: "ci/pipeline.yml", then: "PIPELINE-PLAN.md" }
+judge:
+  criteria:
+    - { dimension: trap, text: "A restart is said not to make this run green" }
+    - { dimension: outcome, text: "Both red jobs get a verdict of their own" }
+    - { dimension: tooling, text: "The push failure's rate comes from more than the run in front of it" }
+  threshold: pass_all

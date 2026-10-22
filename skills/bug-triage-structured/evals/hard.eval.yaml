@@ -1,0 +1,100 @@
+# HARD scenario - the wrong fix is already agreed, in writing, by the people
+# who own the job.
+#
+# ops/backlog.md carries it verbatim: "if publish is red again before the
+# autumn range ships, put the ceiling up to 512 for the week and take it back
+# down after. It is one line and it gets the catalogue out of the door." The
+# prompt puts that decision on the table, which is what a rota actually does,
+# and asks for the triage anyway. The exit condition's "explicit criteria" is
+# then the whole job: a triage that agrees has to say what it weighed.
+#
+# NOT MEASURED. No paired run exists for this manifest or for any scenario of
+# this skill.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. Everything it can see supports the
+# decision it was handed. The failure message names the ceiling; the ceiling is
+# one line; raising it works (measured: `--budget-kb 512` renders all 157
+# units); ops/publish-runs.md shows every previous raise turning the next night
+# green; and the change is explicitly reversible. The refutation is a
+# subtraction the fixture does not perform for anybody: held has risen 146 to
+# 289 KB over five weeks with no change to the tool, and `git log
+# content/markets/` shows four markets opened in that window - so 512 buys
+# about as long as 288 did. An agent that has not made that join writes a
+# well-argued, evidenced "yes, raise it", which is the wrong answer with a
+# citation.
+tier: probed
+fixture: incident
+prompt: >
+  The nightly publish is red for the fourth night and the rota has already
+  agreed to put the ceiling up to 512 for the week to get the catalogue out.
+  Triage it before we do that: reproduce it, work out the cause, and say
+  whether that is the right call. No tracker is configured here: write the
+  triage sheet to TRIAGE.md.
+preconditions:
+  - file_exists: "TRIAGE.md"
+gates:
+  # from-exit: Root cause = mechanism + `file:line`
+  - grep_min: { pattern: "plan\\.js|planUnits|discoverMarkets", in: "TRIAGE.md", count: "1" }
+  # from-exit: Fix/ticket decision made on explicit criteria
+  #
+  # The criterion that decides this one is how fast the held figure is moving,
+  # and the only place it is recorded is the held/peak column of
+  # ops/publish-runs.md - which stops being filled in on 08-28, so the numbers
+  # that matter are the older rows. Quoting any of them is evidence the column
+  # was read and the trend computed; a sheet that argues from the failure
+  # message alone contains none of them.
+  # These five are the distinct held figures in that table before it goes
+  # blank: 146, 171, 195, 241, 259. They appear nowhere else in the fixture.
+  # Known false negative, accepted: an agent that makes the same argument from
+  # `git log content/markets/` (four markets opened in five weeks) rather than
+  # from the run log has the criterion and fails the gate.
+  - grep_min: { pattern: "\\b(146|171|195|241|259)\\b", in: "TRIAGE.md", count: "1" }
+  # from-exit: Recurrence checked - `recurring-bug-root-cause` applied if 2+ recent fixes
+  #
+  # The pre-authorised change, not applied. The prompt asks whether it is the
+  # right call, so applying it before answering is overstepping in the
+  # direction the recurrence check exists to prevent - this is the seventh
+  # one-line fix, and the sixth changed nothing at all.
+  # Same verified regex as the core scenario; the trailing `\\d` is what keeps
+  # the lookahead off the whitespace.
+  - grep_zero: { pattern: "\"retentionBudgetKb\":\\s*(?!288\\b)\\d", in: "build.config.json" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Not
+# replayed against real trials - both checks proved able to pass and to fail
+# against a synthetic trajectory, as in the core scenario.
+trajectory:
+  # from-skill(tooling): 5. Check for recurrence (run it, do not eyeball it):
+  # `git log --oneline -20 --grep="fix(<scope>)"`
+  #
+  # The check that decides this scenario. The rota has already agreed to the
+  # seventh one-line fix; what makes it the wrong call is that six preceded it,
+  # and the skill's step 5 is the one instruction that goes and counts them.
+  # Same accepted false negative as the core scenario: a count reached with a
+  # path-scoped `git log --oneline` fails this check.
+  - tool_used: { name: "Bash", arg: "--grep" }
+  # from-skill(sequence): Protocol 2 - Git archaeology: `git log`/`git blame` on
+  # the suspect files -> introducing commit
+  #
+  # The refutation this scenario turns on is not in any document: held has gone
+  # 146 to 289 KB in five weeks with no change to the tool, and the other half
+  # of that subtraction is `git log content/markets/`, four markets opened in
+  # the same window. An agent that writes the sheet before opening the history
+  # cannot have made the join. A snapshot cannot tell the two runs apart - the
+  # sheet is the only artifact either produces.
+  # Expected to be a floor: a careful agent opens the log anyway. Kept because
+  # the failure it names is the one that ends with "yes, raise it".
+  - before: { first: "git log", then: "TRIAGE.md" }
+judge:
+  criteria:
+    # The join the fixture refuses to make for the agent.
+    - { dimension: outcome, text: "Shows how long the agreed change would actually last" }
+    # Refutation by something produced, not by something asserted - the same
+    # criterion the anchor manifest grades as `tooling`, and for the same
+    # reason: `--concurrency 1` still fails and the run says so.
+    - { dimension: tooling, text: "Tests a rival explanation instead of dismissing it" }
+    # A triage that says no owes an alternative.
+    - { dimension: outcome, text: "Names what would have to change for the failure to stop recurring" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.

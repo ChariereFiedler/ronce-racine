@@ -74,9 +74,3 @@ If the repo exposes a measurement tool (metrics script, report), use it - it win
 ## Tooling
 
 - The repo's metrics tool if it exists (wins); otherwise `git log`, `git log --oneline`, CI history, session transcripts.
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.0 (2026-06-19) - initial version, generalized from a project-specific daily-improve workflow (metrics/scripts coupling removed)

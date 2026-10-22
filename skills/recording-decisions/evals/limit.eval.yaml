@@ -1,0 +1,91 @@
+# platform / limit - three routine choices and no decision among them.
+#
+# The scenario the old base never had. Until this one existed, this skill could
+# not fail by producing a decision record when none was warranted, which is the
+# failure mode its own "When to record" section spends most of its length on.
+#
+# WHAT IS KNOWN: nothing measured. No paired run for this skill on this world.
+#
+# WHAT IS NOT KNOWN, stated because the adversarial review of the previous
+# round predicted it: a careful agent may well decline unaided. The precedent
+# points that way - audit-security saturated on its planted-defect check, and
+# refactoring-shared-component-api came back 1.00 against 1.00 three times. The
+# discriminating half here is not the refusal, it is refusing WITHOUT inventing
+# a rationale: a record for the naming choice arrives complete with an Options
+# table nobody ever weighed, because the house template demands one. If this
+# comes back judge-saturated, record it as a finding rather than harden it.
+#
+# The fixture makes the bar free to both arms on purpose: docs/adr/README.md
+# states it in its own words - "A routine choice with one sensible answer is
+# not a decision". Giving the criterion away is what forces the gates onto the
+# outcome instead of onto the vocabulary.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS - AND THE ADMISSION. The honest argument is
+# weaker here than in the other two scenarios of this skill, and it is recorded
+# as such rather than dressed up. A model asked about a helper's name, a print
+# order and a directory has a good chance of saying none of them is a decision,
+# because two of the three are on every list of things not to record. What the
+# scenario really tests is the failure that follows the refusal being
+# half-hearted: the request says "add what belongs", the repository has a
+# template with an Options table, and the third item - a directory layout -
+# is the one an agent talks itself into. The record it then writes carries an
+# Options table nobody ever weighed, which is fabrication rather than
+# over-production. THIS SCENARIO MAY WELL COME BACK SATURATED. If it does, that
+# is the finding and it gets recorded here; it is not a reason to add gates, and
+# the fixture states the bar in docs/adr/README.md on purpose, which makes it
+# easier rather than harder.
+#
+# NO TRAJECTORY SECTION, and the skill is the reason rather than the fixture.
+# Its `## Tooling` opens "No script: essentially a human decision"; it has no
+# `Context to gather` section at all; and the one ordering it states - "Record
+# at the moment of the decision, not at the end of the session" - is about
+# wall-clock inside a session rather than about two acts, so no `before` can
+# read it. The single forbidden act it names, "Never modify an existing
+# decision - write a new one that deprecates it", is not expressible either:
+# `tool_absent` matches a path anywhere in a rendered call, so forbidding
+# `docs/adr/0004` would fail every run that READ it - which this scenario
+# requires. A check invented to fill the section would be one the skill does
+# not prescribe.
+tier: probed
+# answer-only: the deliverable is a refusal - there is no artefact to produce, so both gates below are absences
+fixture: platform
+prompt: >
+  Wrapping up. Three things we settled this afternoon: the coverage helper
+  stays called coverageGaps rather than gapsFor, the pipeline-log tool prints
+  newest first rather than oldest first, and the rota fixtures stay under
+  test/fixtures/rotas instead of moving next to the tests that use them. Add
+  what belongs in our decision log and write what you did to DECISION-NOTES.md.
+preconditions:
+  # The prompt names this path. It also fails on the untouched fixture, which
+  # is what keeps eval-lint's do-nothing check meaningful for a manifest whose
+  # gates are both absences: a run that produces nothing is reported as a
+  # missing deliverable, not as a pass.
+  - file_exists: "DECISION-NOTES.md"
+gates:
+  # from-exit: Log entry in the right place (`docs/adr/` otherwise `.claude/decisions.md`)
+  #
+  # Read backwards, which is the only way a restraint scenario can be gated:
+  # the exit condition says where an entry goes when one is due, and here none
+  # is. Every one of the three choices is on the skill's own "Do not record"
+  # list - a name, an output order, a file location - and none of them can be
+  # undone into anything worse than a rename.
+  #
+  # `except` allows the note the prompt asked for and nothing else, so a
+  # seventh record under docs/adr/, an appendix bolted onto 0004, or a new row
+  # in the README's table all fail.
+  - repo_clean: { except: "DECISION-NOTES.md" }
+  # from-exit: Log entry in the right place (`docs/adr/` otherwise `.claude/decisions.md`)
+  #
+  # The second location that line names is invisible to every other check in
+  # the harness: `.claude/` is pruned from snapshotRepo, so a record hidden in
+  # the skill's own fallback would slip past the repo_clean above. file_absent
+  # is evaluated with existsSync and does reach it. This is the one gate that
+  # can see that path at all, and the 2026-08-25 measurement on this skill is
+  # why it is here - a deliverable landing in .claude/ was invisible then.
+  - file_absent: { value: ".claude/decisions.md" }
+judge:
+  criteria:
+    - { dimension: restraint, text: "Each of the three is turned down with a reason" }
+    - { dimension: outcome, text: "The bar applied is the one the repository states" }
+    - { dimension: outcome, text: "The naming choice is called a preference" }
+  threshold: pass_all

@@ -12,7 +12,7 @@
  *   scripts → <repo>/.claude/scripts/
  *   hooks   → <repo>/.claude/hooks/
  *   agents  → <repo>/.claude/agents/
- * and prints the settings.json snippet to wire up the hooks.
+ * and merges the hook wirings into <repo>/.claude/settings.json (backup: settings.json.bak).
  *
  * The implementation is split under src/: paths, lock, catalog, detect,
  * settings and selector. This file keeps the commands and the CLI parsing.
@@ -22,7 +22,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SELF, INVOCATION, LOCKFILE, BUILT_HOOKS, ADOPTED_HEADER, shippedHookName } from "./src/paths.js";
 import { CATALOG, type HookWiring, type Item } from "./src/catalog.js";
-import { canonicalHash, compareToken, copyPath, describeSource, isStale, loadLock, selfVersion, staleMessage, type Lock } from "./src/lock.js";
+import { backupPath, canonicalHash, compareToken, copyPath, describeSource, isDistributed, isStale, loadLock, selfVersion, staleMessage, type Lock } from "./src/lock.js";
 import { doPlan, plan } from "./src/detect.js";
 import { mergeHookSettings } from "./src/settings.js";
 import { unwireHookSettings, removeArtifacts, cleanupLayout } from "./src/uninstall.js";
@@ -121,13 +121,19 @@ async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rules
     // file, and on a skill directory it silently produces a HYBRID (the user's
     // extra files kept, the same-named ones canonical) - all under a message
     // telling the user to review the backup before deleting it.
-    const backup = `${dst}.pre-install.bak`;
-    if (!installedBefore.has(token) && existsSync(dst) && !existsSync(backup)) {
+    // Kept OUTSIDE the directories the harness scans: a skill backed up in place
+    // as `<name>.pre-install.bak/` was loaded as a second skill, the same
+    // instructions offered twice to the model. See backupPath.
+    const backup = backupPath(repo, token, "pre-install.bak");
+    const legacyBackup = `${dst}.pre-install.bak`;
+    if (!installedBefore.has(token) && existsSync(dst) && !existsSync(backup) && !existsSync(legacyBackup)) {
       copyPath(dst, backup);
       nBackedUp++;
     }
-    // Test procedures (*.test.ts) and eval manifests (eval.yaml) stay in the canonical repo - never distributed.
-    copyPath(src, dst, recursive ? (s: string) => !s.endsWith(".test.ts") && !s.endsWith("eval.yaml") && !s.endsWith("README.md") : undefined);
+    // Test procedures, eval manifests and per-skill READMEs stay in the canonical
+    // repo - never distributed. The predicate is shared with drift control on
+    // purpose: see isDistributed for what two copies of it cost.
+    copyPath(src, dst, recursive ? isDistributed : undefined);
   };
 
   const adopted: string[] = [];
@@ -192,7 +198,7 @@ async function doInstall(repo: string, opts: { all: boolean; yes: boolean; rules
 
   console.log(`Installed into ${dotclaude}: ${nRules} rules, ${nSkills} skills, ${nScripts} scripts, ${nAgents} agents${nHooks > 0 ? `, ${nHooks} hook(s)` : ""}.`);
   if (nPreserved > 0) console.log(`Preserved ${nPreserved} detached (customized) item(s) - left untouched.`);
-  if (nBackedUp > 0) console.log(`⚠ Backed up ${nBackedUp} pre-existing item(s) to *.pre-install.bak - review before deleting (or 'detach' them to keep your version).`);
+  if (nBackedUp > 0) console.log(`⚠ Backed up ${nBackedUp} pre-existing item(s) to .claude/.ronce-racine-backups/**/*.pre-install.bak - review before deleting (or 'detach' them to keep your version).`);
   if (adopted.length) console.log(`Rules manifest: .claude/rules/shared/.adopted (${adopted.length} rules)`);
 
   // Hooks BEFORE the lockfile, on purpose. Written first, the lockfile records a

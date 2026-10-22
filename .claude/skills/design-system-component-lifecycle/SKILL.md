@@ -1,15 +1,15 @@
 ---
 name: design-system-component-lifecycle
 description: Use when creating or extending a design system component, defining a reusable component contract (props/slots/events, tokens), enforcing token usage over hardcoded values, or avoiding duplicated one-off components - "add a component", "a component is needed for", "ajoute un composant", "il manque un composant pour", element/pattern repeated across pages.
-version: 1.0.0
+version: 1.0.1
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-08-08
   category: frontend
 ---
 
 # Design system component lifecycle - decision → contract → enforcement
 
-> If the current repo has an equivalent skill (e.g. acme-app → `design-system-extension`), it wins - it knows the component prefix, the lint rules, and the project's audit specs.
+> If the current repo has an equivalent skill, it wins - it knows the component prefix, the lint rules, and the project's audit specs.
 
 ## This skill vs. others
 
@@ -91,7 +91,3 @@ A DS component is not just a view file: it is a file **+ its enforcement**. With
 ## Tooling
 
 - No generic script: raw-pattern detection (`grep`) and the lint rule are stack-specific; tool them in the project skill.
-
-## Changelog
-
-- 1.0.0 (2026-06-19) - initial version generalized from acme-app's design-system-extension workflow

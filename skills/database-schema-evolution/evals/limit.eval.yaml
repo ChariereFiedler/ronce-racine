@@ -1,0 +1,95 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED - no paired run, no figure of its own. `tier: probed`.
+#
+# This is the restraint scenario, and it is the one the old base never had.
+# Adding a column nobody writes yet is NOT an expand-backfill-contract problem:
+# it is one additive migration plus its ledger entry. The right answer is to
+# stop there. The base could not previously fail a skill for producing its
+# apparatus when none was warranted, which is why the protocol looked free.
+#
+# The trap is the other half: the column "belongs" to
+# `migrations/0005_technicians.js`, which created the table, and editing that
+# file is the shortest path to a clean-looking history. It is also the one
+# thing the repository mechanically forbids - `migrations/ledger.json` seals
+# each shipped file's line and byte count and `node tools/check/migrations.js`
+# fails `npm test` when a file and the ledger part company. AGENTS.md and
+# docs/architecture.md both say it in words as well.
+#
+# How a careful agent with NO skill plausibly fails.
+# Two ways, opposite in direction. It over-applies: reads "schema change",
+# reaches for the zero-downtime protocol it has seen in a hundred blog posts,
+# and produces three migrations, a dual-write and a deprecation window for a
+# column that has no readers yet - gate 1 catches that, because the count is
+# exact. Or it under-applies: edits 0005 so the roster table "has always had"
+# a phone number, which is the tidier diff and the one that turns the suite
+# red - gate 2 catches that. Both are plausible from the prompt alone; neither
+# is caught by anything the old base contained.
+#
+# Known cost of gate 1, stated rather than hidden: it is an EXACT count, so an
+# agent that legitimately adds a second migration for something else in the
+# same run fails it. Nothing in the prompt asks for anything else.
+#
+# The format-gate probe passes no gate here.
+#
+# SATURATION RISK, admitted rather than discovered later. Restraint may be the
+# unaided default here: an agent that has never heard of expand-contract has no
+# protocol to over-apply, so it writes one migration and passes gate 1 for the
+# wrong reason. What this scenario can still show is a NEGATIVE lift - a skilled
+# arm applying the rollout to a change that does not need one - and that is
+# worth knowing on its own. Read the two-pair probe with that in mind: an
+# unaided arm at the ceiling is a fact about this scenario, not about the skill.
+prompt: >
+  Whoever is on the counter can see the name of the technician a job is on and
+  nothing else about them, so they cannot ring them up (ops/backlog.md). Give a
+  technician a phone number, development seed included, the way this project
+  does that sort of thing.
+
+gates:
+  # Exactly one more migration than the ten that have shipped. Computed
+  # against the fixture, not guessed: `grep "export const id" migrations/`
+  # returns 10 at HEAD, one per shipped file, and ledger.json carries no such
+  # line. Eleven means one new migration; twelve or more means the rollout
+  # protocol was applied to a change that does not need it.
+  # from-exit: Expand, backfill and contract in separate, idempotent migrations
+  - grep_count: { pattern: "export const id\\s*=", in: "migrations", count: "11" }
+  # The shortest wrong path is editing the migration that created the roster.
+  # The glob permits exactly the one new file and the ledger entry it needs, so
+  # this gate also trips on a second and third migration - a second signal for
+  # the same restraint gate 1 measures, stated rather than left to be
+  # discovered. Anything else under migrations/ changing is an edit of
+  # something that shipped.
+  # from-exit: No existing migration modified
+  - repo_clean: { in: "migrations", except: "migrations/ledger.json, migrations/0011*" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and no replay check: the prompt asks for the development seed to
+# be included, so running the migration tool is what the prompt hands over
+# rather than what the skill earns - the same reason a gate whose literal the
+# prompt supplies belongs among the preconditions.
+trajectory:
+  # from-skill(sequence): Read a neighboring migration and copy its conventions
+  # (naming, idempotence, format) before inventing
+  #
+  # Verified against the check's substring semantics rather than assumed.
+  # `migrations/00` matches a read of any of the ten shipped files and also the
+  # write of the new one; `migrations/0011` matches only the new one, which
+  # gate 2's `except` glob already pins to that number. So an agent that opens
+  # 0005 and then writes 0011 has firstAt < thenAt and passes, and one that
+  # writes 0011 with nothing opened before it has firstAt == thenAt - the same
+  # action satisfies both needles - and fails. `ls migrations/` and
+  # `Glob(migrations/*.js)` carry no digits and cannot stand in for the read.
+  - before: { first: "migrations/00", then: "migrations/0011" }
+judge:
+  criteria:
+    - { dimension: restraint, text: "One migration, no expand-backfill-contract sequence" }
+    # trap: "I'll fix the already-applied migration, simpler" - the checksum, or
+    # here the ledger, is what breaks. Create a new migration.
+    - { dimension: trap, text: "The migration that created the roster is left alone" }
+    - { dimension: outcome, text: "The ledger is updated the way this repository requires" }
+    - { dimension: restraint, text: "No deprecation window is opened for a column nothing reads" }
+  threshold: pass_all

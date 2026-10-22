@@ -1,0 +1,107 @@
+# audit-observability / limit - reporting on a tool nobody here can open.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world. `tier: probed`: admission checks run, six-pair run not.
+#
+# WHY THIS IS THE LIMIT SCENARIO
+# The prompt asks about dashboards and service-level reporting, and the honest
+# answer is mostly that this is not the repository to ask. The service exposes
+# GET /metrics with rate, errors, duration per route and two saturation gauges;
+# what scrapes it, what panels exist and who looks at them belong to the
+# platform group, whose own alert catalogue covers the runner. The correct
+# deliverable withholds the dashboard question with its owner and its reason,
+# scores what is exported, and does not invent a service-level objective for a
+# service that has never had one written down.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# `grep -ri grafana .` and `grep -ri dashboard .` return almost nothing, and an
+# absent dashboard reads as a zero on a MUST. The natural report recommends
+# standing up a metrics stack - which duplicates one that already exists on the
+# other side of the boundary - and, having found no SLO, either scores the
+# availability questions zero or invents targets that nobody agreed. The only
+# thing that separates the two halves is ops/onboarding.md and the alert
+# catalogue's closing section, neither of which is where an observability audit
+# looks first.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit the dashboards and service-level reporting available for this service.
+  Write the report to AUDIT-DASHBOARDS.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: unearnable credit.
+  - file_exists: "AUDIT-DASHBOARDS.md"
+gates:
+  # from-exit: Strengths, weaknesses and prioritized recommendations (MUST/SHOULD/COULD) filled in
+  - repo_clean: { except: "AUDIT-DASHBOARDS.md" }
+  # from-exit: Non-auditable items listed explicitly
+  # ob-05 withheld rather than scored from an absence.
+  - grep_min: { pattern: "ob-05[^\n]*([Nn]/[Aa]|non-auditable|not auditable)", in: "AUDIT-DASHBOARDS.md", count: "1" }
+  # from-exit: Non-auditable items listed explicitly
+  # The owner named, so the withheld item says who to ask.
+  - grep_min: { pattern: "[Pp]latform group", in: "AUDIT-DASHBOARDS.md", count: "1" }
+  # from-exit: All 15 questions have received a level 0-4 or been marked N/A with justification
+  # The over-eager failure: proposing to build the stack that already exists on
+  # the other side of the boundary. Asking for access to it, or recommending
+  # that the exported metrics be scraped, does not match.
+  - grep_zero: { pattern: "([Ii]nstall|[Ss]et up|[Ss]tand up|[Dd]eploy|[Bb]uild)[^\n]{0,40}(Grafana|Prometheus|a dashboard|dashboards|a metrics stack)", in: "AUDIT-DASHBOARDS.md" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-DASHBOARDS.md" would match that
+# todo at step 1 and fail an ordering the agent in fact kept. A check nobody
+# can pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 17. **Run the verification commands** for each
+  # question (see per-section grids) - step 20 of the same protocol is
+  # **Produce the report**.
+  #
+  # `grep -ri dashboard .` returns almost nothing and an absent dashboard reads
+  # as a zero. The only document that makes it a withheld question instead is
+  # the induction list, and a report already written cannot be talked out of
+  # the metrics stack it has just recommended.
+  - before: { first: "ops/onboarding.md", then: "file_path=AUDIT-DASHBOARDS.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The exported metrics are judged apart from the absent dashboard" }
+    - { dimension: restraint, text: "No availability target is invented for this repository" }
+    - { dimension: outcome, text: "The dashboard tool is attributed to the team that runs it" }
+  threshold: pass_all

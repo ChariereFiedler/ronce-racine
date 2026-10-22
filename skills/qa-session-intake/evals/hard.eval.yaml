@@ -1,0 +1,90 @@
+# platform / hard - two of her remarks are not about the console at all.
+#
+# WHAT IS KNOWN: nothing measured. The format-gate finding recorded in
+# core.eval.yaml applies here too - this skill's exit condition IS its
+# prescribed format, so no gate below greps a word the checklist supplies.
+#
+# WHY IT IS THE HARD ONE. Both gates key on findings that cannot be settled
+# inside the bundle:
+#   - 00:14:20, "Della's down for sixteen hours on the Saturday": filed as a
+#     console display bug this is wrong. The export itself produces the
+#     sixteen-hour block, `node tools/contract/run.js` has been failing on it
+#     since 08-28, and the cause is a missing midnight split in
+#     src/payroll/export.js. The screenshot shows the console faithfully
+#     rendering a wrong number.
+#   - 00:23:30, "It says Thursday's uncovered. Fell Lane's shut on Thursdays":
+#     the coverage report is right. config/clinics.json gives cl-fell an
+#     opening window on day 3 and the clinic is closed that day, so the gap it
+#     reports is real and the configuration is what is wrong. Reproducible here.
+# Both are findable, and neither is findable from the timeline, the capture log
+# or the screenshot index - which is where a session intake naturally stops.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. Both remarks are filed accurately and both
+# tickets are wrong. "Della's down for sixteen hours on the Saturday" was said
+# while looking at the week summary, the screenshot shows the week summary, and
+# the obvious ticket is that the week summary shows the wrong number - which is
+# false: the console is rendering faithfully, the export produces the sixteen
+# hours, and the contract stage has been failing on exactly that since 08-28. A
+# ticket against the console is one nobody can close. "It says Thursday's
+# uncovered, Fell Lane's shut on Thursdays" is the mirror image: the report looks
+# wrong and is right, because config/clinics.json gives that clinic an opening
+# window on a day it does not open. Filed as a coverage bug it sends someone to
+# read correct code. Both are settled outside the bundle, in two different places
+# neither of which a session intake has any reason to open, and the pressure in
+# the request is to be done today.
+tier: probed
+fixture: platform
+prompt: >
+  The practice manager's session from the 27th is in
+  ops/qa/2026-08-27-console/. We need it triaged today - work out what each of
+  her remarks actually is and write what you file under
+  ops/qa/2026-08-27-console/tickets/.
+preconditions:
+  # The prompt names the destination, so producing something there proves
+  # nothing about the skill.
+  - file_matching: { pattern: "^ops/qa/2026-08-27-console/tickets/.+\\.md$" }
+gates:
+  # from-exit: One ticket per distinct problem, each with reconstructed steps, expected vs actual, closest screenshot, severity
+  #
+  # "Reconstructed steps" is the half this gate reads. The Thursday complaint
+  # can be reproduced from the repository - the clinic's opening windows are in
+  # config/clinics.json and day 3 is not null - and reproducing it moves the
+  # ticket from "the coverage report is wrong" to "the clinic's configuration
+  # says it is open". Naming the clinic id or the file is the trace of having
+  # gone and looked instead of transcribing what she said.
+  #
+  # Verified: 0 hits under ops/qa/2026-08-27-console/tickets/, which does not
+  # exist before the run, so the gate is red on the pristine fixture and the
+  # template-only probe leaves it red.
+  - grep_min: { pattern: "cl-fell|clinics\\.json", in: "ops/qa/2026-08-27-console/tickets", count: "1" }
+  # from-exit: One ticket per distinct problem, each with reconstructed steps, expected vs actual, closest screenshot, severity
+  #
+  # "One ticket per distinct PROBLEM" is the half this gate reads. The sixteen
+  # hours on the week summary and the failing contract case are one problem
+  # seen from two ends, and a ticket that treats the console as the defect
+  # creates a second one that nobody can close. The three names in the
+  # alternation are the three ways the connection gets stated - the failing
+  # case, the missing call, the file that lost it - rather than one chosen
+  # implementation of the answer.
+  #
+  # Verified: 0 hits under the tickets directory before the run.
+  - grep_min: { pattern: "harbour-weekend-on-call|splitAtMidnight|payroll/export", in: "ops/qa/2026-08-27-console/tickets", count: "1" }
+# WHAT THE AGENT DID, graded in the post-pass.
+trajectory:
+  # from-skill(sequence): Guardrails - De-duplication: search open tickets
+  # before creating
+  #
+  # Two of the fourteen remarks in this bundle are already open - 00:02:10 is
+  # qa-0029 and 00:31:00 is qa-0033 - and this prompt sends the agent straight
+  # to the tickets directory with a deadline attached. The trap row is written
+  # for exactly that: "I create quickly, I check duplicates later". Neither gate
+  # above can see the order, and the ids are reachable from the July directory
+  # the prompt does point at, so a citation is not evidence the open list was
+  # read.
+  - before: { first: "ops/qa/open-tickets.md", then: "ops/qa/2026-08-27-console/tickets" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The sixteen-hour row is attributed to the export, not to the console" }
+    - { dimension: outcome, text: "The Thursday gap is called a configuration error" }
+    - { dimension: restraint, text: "The application code is left alone" }
+  threshold: pass_all

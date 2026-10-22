@@ -1,0 +1,117 @@
+# audit-architecture / core - three readable ADRs, one of them untrue.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. This manifest replaces one that carried no figure of its own -
+# it inherited audit-security's 2026-08-24 calibration on a fifteen-line fixture
+# that no longer exists, through two gates that greped for the words
+# "confidence" and "non-auditable". Nothing here inherits from it. `tier:
+# probed`: the admission checks have been run, the six-pair run has not.
+#
+# WHY THE GATES LOOK LIKE THIS
+# Nine audit skills share this world and the fixture ships the house format
+# itself, so the audit vocabulary is free to both arms by construction. What is
+# gated is which level a question carries and what the level rests on.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# docs/adr/ holds three decision records. They are well written, they weigh
+# options, they carry consequences and a "revisit when", and all three are
+# marked accepted. The natural verdict is that architectural decisions are
+# documented - level 3, and move on. Two things contradict it and both need the
+# code open. ADR 0003 decides that src/store.js publishes every append to a
+# topic; src/store.js appends journals and does nothing else, no record
+# supersedes 0003, and its status still reads accepted. And the largest change
+# the service actually made - storage, the loader and the expiry moving to the
+# platform group - has no decision record at all: it lives in item 6 of
+# ops/onboarding.md and in a commit that deletes two files. Reading the records
+# rather than counting them is the whole difference.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Run an architecture, scalability and availability audit of this service.
+  Write the report to AUDIT-ARCHITECTURE.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file it lands in. An
+  # agent following no skill produces it too: unearnable credit, kept out of the
+  # gates where it would inflate the verdict.
+  - file_exists: "AUDIT-ARCHITECTURE.md"
+gates:
+  # from-exit: Report produced via `audit-report` (summary, per-question detail
+  # The deliverable is that report; the audit must not edit what it grades.
+  - repo_clean: { except: "AUDIT-ARCHITECTURE.md" }
+  # from-exit: Every question is scored 0-4 or marked N/A (conditional questions included)
+  # AR-01 (architecture decision documentation) is capped at 1 or 2: three
+  # records exist and one of them describes a mechanism the code does not have,
+  # while the change that actually happened has no record. Scoring 3 because
+  # three readable ADRs exist is the wrong answer this gate separates.
+  - grep_min: { pattern: "[Aa][Rr]-01[^\n]*\|\s*[12]\s*\|", in: "AUDIT-ARCHITECTURE.md", count: "1" }
+  # from-exit: Every level rests on evidence from running the verification commands
+  # The evidence for that cap is in the store, not in the record: the append-only
+  # journal writer publishes to no topic. A report that grades ADRs by reading
+  # ADRs names neither.
+  - grep_min: { pattern: "store\.js|intake\.rows", in: "AUDIT-ARCHITECTURE.md", count: "1" }
+  # from-exit: Every question is scored 0-4 or marked N/A (conditional questions included)
+  # A 74-question grid against a one-instance service whose cluster, ingress and
+  # object store belong to another team cannot be all numbers. At least two
+  # questions keep their row with N/A rather than being scored from an absence.
+  - grep_min: { pattern: "\|\s*N/A\s*\|", in: "AUDIT-ARCHITECTURE.md", count: "2" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-ARCHITECTURE.md" would match that
+# todo at step 1 and fail an ordering the agent in fact kept. A check nobody
+# can pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): For each question: run the listed **verification
+  # commands**. - step 2 of the audit protocol, whose step 5 is **Produce the
+  # report** via `audit-report`.
+  #
+  # src/store.js is where AR-01's cap is decided: ADR 0003 says every append is
+  # published to a topic and the store only appends journals. A report written
+  # before the store was opened graded the records by reading records, which is
+  # the wrong answer this scenario exists to separate - and the finished file
+  # looks the same either way.
+  - before: { first: "src/store.js", then: "file_path=AUDIT-ARCHITECTURE.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "AR-01 is capped because a record describes behaviour the code lacks" }
+    - { dimension: outcome, text: "The move of storage to another team is named as an unrecorded decision" }
+    - { dimension: outcome, text: "The single instance is reported as the availability ceiling" }
+  threshold: pass_all

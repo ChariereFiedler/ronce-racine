@@ -72,9 +72,3 @@ Deliver alongside the tickets:
 
 - No generic script (triage depends on the bundle format): if the repo has dedicated intake tooling, run it (see header note).
 - Follow the project bug skill's ticket template for the content of each ticket created.
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

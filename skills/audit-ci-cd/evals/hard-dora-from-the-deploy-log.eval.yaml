@@ -1,0 +1,120 @@
+# audit-ci-cd / hard - the metrics that do not need a dashboard.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world; the previous manifest for this skill inherited another skill's figure
+# on a fixture that no longer exists. `tier: probed`.
+#
+# WHY THIS IS THE HARD SCENARIO
+# It is the inverted trap of the world: the textbook answer is not merely
+# incomplete, it is false here. "The DORA questions require a metrics dashboard
+# and cannot be audited from a repository" is what most audits say, what this
+# skill's grid invites, and what the fixture's own example report for another
+# project says - docs/audits/2026-03-05-netherby-billing-ci-cd.md marks ci-05
+# N/A because that project's release log has no outcome column. This one's does.
+# ops/deploys.md carries date, tag, environment, outcome and lead hours for
+# fourteen live releases between 2026-04-07 and 2026-08-26: about one every ten
+# days, a median lead time of six hours, and one reverted release - 2026-07-01,
+# the attachments route answering 500 for pdf uploads - which is a change
+# failure rate of roughly seven per cent. Marking something non-auditable is not
+# free, and this is the item that costs.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# Asked how changes reach production, the natural sweep is ci/pipeline.yml,
+# package.json and the release scripts. All three describe the mechanism and
+# none of them carries a single number. ops/ is a directory of rotas, alerts and
+# incident notes; the deploy log inside it is a markdown table that reads as a
+# changelog rather than as a measurement. An agent with no grid has no question
+# forcing it to look for a lead time, and an agent that does look has the ready
+# excuse that delivery metrics live in a dashboard.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit how changes reach production in this project: pipeline, environments
+  and delivery performance. Write the report to AUDIT-DELIVERY.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: unearnable credit.
+  - file_exists: "AUDIT-DELIVERY.md"
+gates:
+  # from-exit: Report produced in the output format
+  - repo_clean: { except: "AUDIT-DELIVERY.md" }
+  # from-exit: All 10 questions evaluated (or justified N/A)
+  # ci-05 (change failure rate) carries a level rather than a shrug. It is
+  # computable here and the reflex answer is that it is not.
+  - grep_min: { pattern: "ci-05[^\n]*\|\s*[0-4]\s*\|", in: "AUDIT-DELIVERY.md", count: "1" }
+  # from-exit: Verification commands run for each scored question
+  # The evidence that makes it computable: one release out of fourteen was
+  # pulled. A report that scores ci-05 without finding the reverted row has
+  # scored it from nothing.
+  - grep_min: { pattern: "[Rr]evert", in: "AUDIT-DELIVERY.md", count: "1" }
+  # from-exit: All 10 questions evaluated (or justified N/A)
+  # The counterweight: scoring everything is not the winning strategy either.
+  # At least one question keeps its row with N/A - the runner and its image are
+  # the platform group's, and no amount of reading this repository reaches them.
+  # On its own it is passed by the wrong answer too, which marks the delivery
+  # metrics N/A for want of a dashboard; it only bites next to the two above.
+  - grep_min: { pattern: "\|\s*N/A\s*\|", in: "AUDIT-DELIVERY.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-DELIVERY.md" would match that todo
+# at step 1 and fail an ordering the agent in fact kept. A check nobody can
+# pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 3. **Run the verification commands** for each
+  # question ci-01 to ci-10 - step 11 of the same protocol is **Produce the
+  # report**.
+  #
+  # The inverted trap, as an ordering. ci-03 to ci-05 are computable here and
+  # only from ops/deploys.md - date, tag, environment, outcome, lead hours. An
+  # agent that writes the report first has already spent the excuse the grid
+  # hands it ("delivery metrics need a dashboard"), and no later read can undo
+  # it. The skill's own dora.md grid prescribes `git log` for these questions
+  # instead; that is NOT gated here, because in this world git log answers none
+  # of them and both arms run it anyway - it would score a reflex, not the
+  # work.
+  - before: { first: "ops/deploys.md", then: "file_path=AUDIT-DELIVERY.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The failure rate is computed from the outcome column" }
+    - { dimension: outcome, text: "The lead time is stated with the values it was taken from" }
+    - { dimension: restraint, text: "The runner's own configuration stays outside the scored questions" }
+  threshold: pass_all

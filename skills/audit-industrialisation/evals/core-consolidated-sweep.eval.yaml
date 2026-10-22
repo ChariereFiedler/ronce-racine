@@ -1,0 +1,111 @@
+# audit-industrialisation / core - eight domains over one uneven repository.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. The previous manifest for this skill recorded one figure -
+# judge-saturated on 2 pairs, its single criterion passing in all four runs -
+# taken on a fifteen-line fixture that no longer exists. Two pairs never yields
+# a verdict and nothing here inherits from it. `tier: probed`: the admission
+# checks have been run, the six-pair run has not.
+#
+# WHY THE GATES LOOK LIKE THIS
+# This is the most expensive scenario in the world's set: eight domains over a
+# repository of thirty commits. The gates are deliberately few and none of them
+# keys on the consolidated report's shape, which this skill's own template hands
+# over in full - the maturity class names, the MUST/SHOULD/COULD list and the
+# "0→2" impact projections are all in the template, so a gate on any of them
+# would be passed by an empty report carrying the headings.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# The destination is the first thing: with no skill there is no reason to file a
+# consolidated audit anywhere in particular, and the report lands at the root
+# under whatever name the agent chose. The second is where the report puts its
+# evidence. A sweep over eight domains under time pressure produces impressions,
+# and this repository has a ready-made set of them:
+# docs/audits/2026-02-11-intake-summary.md is a one-page review of this very
+# service, domain by domain, that says quality gates are strong and CI/CD is
+# strong - written when both were true, and carrying its own caveat that nothing
+# in it was verified by running anything. Reproducing its shape is the cheapest
+# path to a plausible consolidated report, and it is wrong in the one place the
+# board would act on. The third is scope: the cluster, the ingress, the object
+# store, the runner and the expiry job all belong to another team, and a
+# consolidated score that silently includes them is a score over a system this
+# engagement never saw.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Run a full industrialisation audit of this project and file the consolidated
+  report in the repository.
+gates:
+  # from-exit: Markdown report saved to `docs/audit/`
+  # The destination is the skill's, not the prompt's - the prompt deliberately
+  # does not say where the report goes, so this gate is earnable rather than
+  # handed over. It keys on a path and not on content: an empty file in the
+  # right place passes it, which is why it is only ever one gate of four.
+  # leak-ok: the prompt never says where the report goes - the destination is
+  # the skill's own promise. The lint drops "docs" as a stop word, which
+  # reduces this pattern's literal to the word "audit" that no audit prompt
+  # can avoid.
+  - file_matching: { pattern: "^docs/audit/.*\.md$" }
+  # from-exit: Markdown report saved to `docs/audit/`
+  # A consolidated audit reads a repository; it does not edit one.
+  - repo_clean: { except: "docs/audit/" }
+  # from-exit: each question scored 0-4 or N/A with factual evidence
+  # One of the two findings in this world that cannot be reached by impression.
+  # It comes out of running the repository's own rules and reading the output,
+  # or out of comparing db/schema.sql against data/retention.json.
+  - grep_min: { pattern: "intake_attachments|--enforce|[Ee]nforce flag", in: "docs/audit/", count: "1" }
+  # from-exit: Relevance matrix applied - N/A domains marked, not audited blind
+  # What is out of scope, and whose it is. A consolidated score that never names
+  # the boundary has scored a system the audit could not see.
+  - grep_min: { pattern: "[Pp]latform group", in: "docs/audit/", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and the skill states it in those words: Phase 1 is what happens
+# "Before launching the audits". This skill names no `Guardrails` and no step
+# budget, and its one named tool is the Agent tool of Phase 2, whose rendered
+# name in a Harbor trajectory is not something this manifest can verify without
+# a run - so no `tool_used` is written on a guess. What remains is the
+# ordering, and an ordering is exactly what a repository snapshot cannot hold:
+# the report is byte-for-byte the same file whether the reconnaissance came
+# before it or after it. The one act all nine DO prescribe - "each
+# reference/<section>.md read" - is deliberately not gated: the arm with no
+# skill installed has no such file to open, so a check on it would move this
+# dimension by construction rather than by behaviour, and tools/eval-report.ts
+# already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the destination path. This prompt does not
+# name where the report goes - the destination is the skill's own promise - but
+# an agent that has read the skill puts `docs/audit/` into its opening
+# TodoWrite, and a `then` of "docs/audit/" would match that todo at step 1 and
+# fail an ordering the agent in fact kept. That failure would fall on the aided
+# arm alone, which is worse than a check nobody can pass. Keying on the
+# rendered argument matches the Write and the Edit and nothing the agent merely
+# says. Its honest limit: a report written through a shell heredoc renders no
+# `file_path=` at all, and the check then holds vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): Before launching the audits, **build a structured
+  # project profile** that will be passed to every subagent.
+  #
+  # The profile's own detection block opens with `ls package.json go.mod ...`,
+  # so package.json is the first thing Phase 1 is supposed to touch. A
+  # consolidated report filed before the profile exists is the
+  # sweep-by-impression this scenario is built against, and the filed file
+  # looks identical either way.
+  - before: { first: "package.json", then: "file_path=docs/audit/" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The global score states which questions it was computed over" }
+    - { dimension: trap, text: "The quality job is reported as advisory rather than as a barrier" }
+    - { dimension: trap, text: "The February one-page review is not used as a source of levels" }
+  threshold: pass_all

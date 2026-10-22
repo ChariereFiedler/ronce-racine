@@ -35,7 +35,39 @@ const VERBOSE_PATTERNS: RegExp[] = [
   /^\s*curl\s/,
   /^\s*docker\s+(build|logs)\b/,
   /^\s*rustup\s/,
+  // Lecture de fichiers au shell. Mesuré sur un run d'agent réel (2026-09-19,
+  // 14,15 $, 32 min) : 43 des 101 appels Bash lisaient des fichiers via `cat`,
+  // `sed -n` ou `grep`, pour 125k caractères réinjectés dans le contexte — un
+  // seul `cat` d'un fichier de 10k s'y paie à CHAQUE appel suivant, soit 260
+  // fois sur ce run. Ces commandes-là ne sont pas verbeuses par accident comme
+  // un build : elles le sont par construction, proportionnellement au fichier.
+  //
+  // `cat` sans redirection : `cat > f <<EOF` écrit, il n'y a pas de sortie à
+  // tronquer, et l'envelopper casserait le heredoc.
+  /^\s*cat\s+(?![<>])[^|<>]*$/,
+  /^\s*sed\s+-n\b/,
 ]
+
+/** Un flag court (un seul tiret) qui porte `l`, `c` ou `q` : `-l`, `-rl`, `-nc`… */
+const SHORT_FLAG = /(?:^|\s)-[A-Za-z]+(?:\s|=|$)/g
+
+/**
+ * `grep` qui a DÉJÀ sa borne, donc à laisser tel quel : `-l`/`-c`/`-q` ne
+ * rendent que des noms ou un compte, et un `-m N` explicite dit que l'appelant
+ * a choisi combien de lignes il voulait.
+ *
+ * Le test porte sur les flags à UN tiret uniquement : `--include="*.ts"`
+ * contient `-incl`, qui se lisait comme un `-l` groupé et faisait passer pour
+ * borné un `grep -rn --include` qui ne l'est pas du tout.
+ */
+export function isBoundedGrep(cmd: string): boolean {
+  if (/(?:^|\s)(?:-m|--max-count)(?:\s|=)/.test(cmd)) return true
+  for (const match of cmd.matchAll(SHORT_FLAG)) {
+    if (match[0].startsWith(' --') || match[0].startsWith('--')) continue
+    if (/[lcq]/.test(match[0])) return true
+  }
+  return false
+}
 
 const SKIP_PATTERNS: RegExp[] = [
   /\|\s*(head|tail|grep|wc|less|more|awk|sed|cut|sort|uniq|jq)\b/,
@@ -46,7 +78,11 @@ const SKIP_PATTERNS: RegExp[] = [
 export function isVerboseCommand(cmd: string): boolean {
   if (SKIP_PATTERNS.some(p => p.test(cmd))) return false
   const parts = cmd.split(/&&|\|\|/).map(s => s.trim())
-  return parts.some(part => VERBOSE_PATTERNS.some(p => p.test(part)))
+  return parts.some(
+    part =>
+      VERBOSE_PATTERNS.some(p => p.test(part)) ||
+      (/^\s*grep\b/.test(part) && !isBoundedGrep(part)),
+  )
 }
 
 export function wrapCommand(cmd: string, hookDir: string): string {

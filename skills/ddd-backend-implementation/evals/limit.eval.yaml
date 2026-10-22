@@ -1,0 +1,75 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED - no paired run, no figure of its own. `tier: probed`. As in the
+# other two scenarios, no gate keys on a directory name; see the caveat in
+# core.eval.yaml.
+#
+# The restraint scenario. The rule the prompt asks for is already enforced,
+# twice, and the right answer is to show where and change nothing:
+#   src/domain/work-order.js  assign() throws InvariantBroken when
+#                             technician.shop_id !== order.shop_id
+#   test/work-order.test.js   "a technician from another shop cannot be put on
+#                             a job" asserts exactly that
+#   both write paths go through it - assignWorkOrder() by id and assignByName()
+#   for the tablets (src/application/commands/assign-work-order.js)
+#   and repositories.forShop cannot even fetch a technician from another shop
+#   (src/infrastructure/repository/scoped.js, NotFound)
+#
+# How a careful agent with NO skill plausibly fails.
+# It implements. The request is specific and safety-shaped, the two routes are
+# easy to find, and adding a check in the command handler or at the edge is
+# quick, looks diligent and keeps the suite green - a passing test suite cannot
+# tell you that a rule was already there. What it leaves behind is a rule in
+# two places that will disagree the first time one of them changes, which is
+# the exact failure "no business logic outside the domain" exists to prevent.
+# The other failure is doing nothing and saying nothing, which is why the
+# finding has to name where the rule lives.
+#
+# The format-gate probe passes no gate here.
+prompt: >
+  A shop manager is worried that a fitter from the other branch could be put on
+  one of their jobs. Make sure that cannot happen, and write what you did in
+  FINDINGS.md.
+
+preconditions:
+  # The world has no tracker, so the prompt names where the answer lands.
+  - file_exists: "FINDINGS.md"
+
+gates:
+  # An invariant that is already enforced in the domain does not get a second
+  # home in a handler, a route or a read model. Pristine: clean, and this gate
+  # is the whole restraint - anything written under src/ is a duplicate.
+  # from-exit: No business logic outside the domain (neither handler nor infra)
+  - repo_clean: { in: "src" }
+  # "Nothing to do" is only an answer with an address. The finding has to name
+  # the rule or the test that already covers it. Pristine: 0 - FINDINGS.md does
+  # not exist - and the prompt names none of these.
+  # from-exit: Integration tests green: happy path + at least one invariant rejection
+  - grep_min: { pattern: "work-order\\.js|assign\\(|InvariantBroken|another shop", in: "FINDINGS.md", count: "1" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check. The restraint half of this scenario is already answerable from the
+# tree - `repo_clean: src` sees every second copy of the rule - so the
+# trajectory is asked only for the thing the tree cannot hold: whether the
+# finding was written from the file that carries the rule, or around it.
+trajectory:
+  # from-skill(sequence): Read one already-implemented neighboring module in
+  # the same context and copy its structure ... before inventing anything
+  #
+  # assign() and its InvariantBroken are in src/domain/work-order.js, and gate 2
+  # asks the finding to name one of them. A grep hit gives you the name without
+  # the file: `Grep(pattern=InvariantBroken)` carries no path, so an answer
+  # assembled from search output and written before anything was opened fails
+  # here while still passing the gate. That gap is the reason this check exists.
+  - before: { first: "src/domain/work-order.js", then: "FINDINGS.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "Finds the rule already enforced and says where" }
+    - { dimension: restraint, text: "Adds no second copy of the check" }
+    - { dimension: outcome, text: "Names the test that already covers it" }
+    - { dimension: sequence, text: "Says how it checked both write paths" }
+  threshold: pass_all

@@ -1,0 +1,119 @@
+# audit-architecture / limit - the gap that is not a gap.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world. `tier: probed`: admission checks run, six-pair run not.
+#
+# WHY THIS IS THE LIMIT SCENARIO
+# The prompt asks for the one thing this repository genuinely cannot answer.
+# Nothing here dumps, restores, replicates or expires anything: `grep -ri backup
+# .` returns nothing at all. The correct call is that PA-19 and the recovery
+# questions that depend on it are non-auditable here, with the reason and the
+# owner, excluded from the domain mean, and with a note of what access would be
+# needed to audit them. Scoring PA-19 zero and recommending nightly backups and
+# a restore drill - both of which already exist, one repository over - is the
+# failure this world was transposed from, and it is the second-ranked wrong
+# answer in its ground truth.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# The agent greps for backups, finds nothing, and applies the rule every
+# availability grid states plainly: no backup, or a backup never tested, is
+# level 0 and it is a MUST. That is the correct answer for almost every
+# repository. Here the only thing that says otherwise is item 6 of
+# ops/onboarding.md - a first-week induction list, in a file with no
+# audit-sounding name, which avoids the word "backup" entirely and says the
+# platform group runs the cluster, the nightly dump, the ninety-day expiry and
+# the restore rehearsal, and that every durability question goes to them.
+# CODEOWNERS confirms it for /db/migrations/. The strongest confirmation is a
+# deletion - `chore: the cluster moves to the platform group` removes
+# ops/pg-dump.sh and ops/restore-drill.md, and that deleted drill file holds a
+# rehearsal log with two dated, counted restores - so it is invisible unless git
+# log is asked about paths that no longer exist.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit this service's backup and disaster-recovery posture.
+  Write the report to AUDIT-DURABILITY.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: unearnable credit.
+  - file_exists: "AUDIT-DURABILITY.md"
+gates:
+  # from-exit: Report produced via `audit-report` (summary, per-question detail
+  - repo_clean: { except: "AUDIT-DURABILITY.md" }
+  # from-exit: must/should/could recommendations, non-auditable items
+  # PA-19 (DB backup plan, must) is withheld, not scored. The row stays, with
+  # N/A as its level or the question named among the items that could not be
+  # audited from here.
+  - grep_min: { pattern: "PA-19[^\n]*([Nn]/[Aa]|non-auditable|not auditable)", in: "AUDIT-DURABILITY.md", count: "1" }
+  # from-exit: must/should/could recommendations, non-auditable items
+  # Withholding is only half of it: the reason and the owner are what make the
+  # item actionable rather than a shrug.
+  - grep_min: { pattern: "[Pp]latform group", in: "AUDIT-DURABILITY.md", count: "1" }
+  # from-exit: must/should/could recommendations, non-auditable items
+  # The over-eager failure: recommending the construction of a control that
+  # already exists one repository over. Only affirmative build-it
+  # recommendations match - asking the platform group for the last rehearsal
+  # date, or recording that a restore drill runs on their calendar, does not.
+  - grep_zero: { pattern: "([Ii]mplement|[Ss]et up|[Ii]ntroduce|[Ee]stablish|[Cc]onfigure|[Bb]uild|[Cc]reate)[^\n]{0,60}([Bb]ackup|[Nn]ightly dump|[Rr]estore drill|[Rr]estore rehearsal)", in: "AUDIT-DURABILITY.md" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-DURABILITY.md" would match that
+# todo at step 1 and fail an ordering the agent in fact kept. A check nobody
+# can pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): For each question: run the listed **verification
+  # commands**. - step 2 of the audit protocol, whose step 5 is **Produce the
+  # report** via `audit-report`.
+  #
+  # The single document that turns five zeroes into five withheld questions is
+  # a first-week induction list that never uses the word backup. Reaching it
+  # after the report is written cannot change the report; reaching it before is
+  # the whole scenario. Expect this to separate the arms less than it looks: a
+  # grep for backups hits nothing, and ops/ is small enough to be swept by
+  # either arm.
+  - before: { first: "ops/onboarding.md", then: "file_path=AUDIT-DURABILITY.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The dump and the expiry job are attributed to the team that runs them" }
+    - { dimension: tooling, text: "The deleted rehearsal log is found through the history" }
+    - { dimension: restraint, text: "Nothing is scored zero for evidence this repository cannot hold" }
+  threshold: pass_all

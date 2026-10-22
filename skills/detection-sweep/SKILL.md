@@ -83,15 +83,3 @@ Workflow directives for the sweep as a whole (state them when invoking the skill
 - Test procedure: `scripts/sweep.test.ts` - deterministic behavioral test of the script (positive + negative fixture). Run `npx tsx scripts/sweep.test.ts` from the canonical repo after any change to the script (also picked up by `npm test`). Not distributed to target repos.
 
 - `scripts/sweep.ts [path]` - read-only detection sweep (`npx tsx scripts/sweep.ts`); its only argument is the path to scan. Detects: flagged debt (TODO/FIXME, lint suppressions), debug leftovers, fragile/disabled tests, swallowed errors, potential secrets, large files. Produces a report to triage (1 ticket per cause, not per occurrence).
-
-## Changelog
-
-- 1.0.4 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.3 (2026-08-08) - sweep.ts iterates instead of returning a value from forEach
-
-- 1.0.2 (2026-07-20) - co-located test procedure for sweep.ts (scripts/sweep.test.ts)
-
-- 1.0.1 (2026-07-20) - workflow directives clarified as skill options, not sweep.ts flags
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

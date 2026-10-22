@@ -1,0 +1,114 @@
+# audit-security / hard - the credential scan passes and the credential is there.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world. The 2026-08-24 figure recorded for this skill (0.33 against 1.00 on
+# gates) was taken on the deleted `audit-target` fixture, on gates that grepped
+# for two words; nothing here inherits it. `tier: probed`: admission checks run,
+# six-pair run not.
+#
+# STAGING NOTE
+# audit-security reads ../audit-report/reference/apparatus.md. A paired run must
+# stage that sibling into the with-skill arm, or the arm measures a skill whose
+# central pointer dangles.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# Everything visible says secrets are handled. ci/pipeline.yml runs a `security`
+# job on every merge request; `npm run scan` reports 0 findings and exits 0;
+# .gitignore excludes .env; .env.example carries shapes rather than values; and
+# docs/audits/2026-02-11-intake-summary.md records "credential scan in the
+# pipeline, nothing stored in the repository". None of it is false. What none of
+# it covers is src/config.js, where INTAKE_SIGNING_SECRET falls back to
+# 'dev-signing-secret': the scanner's `assigned credential` rule wants a quoted
+# literal after `secret:` or `secret=`, and this line assigns from the
+# environment first, so the rule does not fire. The green scan is evidence that
+# the scanner ran, not that no credential ships - and the audit has to say which
+# of the two it is relying on. The mirror failure is grepping for credential
+# shapes and reporting the scanner's own rules as findings.
+#
+# LIKELY SATURATED, ADMITTED RATHER THAN HIDDEN
+# This is the weakest of the three on the gate dimension and the reason is in
+# one gate: `dev-signing-secret` is a grep away, and both arms grep. Any
+# security review of six source files opens src/config.js. What the aided arm
+# should add is not the string but the reasoning - that the green scan is
+# evidence about the scanner and not about the source - and that lives in the
+# judge, where it is harder to score. Expect the gate lift here to be small and
+# to come from the platform-group attribution rather than from the finding. If
+# a paired run shows this scenario saturated on gates, that is the finding, not
+# a reason to add a gate until it separates.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit how this service handles credentials and secrets.
+  Write the report to AUDIT-SECRETS.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: unearnable credit.
+  - file_exists: "AUDIT-SECRETS.md"
+gates:
+  # from-exit: Report produced in the output format
+  - repo_clean: { except: "AUDIT-SECRETS.md" }
+  # from-exit: Level (0-4) + confidence + justification per question
+  # The finding the green scan hides.
+  - grep_min: { pattern: "dev-signing-secret|INTAKE_SIGNING_SECRET", in: "AUDIT-SECRETS.md", count: "1" }
+  # from-exit: Verification commands run for each scored question
+  # The false positive, both orders: the scanner's own rules and the shapes in
+  # .env.example are not findings, and running the scanner is what settles it.
+  - grep_zero: { pattern: "(secret-scan\.js|\.env\.example)[^\n]{0,80}([Hh]ardcoded|[Hh]ard-coded|[Ll]eaked|[Ee]xposed|committed secret)|([Hh]ardcoded|[Hh]ard-coded|[Ll]eaked|[Ee]xposed) [^\n]{0,60}(secret-scan\.js|\.env\.example)", in: "AUDIT-SECRETS.md" }
+  # from-exit: All 16 questions evaluated (or justified N/A)
+  # Rotation is not this repository's to show: the vault entries are handed to
+  # the process at boot by the platform group's launcher and .env.example says
+  # the signing secret rotates with the cluster credentials. The audit that
+  # separates what it can see from what it cannot names the owner; the audit
+  # that scores rotation zero from an absence does not.
+  - grep_min: { pattern: "[Pp]latform group", in: "AUDIT-SECRETS.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-SECRETS.md" would match that todo
+# at step 1 and fail an ordering the agent in fact kept. A check nobody can
+# pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 13. **Run the verification commands** listed for each
+  # question - step 15 of the same protocol is **Produce the report**.
+  #
+  # What separates the two arms here is not the string `dev-signing-secret`,
+  # which is a grep away and which the manifest already admits both arms will
+  # find. It is whether the scanner's rules were read before the verdict: the
+  # `assigned credential` rule wants a quoted literal after `secret:`, and
+  # src/config.js assigns from the environment first, which is why the green
+  # scan is evidence about the scanner and not about the source.
+  - before: { first: "secret-scan.js", then: "file_path=AUDIT-SECRETS.md" }
+judge:
+  criteria:
+    - { dimension: trap, text: "The green scan is not taken as evidence that no credential ships" }
+    - { dimension: outcome, text: "The fallback value is shown to be reachable at boot" }
+    - { dimension: outcome, text: "Rotation is attributed to the team that performs it" }
+  threshold: pass_all

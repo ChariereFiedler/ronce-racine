@@ -1,5 +1,7 @@
 # Skill evaluation harness (testability tier 4) - design
 
+> Historical design record, kept for the reasoning it carries. It describes the state at the date in its filename and may be stale; the current behavior is what the code and `docs/` say.
+
 Date: 2026-07-20 · Status: approved (brainstorm 2026-07-20)
 
 ## Problem

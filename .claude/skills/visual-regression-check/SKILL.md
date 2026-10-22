@@ -1,15 +1,15 @@
 ---
 name: visual-regression-check
 description: Use when a UI change is about to be committed and its real rendering needs checking on desktop and mobile - "does it render well?", "does it display correctly?", "ça rend bien ?", "est-ce que ça s'affiche bien ?", suspected visual regression, layout/restyle changed, green tests but the rendering never seen.
-version: 1.0.0
+version: 1.0.2
 metadata:
-  last-reviewed: 2026-06-19
+  last-reviewed: 2026-09-04
   category: frontend
 ---
 
 # Visual regression check - see the real rendering before commit
 
-> If the current repo has a dedicated visual skill (e.g. acme-app → `visual-self-review`), it wins - it knows the pages, the snapshot harness, and the project commands.
+> If the current repo has a dedicated visual skill, it wins - it knows the pages, the snapshot harness, and the project commands.
 
 ## This skill vs. others
 
@@ -37,7 +37,7 @@ metadata:
 3. **Capture each surface in each viewport**: `browser_resize` 1280×720 → `browser_take_screenshot`; then `browser_resize` 375×812 → screenshot. Save under a readable path (`<surface>-<viewport>-<state>.png`).
 4. **Cover the states**: nominal, empty, error, loading (those reachable; flag the ones not reached).
 5. **Inspect each capture** (vision) with the objective checklist below.
-6. **Compare** to the expected rendering / the state before the change (and to the project's snapshot harness if it exists).
+6. **Compare** to the expected rendering described by the ticket/diff, and to the project's snapshot harness if it exists. A comparison to the **state before the change** counts only if a before-capture exists: the same surfaces, same viewports, same states, captured on the pre-change code (`git stash` or a worktree on the base commit, steps 1-3 run a second time). Capture it before applying the change when you can, or skip that comparison and say so - your memory of how it looked is not a before-capture.
 
 Inspection checklist:
 
@@ -70,12 +70,14 @@ Not checked: <unreachable state/surface - explicit>
 | "I looked on desktop, that's enough" | Mobile (375px) is blind spot #1: overflow and wrap only appear when narrow. |
 | "No need for the empty/error state" | That is where `undefined`/`NaN`/raw i18n keys surface. One state = partial evidence. |
 | "A human review will validate it" | This skill does not replace the human, but does not assume they will look: be the detection gate before commit. |
+| "It looked different before, I remember" | Memory is not a capture. Either a before-capture from the pre-change code exists, or the comparison was not made - say which. |
 
 ## Exit condition
 
 - [ ] Desktop **and** mobile captures of each affected surface, read with the checklist
 - [ ] Empty/error states checked or explicitly flagged as not checked
 - [ ] Compared to the project's snapshot harness if it exists (intentional diff re-read, otherwise fixed)
+- [ ] Before/after comparison made against a before-capture, or explicitly declared not made
 - [ ] Verdict + capture paths traced - never "it should render"
 
 ## Tooling
@@ -83,7 +85,3 @@ Not checked: <unreachable state/surface - explicit>
 - Browser driving via Playwright MCP: `mcp__<server>__browser_navigate`, `mcp__<server>__browser_resize`, `mcp__<server>__browser_take_screenshot` (and `browser_snapshot` for the accessibility tree).
 - Failing that: the project's E2E runner / visual snapshot harness (read its config).
 - No dedicated script here: dev command and viewports are project-specific.
-
-## Changelog
-
-- 1.0.0 (2026-06-19) - initial generic release extracted from acme-app/visual-self-review (stack coupling removed, viewports parameterizable)

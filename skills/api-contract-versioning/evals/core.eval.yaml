@@ -1,0 +1,131 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED. No paired run has been made against this scenario and no
+# figure in the findings log belongs to it; the only skill with a real
+# six-pair verdict is recurring-bug-root-cause. `tier: probed` is the claim:
+# admission checks only, never a causal verdict.
+#
+# What the fixture carries (playground/fixtures/service/EXPECTED.md). Three
+# consumer families, and only one of them ships with the service:
+#   clients/dispatch-console/  co-deploys, reads `job.assignee` in toRow()
+#   clients/shop-tablet/       does NOT - installed on twenty-five walls,
+#                              updates when a shop restarts it, about a month
+#                              to turn over, and its KNOWN_FIELDS list keeps
+#                              `assignee` and DROPS anything it does not know
+#   tools/exporter/            does NOT - reads the database positionally, so
+#                              it is not an API consumer at all, which is the
+#                              distinction an inventory has to make rather
+#                              than sweep in
+#
+# How a careful agent with NO skill plausibly fails.
+# The rename is four characters in `src/http/serialise.js` and one call site
+# in a client that lives in this repository, so the whole change looks
+# co-deployed: everything that reads the field is right there in the tree. The
+# tablet's own comment says a field it has never heard of is "logged and
+# dropped ... we would rather it kept working", which reads as tolerance and
+# is the opposite - dropping a field the tablet DOES know nulls the fitter's
+# name on the wall-mounted screen, silently, with a warning nobody reads. An
+# agent that greps the repository and finds every reader has a complete-looking
+# inventory of exactly the consumers that do not matter. Gate 1 asks whether
+# the fleet made the list at all; gate 2 catches the follow-on move of editing
+# the tablet's source as though that shipped anything.
+#
+# The format-gate probe. This skill's skeleton is large - the exit checklist
+# plus the whole of templates/consumer-inventory.md, which already contains
+# "breaking", "additive", "expand-contract", "Distributed clients (CLI / SDK /
+# installed app)" and "Dated removal ticket". Every one of those words is
+# therefore unusable as a gate, and the manifest this replaces gated on two of
+# them. The gates below key on this world's consumers and on a real date.
+prompt: >
+  The domain, the roster and the dispatch board all say technician; the job
+  payload says `assignee`. Rename the payload field to `technician`. Leave
+  what the team needs in order to review the change in docs/contract-change.md.
+
+preconditions:
+  # The world has no tracker, so the prompt names where the review note lands.
+  - file_exists: "docs/contract-change.md"
+  # Doing what the prompt literally asked. An agent with no skill produces this
+  # too, so it earns no credit - but the gates below are uninterpretable
+  # without it.
+  - grep_min: { pattern: "technician", in: "src/http/serialise.js", count: "1" }
+
+gates:
+  # The consumer that decides this change is not in the tree and cannot be
+  # migrated by us. Naming it is the inventory's whole job. Pristine: the file
+  # does not exist, so 0 hits, and "tablet" appears nowhere in the skill's
+  # template or checklist.
+  # from-exit: Consumer-family inventory done (greps cited), each one listed
+  - grep_min: { pattern: "tablet|fleet|2\\.3|2\\.4", in: "docs/contract-change.md", count: "1" }
+  # Editing the source of a client that does not deploy with us changes
+  # nothing on any wall: the twenty-five installed copies are unaffected by
+  # this repository. It is the move that makes a breaking change look handled.
+  # from-exit: Non-co-deployed consumers: compat or deprecation with a dated removal ticket
+  - repo_clean: { in: "clients/shop-tablet" }
+  # "We will remove the old field later" is the failure this line exists to
+  # forbid. An ISO date or a year, not a word. Pristine: 0 - the file does not
+  # exist - and the consumer-inventory template carries a blank deadline, no
+  # date.
+  # from-exit: Non-co-deployed consumers: compat or deprecation with a dated removal ticket
+  - grep_min: { pattern: "[0-9]{4}-[0-9]{2}-[0-9]{2}|\\b20(2[6-9]|3[0-9])\\b", in: "docs/contract-change.md", count: "1" }
+  # docs/api/work-orders.md is this repository's contract artifact: the payload
+  # table and the promise that no field is renamed without a dated notice. A
+  # contract change that does not reach it has not been reviewed against
+  # anything. The pattern is the table ROW, not the word: the document already
+  # says "the technician's name" in two field descriptions, so a bare grep for
+  # the word is green before the agent starts and eval-lint rejects it as
+  # vacuous - which is how this gate came to be written this way.
+  # from-exit: Contract-artifact diff (schema/snapshot) reviewed and pasted into the MR
+  - grep_min: { pattern: "\\| ?`?technician", in: "docs/api/work-orders.md", count: "1" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# Neither check below has a shadow in the tree. The inventory is a READ of
+# files this change never touches, and "before any decision" is an ordering
+# claim: the same docs/contract-change.md comes out whether the tablet was
+# opened first or name-dropped afterwards, which is exactly what a repository
+# snapshot cannot hold.
+#
+# NO `tool_absent` and NO `step_budget` here, deliberately. The one forbidden
+# act this skill names as a command is `--update` on a contract snapshot
+# (protocol 6, "compare mode, not --update"), and this world has no snapshot
+# generator at all - a check on it would pass on every trial in both arms and
+# measure nothing. The skill sets no step budget.
+trajectory:
+  # from-skill(sequence): Which consumers co-deploy (monorepo, atomic pipeline)
+  # vs outlive the deployment (installed apps, third-party clients)? That
+  # boundary decides what is allowed to break
+  #
+  # The `then` is the review note rather than the edit to serialise.js, and the
+  # choice is the difference between a check and a trap. Reading the producer
+  # early is ordinary work - an agent opens the file it was asked to change -
+  # so an ordering check keyed on it would fail both arms and penalise them
+  # equally. Writing the note IS the decision, and protocol step 1 puts the
+  # inventory before any decision. docs/contract-change.md does not exist in
+  # the fixture, so its first appearance in the trajectory is the write.
+  #
+  # Fails two different ways, and the message says which: the fleet client was
+  # never opened at all, or it was opened after the conclusion was written.
+  - before: { first: "clients/shop-tablet", then: "docs/contract-change.md" }
+  # from-skill(tooling): `templates/consumer-inventory.md` - consumer migration
+  # checklist
+  #
+  # The only artifact this skill's Tooling section names. Harbor uploads the
+  # skill directory verbatim and mounts it, so the template is an ordinary Read
+  # under .../skills/api-contract-versioning/templates/ - which is also why the
+  # unaided arm cannot reach it by construction. Stated plainly: this measures
+  # ADHERENCE, not capability, the same way the anchor's `detect-recurring-fixes`
+  # check does (0/6 unaided, 5/6 aided on 2026-09-03). Read it beside the
+  # report's own reference-read rate, not as a separate finding.
+  - read_file: { path: "templates/consumer-inventory.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "Both field names are served during the window" }
+    # trap: "The frontend compiles, we're good" - every reader of this field is
+    # in the tree, which is what makes the change look co-deployed.
+    - { dimension: trap, text: "The change is called breaking, not additive" }
+    - { dimension: outcome, text: "The extract is separated from the API consumers" }
+    - { dimension: outcome, text: "Nothing waits on a client we cannot deploy" }
+  threshold: pass_all

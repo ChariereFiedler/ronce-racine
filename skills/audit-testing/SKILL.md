@@ -22,16 +22,9 @@ Audit the maturity of a project's testing practices: coverage, test pyramid, sta
 
 **13 questions** split into 5 sections. The detailed grids (statement, checks, commands, levels 0-4) live in `reference/` - see [Grids by section](#grids-by-section).
 
-## Criticality levels
-
-- **must**: fundamental practice, absence = critical risk
-- **should**: good practice, absence = moderate risk
-- **could**: excellence, absence = room for improvement
-
 ## Score calculation
 
-- Domain score = average of scored questions (exclude N/A)
-- State "X questions scored out of Y total"
+- The score rule itself is in the shared apparatus (see [Report apparatus](#report-apparatus))
 - A question is N/A if the project profile makes it non-applicable (e.g. no third-party API → te-01/te-01a/te-05 N/A, no batch → te-06 N/A)
 - Conditional sub-questions (te-01a, te-02a, te-03a, te-09a) are N/A if their parent question does not reach the required level
 - Criticality (used to prioritize remediation, NOT in the score - see `audit-report/reference/scoring-model.md`):
@@ -52,7 +45,7 @@ Audit the maturity of a project's testing practices: coverage, test pyramid, sta
 9. **Assign a level** per question with a justification and a confidence level
 10. **Mark N/A** the questions non-applicable to the project profile
 11. **List the non-auditable items** requiring an interview or external access
-12. **Produce the report** in the standard format
+12. **Produce the report** in the shared output format (see [Report apparatus](#report-apparatus))
 
 ## Grids by section
 
@@ -66,52 +59,9 @@ Each file contains the statement, the items to analyze/check, the bash commands 
 | Resilience & chaos | [reference/resilience-chaos.md](reference/resilience-chaos.md) | te-04, te-05, te-06 | 3 |
 | Unit, integration & CI tests | [reference/tests-unit-integ-ci.md](reference/tests-unit-integ-ci.md) | te-07, te-08, te-09, te-09a | 4 |
 
-## Confidence levels
+## Report apparatus
 
-- **high**: verified by an executed command or direct file read
-- **medium**: inferred from structure/config but not deeply verified
-- **low**: requires an interview or external access (coverage dashboard, historical reports, team interview)
-
-## Output format
-
-```markdown
-## Testing & Validation - Global score: X.X/4 (Y questions scored out of Z)
-
-### Summary
-[2-3 sentences summarizing testing maturity]
-
-### Detail per question
-
-| Code | Question | Criticality | Level | Confidence | Justification |
-|------|----------|-------------|-------|------------|---------------|
-| te-01 | Contract testing with third-party APIs | could | X | medium | ... |
-| te-01a | Coverage of tested contracts | could | X | low | ... |
-| te-02 | Golden dataset | should | X | high | ... |
-| te-02a | Golden dataset maintenance | should | X | medium | ... |
-| te-03 | Full-injection E2E tests | should | X | high | ... |
-| te-03a | Flaky test management | should | X | high | ... |
-| te-04 | Chaos testing | could | X | low | ... |
-| te-05 | Third-party API outage simulation | should | X | medium | ... |
-| te-06 | Historical batch replay | could | X | low | ... |
-| te-07 | Unit test structure | must | X | high | ... |
-| te-08 | Integration test structure | must | X | high | ... |
-| te-09 | Test execution in CI | must | X | high | ... |
-| te-09a | Test feedback loop | should | X | medium | ... |
-
-### Strengths
-- ...
-
-### Weaknesses
-- ...
-
-### Recommendations
-1. [MUST] ...
-2. [SHOULD] ...
-3. [COULD] ...
-
-### Non-auditable items
-- [te-XX] Description - Reason (requires interview / dashboard access / log access / field observation / ...)
-```
+Read `../audit-report/reference/apparatus.md` before writing the report: the score rule, the criticality and confidence levels, the handling of non-auditable items and the output skeleton live there and nowhere else. Domain title `Testing & Validation`, 13 questions: one row per code listed in [Grids by section](#grids-by-section).
 
 ## Exit condition
 
@@ -123,9 +73,3 @@ Each file contains the statement, the items to analyze/check, the bash commands 
 - [ ] Domain score calculated (average excluding N/A, "X scored out of Y")
 - [ ] Report produced in the output format
 - [ ] Non-auditable items listed
-
-## Changelog
-
-- 1.0.1 (2026-07-20) - scoring aligned with scoring-model.md: flat mean only; criticality kept for remediation priority, weights removed from the score
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

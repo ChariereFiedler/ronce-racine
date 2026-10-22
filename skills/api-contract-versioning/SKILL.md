@@ -70,9 +70,3 @@ A network API contract has a chain of consumers that are **coupled and potential
 ## Tooling
 
 - `templates/consumer-inventory.md` - consumer migration checklist
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.0 (2026-06-19) - initial release, generalized from a project-specific `api-contract-evolution` workflow (decoupled from a Rust/Axum stack, agnostic across REST/GraphQL/gRPC)

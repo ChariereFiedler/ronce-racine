@@ -1,6 +1,6 @@
 # Adopting Ronce Racine in a repo
 
-## Option A - Smart installer (recommended)
+## The installer
 
 `ronce-racine` detects the project's stack (frontend/backend/tests/SQL/migrations/CI/infra/git) and proposes the relevant artifacts, with a reason for each.
 
@@ -43,45 +43,42 @@ npx ronce-racine check . --strict   # exit 1 on drift (blocking gate)
 - **Backing out**: `ronce-racine uninstall .` removes what the lockfile records and unwires its own hooks, keeping detached items and restoring any `*.pre-install.bak`. Preview it with `--dry-run`. See [`distribution-model.md`](distribution-model.md#removing-an-installation).
 - **Staleness**: the canonical version has moved on since install → "rerun install" warning.
 
-CI gate: the [`templates/anti-drift.gitlab-ci.yml`](../templates/anti-drift.gitlab-ci.yml) snippet (soft via `allow_failure`, blocking by removing that line).
+CI gate: `check --strict` is one command, so any runner can host it. On GitLab,
+the [`templates/anti-drift.gitlab-ci.yml`](../templates/anti-drift.gitlab-ci.yml)
+snippet is ready to paste (soft via `allow_failure`, blocking by removing that
+line). On GitHub Actions, the same gate is one step:
 
-> The sections below describe the **rules-only approach** (rules and nothing else), still driven by `ronce-racine`.
-
-## 1. Choose the adopted rules
-
-Selection happens at install time, not in a hand-written file:
-
-```bash
-npx ronce-racine install . --rules-only              # selector, pre-checked with the detected stack
-npx ronce-racine install . --rules-only --pick rule:minimal-code.md rule:commits.md
+```yaml
+# .github/workflows/ronce-racine.yml
+name: Config drift
+on: [push, pull_request]
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      # Pin the version the repo installed, so a new release is a decision
+      # rather than a red pipeline. `check` without --strict only warns.
+      - run: npx ronce-racine@<version> check . --strict
 ```
 
-`.claude/rules/shared/.adopted` is **written by the installer** as a record of what it adopted; editing it changes nothing, and the next install rewrites it. What is actually managed lives in the lockfile.
+Prerequisite, on either forge: the runner must reach the npm registry. If you
+prefer no network dependency in CI, the committed files already freeze the
+content - the gate only adds drift **detection**.
 
-Only adopt the rules for which you want the **generic canonical** version. A rule you want to **enrich locally** (e.g. `secure-logging` with the project's identifiers and lint): leave it out of the selection, and keep your version in `.claude/rules/shared/` or `rules/<project>/`. A rule the installer never wrote is never touched by `install` or `check`; one you customized after adopting it is what `detach` is for.
+## The rules-only path
 
-## 2. Commit
+`ronce-racine install . --rules-only` restricts the whole run to rules; add
+`--pick rule:minimal-code.md rule:commits.md` to name them, or `--yes` to skip
+the selector when resyncing later. Only adopt the rules for which you want the
+**generic canonical** version: a rule you want to enrich locally, leave out of
+the selection and keep in `.claude/rules/shared/` or `rules/<project>/`. A rule
+the installer never wrote is never touched by `install` or `check`; one you
+customized after adopting it is what `detach` is for.
 
-The adopted files land in `.claude/rules/shared/` and are tracked in the lockfile (same drift mechanism as everything else). Check the diff (`git diff`), then commit:
-
-```bash
-git add .claude/rules/shared .claude/.ronce-racine.json
-git commit -m "chore(rules): adopt the generic canonical rules (ronce-racine)"
-```
-
-## 3. Anti-drift CI gate (recommended)
-
-Add the job from [`templates/anti-drift.gitlab-ci.yml`](../templates/anti-drift.gitlab-ci.yml) to the repo's `.gitlab-ci.yml`. It fails if an adopted rule has diverged from the canonical version.
-
-Prerequisite: the runner must be able to reach the npm registry (the job runs `npx ronce-racine@<version> check`). If you prefer no network dependency in CI, the committed files already freeze the content - the gate only adds drift **detection**.
-
-## 4. Update later
-
-When the canonical version evolves:
-
-```bash
-cd <repo>
-npx ronce-racine install . --rules-only --yes
-git add .claude/rules/shared .claude/.ronce-racine.json
-git commit -m "chore(rules): resync canonical rules"
-```
+`.claude/rules/shared/.adopted` is **written by the installer** as a record of
+what it adopted; editing it changes nothing, and the next install rewrites it.
+What is actually managed lives in the lockfile. Commit
+`.claude/rules/shared` and `.claude/.ronce-racine.json` together.

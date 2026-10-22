@@ -1,15 +1,15 @@
 ---
 name: adversarial-feature-challenge
 description: Use when a feature is "done" and needs adversarial stress-testing before shipping - "is it really ready", "est-ce vraiment prêt", "find the bugs", "trouve les bugs", "red team", before closing a ticket whose only validation is the golden path passing.
-version: 1.1.0
+version: 1.1.2
 metadata:
-  last-reviewed: 2026-07-21
+  last-reviewed: 2026-09-04
   category: feature
 ---
 
 # Adversarial feature challenge
 
-> If the current repo has a specific challenge skill (e.g. acme-app → `feature-challenge`), it wins.
+> If the current repo has a specific challenge skill, it wins.
 
 ## This skill vs. others
 
@@ -34,7 +34,7 @@ metadata:
 
 1. **Pick a persona** (table below) and attack the feature from its point of view - don't validate, break
 2. **Walk the layers**: go through every block of the checklist, inject `assets/fuzz-payloads.txt` into the inputs
-3. **Document each flaw** in `templates/challenge-report.md`: repro steps + output (curl/SQL/screenshot) + severity
+3. **Document each flaw** in the challenge report: repro steps + output (curl/SQL/screenshot) + severity. The report is a file **in the audited repository** - `CHALLENGE-REPORT.md` at the root unless the project has a place for it - started by copying `templates/challenge-report.md` out of the skill directory, which is read-only and is not the deliverable
 4. **Switch persona** and start over - 0 bugs = insufficient challenge, not a perfect feature. **Stopping after one persona is not a challenge**: the first persona finds what you already suspected, the second finds what you did not. Name each persona explicitly in the report as you go, so the count is visible.
 5. **Verdict + tickets**: one ticket per confirmed flaw, rule blocking / improvement / green-light
 
@@ -50,7 +50,7 @@ metadata:
 
 ## Tooling
 
-- `templates/challenge-report.md` - full checklist to tick + flaws table + verdict, filled in during the challenge
+- `templates/challenge-report.md` - full checklist to tick + flaws table + verdict. A model to copy into the audited repository and fill in there; never edited in place
 - `assets/fuzz-payloads.txt` - ready-to-inject payloads (SQLi, XSS, Unicode, numeric bounds, dates, tricky emails)
 
 ## Checklist by layer
@@ -85,12 +85,6 @@ metadata:
 
 - [ ] At least 2 personas walked through (one of them non-technical) - **no feature is OK without ≥ 1 challenge round**
 - [ ] Each checklist layer walked or explicitly waived (justified out-of-scope)
-- [ ] Each flaw = archived repro (steps + output) + severity in `templates/challenge-report.md`
+- [ ] Each flaw = archived repro (steps + output) + severity, in the challenge report written into the audited repository
 - [ ] One ticket opened per confirmed flaw
 - [ ] Verdict set: blocking / improvement required / green-light
-
-## Changelog
-
-- 1.1.0 (2026-07-21) - persona switch made explicit and countable; eval runs showed agents stopping after one
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

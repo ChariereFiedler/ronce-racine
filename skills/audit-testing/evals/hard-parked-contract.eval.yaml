@@ -1,0 +1,110 @@
+# audit-testing / hard - a skipped test is a contract nobody renegotiated.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world; the previous manifest for this skill inherited another skill's
+# calibration and its fixture is gone. `tier: probed`.
+#
+# STAGING NOTE
+# audit-testing reads ../audit-report/reference/apparatus.md; a paired run must
+# stage that sibling into the with-skill arm.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# The prompt asks about the boundaries with the works app and the works
+# scheduler. The natural sweep looks for a contract test directory, a pact file
+# or a schema, finds none, and reports "no contract testing" as a one-line gap -
+# which is true and half the answer. The other half is already in the repository
+# and reads as housekeeping: test/export-csv.test.js parks the header check
+# because "the works department changed the column order on their side and we
+# have not agreed the new one", so the only assertion about the file the
+# scheduler consumes has been switched off since `test(export): park the header
+# check until the columns are agreed`. And src/notify.js - the retry, the
+# backoff, the four attempts and the drop that ADR 0001 designed - has no test
+# file at all, so the behaviour the works app's outages are handled by is
+# unexercised. Both are questions on the grid; neither surfaces from a green
+# `npm test`.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit how this project tests its boundaries with the works app and the works
+  scheduler. Write the report to AUDIT-TEST-CONTRACTS.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: unearnable credit.
+  - file_exists: "AUDIT-TEST-CONTRACTS.md"
+gates:
+  # from-exit: Report produced in the output format
+  - repo_clean: { except: "AUDIT-TEST-CONTRACTS.md" }
+  # from-exit: All 13 questions evaluated (or justified N/A)
+  # te-01 (contract testing with third-party APIs) is 0 or 1, not N/A: there are
+  # two third parties here - the works app that src/notify.js posts to, and the
+  # scheduler that consumes the export file. Marking it non-applicable is the
+  # wrong call the skill's own variant makes tempting.
+  - grep_min: { pattern: "te-01[^\n]*\|\s*[01]\s*\|", in: "AUDIT-TEST-CONTRACTS.md", count: "1" }
+  # from-exit: Verification commands executed for every scored question
+  # The parked header check, named. It is the evidence that the contract with
+  # the scheduler is open rather than absent.
+  - grep_min: { pattern: "export-csv|column order|header check", in: "AUDIT-TEST-CONTRACTS.md", count: "1" }
+  # from-exit: Test frameworks detected, files counted by type
+  # The other boundary: the notification path has no test file. Requires
+  # listing src/ against test/ rather than reading the suite that exists.
+  - grep_min: { pattern: "notify", in: "AUDIT-TEST-CONTRACTS.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-TEST-CONTRACTS.md" would match
+# that todo at step 1 and fail an ordering the agent in fact kept. A check
+# nobody can pass penalises both arms equally, which this repository has paid
+# for once already. Keying on the rendered argument matches the Write and the
+# Edit and nothing the agent merely says. Its honest limit: a report written
+# through a shell heredoc renders no `file_path=` at all, and the check then
+# holds vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 2. **Count test files** by type (unit, integration,
+  # e2e) via the dedicated commands - step 12 of the same protocol is **Produce
+  # the report**.
+  #
+  # The second boundary has no test file, so it can only be found from the
+  # source side: src/notify.js is the retry, the backoff, the four attempts and
+  # the drop that ADR 0001 designed, and nothing exercises any of it. A report
+  # written from the suite that exists cannot contain what the suite does not.
+  - before: { first: "src/notify.js", then: "file_path=AUDIT-TEST-CONTRACTS.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The parked header check is tied to the scheduler's column change" }
+    - { dimension: outcome, text: "The retry and drop path is reported as unexercised" }
+    - { dimension: restraint, text: "Contract testing is not marked non-applicable" }
+  threshold: pass_all

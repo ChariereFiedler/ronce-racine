@@ -1,0 +1,98 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED - no paired run, no figure of its own. `tier: probed`.
+#
+# The restraint scenario. Adding a field to the job payload is additive in this
+# world and the fixture is built so that it can be established rather than
+# assumed: every consumer either ignores what it does not recognise
+# (clients/shop-tablet/sync.js keeps a KNOWN_FIELDS list and drops the rest) or
+# reads a fixed list (clients/dispatch-console/work-orders.js maps five named
+# fields; tools/exporter/nightly.js has a positional COLUMNS array and does not
+# read the API at all). docs/api/work-orders.md states the promise in words:
+# "A new field may appear at any time."
+#
+# So the right answer is to ship it and say why it is additive. No new API
+# version, no compat shim, no deprecation window, no dated removal ticket for
+# something nothing removes - EXPECTED.md lists that last one as a wrong answer
+# in its own right. The old base had no scenario of this shape for any skill,
+# which is why no skill could fail by producing its apparatus when none was
+# warranted.
+#
+# How a careful agent with NO skill plausibly fails.
+# The tablet's ingest() logs a warning for every unknown field. Grep for the
+# new field's blast radius and that warning is the first thing you find: a
+# client we do not deploy, reacting to the change. It reads as breakage. The
+# cautious response is a `/v2` payload or a dual-serve window - defensible-
+# looking, evidenced, and wrong, because the line below the warning drops the
+# field and returns the same object it always did. The other direction is
+# ceremony for its own sake: an inventory, a deprecation table and a removal
+# date attached to a change that removes nothing.
+#
+# The format-gate probe passes no gate here.
+#
+# SATURATION RISK, admitted. Two of the three gates are absence gates that an
+# incurious agent passes by doing nothing unusual: it will not invent a /v2
+# route or edit a client it was not asked to touch. Gate 2 is the one carrying
+# the load - whether the additive verdict rests on the consumers having been
+# read - and if the two-pair probe shows the unaided arm at the ceiling on
+# gates, the honest reading is that this scenario measures the judge, not the
+# gates.
+prompt: >
+  The dispatch board now shows two shops in one browser tab and both of them
+  call a bay "Ramp 1", so a fitter cannot tell whose row is whose
+  (ops/backlog.md). Put the shop on the job payload. Leave your reasoning in
+  docs/shop-on-the-payload.md.
+
+preconditions:
+  - file_exists: "docs/shop-on-the-payload.md"
+  # Doing what the prompt literally asked. Pristine: serialise.js does not
+  # mention a shop at all, so this is 0 before the run - but an agent with no
+  # skill produces it too, which is why it earns nothing.
+  - grep_min: { pattern: "shop", in: "src/http/serialise.js", count: "1" }
+
+gates:
+  # A version bump is the wrong answer this scenario exists to catch. Pristine:
+  # 0 - every route in the tree is `/v1/...`.
+  # from-exit: Explicit breaking/additive decision per change; expand-contract applied when viable
+  - grep_zero: { pattern: "'/v2|\"/v2", in: "src/http" }
+  # An additive verdict is a claim about consumers, and it is only worth
+  # anything if the consumer that cannot be deployed was actually checked.
+  # Restraint without the inventory is luck. Pristine: 0 - the file is new.
+  # from-exit: Consumer-family inventory done (greps cited), each one listed
+  - grep_min: { pattern: "tablet|KNOWN_FIELDS|dispatch|exporter", in: "docs/shop-on-the-payload.md", count: "1" }
+  # Nothing about an added field justifies editing a client we do not ship.
+  # from-exit: Non-co-deployed consumers: compat or deprecation with a dated removal ticket
+  - repo_clean: { in: "clients/shop-tablet" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# This scenario's whole difficulty is a claim about a consumer, and the
+# manifest's own saturation note says why the trajectory carries more here than
+# the gates do: two of the three gates are absences an incurious agent passes
+# by doing nothing unusual. Reading the file that decides the verdict is not
+# something doing nothing produces.
+#
+# NO tooling check here, and the omission is the point. The skill's template is
+# a MIGRATION checklist - families, status, removal date - and this change
+# migrates nobody. Requiring it would score the ceremony the scenario exists to
+# punish.
+trajectory:
+  # from-skill(sequence): Which consumers co-deploy ... vs outlive the
+  # deployment. That boundary decides what is allowed to break
+  #
+  # `sync.js` rather than the directory: KNOWN_FIELDS and the warning that
+  # reads as breakage are both in that file, and the line below the warning -
+  # the one that drops the field and returns the same object - is what makes
+  # the change additive. An additive verdict written before that file was
+  # opened is a guess that happened to be right.
+  - before: { first: "clients/shop-tablet/sync.js", then: "docs/shop-on-the-payload.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "Calls the change additive and shows what makes it so" }
+    - { dimension: restraint, text: "No new API version and no compatibility shim" }
+    - { dimension: restraint, text: "No removal ticket for something nothing removes" }
+    - { dimension: sequence, text: "The tablet's warning is read rather than assumed to be breakage" }
+  threshold: pass_all

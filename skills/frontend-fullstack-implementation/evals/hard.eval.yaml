@@ -1,0 +1,107 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. No paired trial exists for this skill on any fixture. `probed`
+# until a six-pair run is recorded here.
+#
+# THE SCENARIO
+#
+# src/pages/notices.js renders a Withdraw button on every advisory, and the
+# button does nothing. NoticeCard's docstring says the wiring is the mounting
+# screen's job ("Actions are plain buttons; the screen that mounts the card
+# wires them by their testId") and the screen never does it.
+#
+# Making it work is the whole exit condition in one task, because this world
+# has exactly one legal way to change what a screen shows:
+#
+#   - src/lib/store.js owns the state and its `reduce` has five action types,
+#     none of them about notices. A withdrawal is a sixth.
+#   - the store's docstring is explicit: "A screen never writes to it: it
+#     dispatches an action and re-renders from what `subscribe` hands back."
+#   - src/lib/data.js reads the rows from disk on every render, so the list is
+#     recomputed from JSON each time and cannot be edited in place.
+#   - `mount` already returns the teardown, and test/pages.test.js asserts the
+#     listener count returns to zero.
+#
+# So there are three wrong places to keep the withdrawn set - a module-level
+# array in notices.js, a mutation of the array `load('notices')` returns, or a
+# write back to src/data/notices.json - and one right one.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# No existing screen dispatches anything. `grep -rn dispatch src/` returns two
+# lines, both inside src/lib/store.js, so the pattern the exit condition
+# demands has no example anywhere in the tree, while the wrong pattern is one
+# line of JavaScript in the file already open. The store is driven from outside
+# in the tests, which makes "the screen dispatches" look like an invention
+# rather than the house rule it is. And nothing catches the shortcut: the suite
+# renders every route and asserts that something came back, so a module-level
+# array passes, a mutated `load()` result passes, and only a second mount in
+# the same process - which nothing performs - would show the state leaking
+# between screens.
+#
+# The second failure is the four states. The notices screen has none: it maps
+# over `load('notices')` and never reads `state.phase`, so an agent that
+# follows the file it is editing ships an interactive screen that cannot show
+# loading or error.
+#
+# NOT SATURATED, as far as can be argued for free: the correct destination for
+# the action is stated once, in a docstring on a file the prompt does not name,
+# and the incorrect one is the default habit.
+fixture: surface
+tier: probed
+prompt: >
+  The Withdraw button on the notices screen is inert - the office clicks it and
+  nothing happens. Make it work: withdrawing an advisory should take it off the
+  list, and the list should come back when the console is restarted, since
+  nothing is persisted yet.
+gates:
+  # The action has to exist in the state layer, which is the only place this
+  # world lets state change. Pristine 0 across src/lib/ for all three strings;
+  # the reducer's five existing cases are filter/set, selection/set,
+  # selection/clear, load/failed and load/done. Scoped to the DIRECTORY rather
+  # than to src/lib/store.js, and matching either the house's namespaced form
+  # or the plain verb: the exit condition promises an action, not a file name
+  # and not a naming convention.
+  # from-exit: Every state mutation goes through an action; no raw fetch outside the project helper
+  - grep_min: { pattern: "notice|withdraw|Withdraw", in: "src/lib/", count: "1" }
+  # And the screen has to go through it rather than keep its own copy.
+  # Pristine 0 in src/pages/notices.js - no screen in this repository dispatches
+  # anything, so this cannot be reached by copying a neighbour.
+  # from-exit: Every state mutation goes through an action; no raw fetch outside the project helper
+  - grep_min: { pattern: "dispatch", in: "src/pages/notices.js", count: "1" }
+  # The shortcut that leaves the suite green: writing the withdrawal back to
+  # the JSON the loader reads. Pristine 0 across src/ for both strings.
+  # from-exit: Every state mutation goes through an action; no raw fetch outside the project helper
+  - grep_zero: { pattern: "writeFileSync|notices\\.json", in: "src/" }
+  # The four states, on a screen that has none today. `state.phase` is the only
+  # source of loading and error in this world. Pristine: 0 lines in
+  # src/pages/notices.js contain "phase".
+  # from-exit: The 4 states (loading/error/empty/success) handled, each with a distinct `data-testid`
+  - grep_min: { pattern: "phase", in: "src/pages/notices.js", count: "1" }
+# NO TRAJECTORY SECTION, and the reason is worth keeping rather than leaving as
+# an omission.
+#
+# Every file this scenario writes is a file it must read first: notices.js and
+# the store are both the subject and the deliverable, so every `before` that
+# could be built here inverts - the read that would anchor `then` precedes any
+# context a check could name, and the check would fail every trial. That is the
+# 2026-09-03 failure shape, and the place to notice it is here rather than in a
+# job's output.
+#
+# Nothing else in the skill supplies one. Its `Tooling` section says "Reuse the
+# current repo's scripts and commands ... No generic tool provided here", so
+# there is no script to name; it states no forbidden act, so there is no
+# `tool_absent` to derive; it bounds no effort, so there is no `step_budget`.
+# The one act it does prescribe that this scenario turns on - the mutation
+# going through the state layer - is already visible in the tree, and the
+# `src/lib/` and `dispatch` gates above hold it.
+judge:
+  criteria:
+    # Trap table: "I'll put the logic straight in the component, it's faster" -
+    # untestable, non-reusable logic that re-fetches on every mount.
+    - { dimension: trap, text: "The withdrawn set lives in the store, not in the module" }
+    - { dimension: outcome, text: "The screen still hands back its teardown" }
+    # Trap table: "Empty / error state, I'll do it later" - the 4 missing
+    # states are the most frequent regressions.
+    - { dimension: trap, text: "The empty case still draws a sentence" }
+  threshold: pass_all

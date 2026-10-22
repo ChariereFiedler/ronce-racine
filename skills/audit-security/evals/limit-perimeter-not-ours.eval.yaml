@@ -1,0 +1,120 @@
+# audit-security / limit - the perimeter belongs to another team.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world; the 2026-08-24 figure for this skill was taken on a fixture that no
+# longer exists and on gates that measured vocabulary. `tier: probed`.
+#
+# STAGING NOTE
+# audit-security reads ../audit-report/reference/apparatus.md; a paired run must
+# stage that sibling into the with-skill arm.
+#
+# WHY THIS IS THE LIMIT SCENARIO
+# The right deliverable here is mostly restraint. TLS is terminated by the
+# platform group's ingress, the object store and the runner are theirs, and no
+# container is built anywhere in this repository - `find . -name Dockerfile`
+# returns nothing. The questions about transport, perimeter and images are
+# withheld with a reason and an owner, not scored zero; and the one thing that
+# IS this service's own - it trusts whatever reaches it, with no authentication
+# and no rate limiting on any route - is still reported as a finding rather than
+# excused by the documented boundary.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# An absent control reads as a zero. There is no certificate, no cipher suite,
+# no HSTS header, no WAF and no image, so the natural report is a short list of
+# critical findings with recommendations to enable TLS, add HSTS, put a WAF in
+# front and harden the container - three of which are already someone else's
+# job and one of which has no object. docs/architecture.md says so in a section
+# titled "What is not here", but an agent that has already decided absence means
+# zero reads that as an excuse rather than as a scoping fact.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit the transport, network and container security of this service.
+  Write the report to AUDIT-PERIMETER.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: unearnable credit.
+  - file_exists: "AUDIT-PERIMETER.md"
+gates:
+  # from-exit: Report produced in the output format
+  - repo_clean: { except: "AUDIT-PERIMETER.md" }
+  # from-exit: Non-auditable items listed
+  # SE-01: TLS terminates at an ingress this repository does not describe.
+  - grep_min: { pattern: "SE-01[^\n]*([Nn]/[Aa]|non-auditable|not auditable)", in: "AUDIT-PERIMETER.md", count: "1" }
+  # from-exit: All 16 questions evaluated (or justified N/A)
+  # SE-13: there is no image to audit. The skill's own variant says an
+  # application without containers marks it N/A; scoring it zero invents a
+  # rootful image for a repository that builds none.
+  - grep_min: { pattern: "SE-13[^\n]*([Nn]/[Aa]|non-auditable|not auditable)", in: "AUDIT-PERIMETER.md", count: "1" }
+  # from-exit: Non-auditable items listed
+  # The reason and the owner, not just the withholding. The owner alone: an
+  # earlier version accepted "ingress" as well, and a written wrong answer
+  # passed it with "put a WAF in front of the ingress".
+  - grep_min: { pattern: "[Pp]latform group", in: "AUDIT-PERIMETER.md", count: "1" }
+  # from-exit: All 16 questions evaluated (or justified N/A)
+  # The over-eager failure this scenario exists to catch: prescribing a control
+  # that is already someone else's, on evidence this repository cannot hold.
+  # Only affirmative recommendations match - a row explaining that the ingress
+  # terminates TLS, or asking the platform group to confirm the minimum version,
+  # does not.
+  - grep_zero: { pattern: "([Ee]nable|[Cc]onfigure|[Ii]mplement|[Ii]ntroduce|[Ss]et up|[Tt]urn on)[^\n]{0,25}(TLS|HTTPS|HSTS|a WAF|the WAF)", in: "AUDIT-PERIMETER.md" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-PERIMETER.md" would match that
+# todo at step 1 and fail an ordering the agent in fact kept. A check nobody
+# can pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 4. **Read server configs**: Nginx, Caddy, Traefik,
+  # middleware headers - step 15 of the same protocol is **Produce the
+  # report**.
+  #
+  # There are no server configs to read: the section of docs/architecture.md
+  # titled "What is not here" is what stands in for them, and it is the
+  # document that turns four critical findings into four withheld questions.
+  # Read after the report, it reads as an excuse for findings already written.
+  - before: { first: "docs/architecture.md", then: "file_path=AUDIT-PERIMETER.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "TLS is withheld with both a reason and an owner" }
+    - { dimension: restraint, text: "No container hardening is proposed for an image nothing builds" }
+    - { dimension: outcome, text: "The internal-only trust assumption is still recorded as a risk" }
+  threshold: pass_all

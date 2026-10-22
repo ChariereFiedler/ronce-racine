@@ -1,0 +1,95 @@
+# LIMIT scenario - the request is for a coverage matrix over content, and
+# content is data. The right answer is to decline the shape of the request and
+# say what the data needs instead.
+#
+# content/ holds 16 datasheets and 10 market files. Nothing in it executes.
+# What reads it is already tested: tools/sheetmill/content.js has
+# test/content.test.js covering the header parser, the market discovery and the
+# override merge, and tools/sheetmill/plan.js has test/plan.test.js covering
+# the withdrawn-market rule. A test per datasheet would assert that a file the
+# author just wrote says what the author just wrote, would grow by one file
+# every time sales-ops adds a part, and would still not catch the two things
+# the rota has actually been bitten by - both of which are already on
+# ops/backlog.md as CHECKS rather than tests: a market folder whose legal line
+# is missing renders a blank footer, and the `withdrawn:` codes are unvalidated.
+#
+# NOT MEASURED, and SATURATION RISK ADMITTED. "Do not unit-test static content"
+# is a widely held instinct and the unaided arm may well hold it. What the
+# scenario can still separate is whether the answer stops at refusing (which
+# leaves the requester where they started) and whether anything gets written
+# into the repository - sixteen test files is the eager failure, and it is a
+# cheap one to commit with `node --test` already wired up.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. The request is specific, reasonable-
+# sounding and comes from a named stakeholder, and the repository makes it easy:
+# a parser to call, a fixture directory to copy, no dependencies to install.
+# The path of least resistance is to produce the matrix that was asked for -
+# one row per datasheet, risk by market count - and to start on the tickets.
+# Refusing costs an argument; complying costs sixteen files that will never
+# fail for a reason anybody cares about.
+tier: probed
+fixture: incident
+prompt: >
+  Sales-ops keeps merging market folders and datasheets and somebody has asked
+  for a test per datasheet so that content/ is covered the way the code is.
+  Work out the coverage this actually needs. No tracker is configured here:
+  write the matrix to STRATEGY.md and any follow-up tickets under tickets/.
+preconditions:
+  - file_exists: "STRATEGY.md"
+gates:
+  # from-exit: Surfaces to cover delegated to the right skill (never write the tests here)
+  #
+  # The gate the scenario exists for. Sixteen test files, or one parameterised
+  # test over the datasheet directory, is what an eager run produces, and this
+  # is the exit-condition line that forbids it - here it forbids it twice over,
+  # since the strategy is also not the place to write the check it recommends.
+  # Known false positive, accepted: an agent that runs tools/portal/stage.js
+  # while surveying creates staging/, which the snapshot does not prune.
+  - repo_clean: { except: "STRATEGY.md, tickets/" }
+  # from-exit: Gap analysis produced (Covered / Partial / Absent) with actions
+  #
+  # Declining the request is only defensible if the existing coverage is
+  # established rather than assumed, and the answer to "who tests the
+  # datasheets" is `parseDatasheet`, exercised by test/content.test.js.
+  # Naming either is evidence that the suite was read before it was declared
+  # sufficient. Neither string is in the prompt, in SKILL.md, in
+  # reference/testing-advanced.md or in any template, so the template-only
+  # probe fails this gate.
+  - grep_min: { pattern: "content\\.test\\.js|parseDatasheet", in: "STRATEGY.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Not
+# replayed against real trials - proved able to pass and to fail against a
+# synthetic trajectory, as in the core scenario.
+trajectory:
+  # from-skill(sequence): Context to gather (before acting) - Existing tests:
+  # locate them (`*.spec.*`, `*.test.*`, `tests/` folders), read a neighbour to
+  # copy its conventions
+  #
+  # The scenario declines the request, and the decline is only defensible if
+  # the existing coverage was established rather than assumed - which is the
+  # argument the second gate above makes for naming `content.test.js` or
+  # `parseDatasheet` in the matrix. Naming a file is not opening it, and the
+  # tree records neither. This is the act: the header parser, the market
+  # discovery and the override merge are already covered, and that file is
+  # where it can be seen.
+  # Any read counts - the dedicated tool, a Grep scoped to the file, a shell
+  # that does not write to it. Same two accepted leaks as the core scenario.
+  - before: { first: "content.test.js", then: "STRATEGY.md" }
+  # NOT CHECKED: the eager act this scenario exists to catch - sixteen test
+  # files, or one parameterised test over the datasheet directory - is an
+  # absence in the TREE, and `repo_clean` above grades it. A `tool_absent` on
+  # the writing tools would forbid the deliverable itself.
+judge:
+  criteria:
+    # The refusal, stated as a classification rather than as a complaint.
+    - { dimension: outcome, text: "Treats the datasheets as data rather than as testable surfaces" }
+    # from-skill(restraint): Exit - "Surfaces to cover delegated to the right
+    # skill (never write the tests here)", and the restraint that leaves the
+    # requester better off than a flat refusal would.
+    - { dimension: restraint, text: "Proposes one check over the whole directory instead of one test per file" }
+    # The two real content risks, both already on the rota's list.
+    - { dimension: outcome, text: "Names what could actually be wrong with a market folder" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.

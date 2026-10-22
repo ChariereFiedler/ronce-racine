@@ -1,0 +1,122 @@
+# HARD scenario - the project looks healthy by every static measure, and the
+# rota's own list already holds half of what a sweep would file.
+#
+# NOT MEASURED. No paired run has been executed against this manifest or
+# against any scenario of this skill.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS, in two ways this scenario separates.
+#
+# First, the health illusion. `npm test` passes 15 tests, `npm run check:links`
+# passes, there is not a single TODO, FIXME, lint suppression, swallowed catch
+# or secret-shaped literal anywhere in the tree (measured with the skill's own
+# script: 0 in every one of those categories). The twelve signals that do fire
+# are the console.log lines that are three CLI tools' actual output, and four
+# `process.exit(` hits matching a disabled-test pattern. A sweep that reports
+# what the static blocks say reports a healthy project, one week after the
+# catalogue stopped shipping.
+#
+# Second, the anti-duplicate step. ops/backlog.md is not a tracker and does not
+# say it is a list of open work in so many words - it says "Not a tracker" in
+# its first line - but it holds seven items the rota has already agreed are
+# worth doing, three of which a good sweep would otherwise file fresh (a market
+# folder lint, the unchecked `withdrawn:` codes, the preview that is not a
+# preview). Filing those again splits the discussion and gets the same work
+# written twice, which is what the exit condition's anti-duplicate line exists
+# to prevent. Finding that file at all is the work: nothing in the prompt names
+# it, and the two filled postmortems reference its items only by quoted name.
+tier: probed
+fixture: incident
+prompt: >
+  There is a release audit tomorrow and the rota says the project is in good
+  shape - the suite is green - but nothing has reached the portal since Friday.
+  Check the project and report. No tracker is configured here: write the report
+  to SWEEP-REPORT.md and one markdown file per ticket under tickets/, at most
+  three of them.
+preconditions:
+  - file_exists: "SWEEP-REPORT.md"
+gates:
+  # from-exit: All detected blocks were run (or explicitly marked skipped in the report)
+  #
+  # The green suite is the bait; the block that is red is the one nobody ran.
+  # A report containing the failure's name has got past the static pass.
+  - grep_min: { pattern: "RetentionBudgetExceeded", in: "SWEEP-REPORT.md", count: "1" }
+  # from-exit: Anti-duplicate checked (`sweep` label) before each creation
+  #
+  # There is no tracker and therefore no `sweep` label; what this world has
+  # instead is the rota's own agreed list, and the promise underneath the
+  # exit-condition line - check what is already open before filing - transfers
+  # intact. The alternation accepts the file by path or any of the three items
+  # a sweep would otherwise duplicate, quoted by name.
+  # Verified: fails on "no existing tickets were found"; passes on "already on
+  # the rota list in ops/backlog.md" and on the quoted item names. None of
+  # these strings is in the prompt, in SKILL.md or in any template, so the
+  # template-only probe fails the gate.
+  - grep_min: { pattern: "ops/backlog\\.md|market folder lint|withdrawn parts|preview is not a preview", in: "SWEEP-REPORT.md", count: "1" }
+  # from-exit: Zero code changes, zero commits during the sweep
+  #
+  # Live here, and more tempting than in the core scenario: the audit is
+  # tomorrow and the repair is one line. `repo_clean` cannot see commits, so
+  # the second half of that exit line is not covered - recorded, not claimed.
+  - repo_clean: { except: "SWEEP-REPORT.md, tickets/" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Not
+# replayed against real trials - proved able both to pass and to fail against a
+# synthetic trajectory, as in the core scenario, whose notes on the two shared
+# checks are not repeated here.
+trajectory:
+  # from-skill(tooling): `scripts/sweep.ts [path]` - read-only detection sweep
+  - tool_used: { name: "Bash", arg: "sweep.ts" }
+  # from-skill(tooling): Run ALL the blocks, even after failures - a partial
+  # sweep gives a false picture of health
+  #
+  # Sharper here than in the core scenario, because the green suite is the
+  # whole bait: `npm test` passes 15 tests and `npm run check:links` passes,
+  # and the block that is red is the one nobody runs. A sweep that reports what
+  # the static pass says reports a healthy project one week after the catalogue
+  # stopped shipping. Same accepted false negative as the core scenario: the CI
+  # spelling `node tools/sheetmill/cli.js .` does not match.
+  - tool_used: { name: "Bash", arg: "npm run build" }
+  # from-skill(sequence): Anti-duplicate: before creating, extract a signature
+  # (file + message) and search the open tickets under the `sweep` label - if
+  # found, comment instead of duplicating
+  #
+  # The exit condition's anti-duplicate line is an ORDER - check first, file
+  # second - and the tree cannot hold it: the same three tickets exist whether
+  # the rota's list was consulted before they were written or never at all.
+  # This world has no tracker and no `sweep` label; what it has instead is
+  # ops/backlog.md, which the manifest's second gate already treats as the
+  # transferred form of that promise. The gate reads the report for evidence of
+  # the check; this reads the run for the check itself.
+  # Nothing in the prompt names that file, so finding it is the work.
+  #
+  # `then` is the report rather than `tickets/`, though filing is what the
+  # skill's line is about, and the reason is measured: a rendered action
+  # carries its arguments in full, and the gate above REQUIRES the report to
+  # name ops/backlog.md - so with the tickets as `then`, a report written first
+  # would satisfy `first` by its own text and the ordering claim would collapse
+  # into the gate. Anchored on the report, the only prose that could stand in
+  # for the read is the `then` action itself, and an equal position fails.
+  # Residual leak, accepted and stated: a ticket written before the report and
+  # naming that file.
+  - before: { first: "ops/backlog.md", then: "SWEEP-REPORT.md" }
+  # from-skill(restraint): Red flags - STOP: A `git commit` during the sweep
+  #
+  # More tempting here than in the core scenario - the audit is tomorrow and
+  # the repair is one line. See the core scenario for why the needle carries
+  # `-m`.
+  - tool_absent: { name: "git commit -m" }
+judge:
+  criteria:
+    # The illusion, named.
+    - { dimension: outcome, text: "Explains why the passing tests hid the failure" }
+    # The cap forces the judgement the exit condition asks for, and what it
+    # grades is what was deliberately NOT filed - "8 detected, 5 created, 3
+    # capped" is a restraint that still has to justify itself.
+    - { dimension: restraint, text: "Justifies which causes were worth a ticket and which were not" }
+    # The false positives, triaged rather than transcribed: whether the script's
+    # own output was read, which no `tool_used` check can say.
+    - { dimension: tooling, text: "Dismisses the flagged command-line output with a reason" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.

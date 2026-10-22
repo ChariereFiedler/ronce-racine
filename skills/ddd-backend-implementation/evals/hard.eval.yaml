@@ -1,0 +1,81 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED - no paired run, no figure of its own. See core.eval.yaml, and
+# the caveat there about never gating on directory names: nothing below keys on
+# what anything is called either. `tier: probed`.
+#
+# What makes this the hard one: the wrong place is comfortable, adjacent and
+# already contains a working example of itself. The number belongs next to the
+# other three in src/infrastructure/read/dashboard-view.js, whose `overdue`
+# method reads the table, decides what counts as open and counts it - all three
+# in one line. Adding `row.status === 'awaiting_parts'` beside it is the
+# smallest possible diff, matches the neighbour exactly, and puts the shop's
+# definition of "standing still" in an infrastructure read model where no
+# domain test can reach it. The domain already owns that vocabulary:
+# OPEN_STATES and the NEXT transition table in src/domain/work-order.js.
+#
+# How a careful agent with NO skill plausibly fails.
+# It copies the neighbour. The method it is extending is right there, the
+# status string is one token, and the suite stays green because nothing tests
+# the read model with more than one shop. The failure is invisible in the diff
+# and shows up two months later when a shop asks whether work waiting on a
+# customer decision counts too, and the answer lives in two files.
+#
+# Gate 2 asks that the number be exposed as a query in the layer this
+# repository already puts queries in - src/application/queries/, five files
+# next door. That is the repository's own layout, not the skill's vocabulary:
+# the gate does not care what the file is called or what shape it returns.
+#
+# The format-gate probe passes no gate here: neither `awaiting_parts` nor the
+# word "parts" appears in this skill's exit checklist, which is its whole
+# skeleton.
+prompt: >
+  The strip across the top of a shop's dashboard says how much is late and how
+  full the bays are. Shop managers want a fourth number: how much of their open
+  work is standing still waiting on a part. Add it, the way this project adds
+  things. `npm test` has to stay green.
+
+gates:
+  # The status literal is the domain's vocabulary. In an infrastructure read
+  # model it is a business rule that no domain test can reach, and the second
+  # copy of a definition that already exists in src/domain/work-order.js.
+  # Pristine: 0 hits anywhere under src/infrastructure.
+  # from-exit: No business logic outside the domain (neither handler nor infra)
+  - grep_zero: { pattern: "'awaiting_parts'|\"awaiting_parts\"", in: "src/infrastructure" }
+  # A read that a shop asks for is a query, and this repository puts its
+  # queries in one place - the gate keys on the number being exposed there at
+  # all, not on the name of the file or the shape of its return. Pristine: 0.
+  # from-exit: Commands and queries separated; ports in application, implementations in infra
+  - grep_min: { pattern: "parts", in: "src/application/queries", count: "1" }
+  # A counter with no test is a number nobody has ever seen be wrong.
+  # Pristine: 0 - no test in the suite mentions parts at all.
+  # from-exit: All 4 layers exist in order, each tested before the next
+  - grep_min: { pattern: "parts", in: "test", count: "1" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+# The protocol-order caveat in core.eval.yaml applies here too and is not
+# repeated.
+trajectory:
+  # from-skill(sequence): The architecture in place: where domain / application
+  # / infrastructure / API live; how ports are declared and injected
+  - read_file: { path: "docs/architecture.md" }
+  # from-skill(sequence): Read one already-implemented neighboring module in
+  # the same context and copy its structure ... before inventing anything
+  #
+  # Five query modules sit next door to where the fourth number belongs, and
+  # the wrong place - the read model - is the file the prompt walks you into.
+  # Gate 2 asks whether the number was exposed as a query; this asks whether an
+  # existing one was opened first. Writes do not satisfy `read_file`.
+  - read_file: { path: "src/application/queries/" }
+judge:
+  criteria:
+    # trap: "I put the rule in the repo/infra, I'm already there" - a rule
+    # living in an adapter disappears with the tech and is untestable.
+    - { dimension: trap, text: "What counts as standing still is decided in the domain" }
+    - { dimension: outcome, text: "The read model composes rather than defines" }
+    - { dimension: outcome, text: "The new number is scoped to the shop that asked" }
+    - { dimension: outcome, text: "The existing three counters keep working" }
+  threshold: pass_all

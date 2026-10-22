@@ -1,0 +1,157 @@
+# CORE scenario - the skill's central promise (a ticket carrying a cited root
+# cause, not a symptom) against the `incident` world's main defect.
+#
+# NOT MEASURED. This manifest has never been through a paired run; no scenario
+# of this skill has. The only skill in this world with a real figure is
+# `recurring-bug-root-cause`, whose default manifest was measured over 6 pairs
+# on 2026-09-03. Nothing here inherits that number - what it does inherit is
+# two facts about the world: the unaided arm reaches for the ceiling, and every
+# arm, aided or not, was tempted by the same half-answer.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS (the argument the fixture's EXPECTED.md
+# carries for the world, restated for this scenario; extending EXPECTED.md
+# itself is a playground/ change this author was not scoped to make, and it is
+# owed).
+#
+# The failure names a byte count and a budget. build.config.json holds that
+# budget on one line. ops/runner-capacity.md is a competent capacity review
+# recommending a dedicated runner; ops/pool-size-trial.md is a real experiment
+# showing the pool size moves the peak; ops/backlog.md pre-authorises raising
+# the ceiling. All three were written by people who had the same evidence and
+# stopped there. A ticket that reports any of them is evidenced, plausible and
+# wrong, and it will cite a `file:line` - in retention.js, where the error is
+# raised, or in build.config.json, where the number lives. Neither is the
+# cause. The cause is a `??` in tools/sheetmill/plan.js that is not on the path
+# from the error message at all: plan.js ran to completion before retention.js
+# ever threw. And the six prior fixes are only visible in `git log`, where they
+# read as six unrelated small fixes unless something makes the agent ask what
+# they have in common.
+tier: probed
+fixture: incident
+prompt: >
+  The nightly publish job has been failing every night since 08-31 and nothing
+  has reached the portal since Friday. The rota decides tomorrow what to do
+  about it and wants it documented first. No tracker is configured here: write
+  the ticket to BUG-TICKET.md.
+preconditions:
+  # The prompt names it, so an agent following no skill produces it too. It
+  # tells you the deliverable landed, which is what makes the gates readable.
+  - file_exists: "BUG-TICKET.md"
+gates:
+  # from-exit: Root cause = mechanism + cited `file:line`
+  #
+  # The exit condition demands a cited location, and in this world the citation
+  # is the whole discrimination: the two decoys and the error message all point
+  # at build.config.json or retention.js, and the cause is in plan.js. This
+  # gate is not a citation-FORMAT check - it does not ask for `:<line>`, which
+  # `src/anything.ts:3` satisfies as happily as the right file. It asks for the
+  # right subject, under any of the three names it has in this repository: the
+  # file, the function that reads the disk, or the default that makes the
+  # workload unbounded.
+  # Verified: fails on "**Cited code**: `tools/sheetmill/retention.js:31`" and
+  # on "the budget in build.config.json is too small"; passes on the file, on
+  # `planUnits()` and on `discoverMarkets(contentDir)`. None of the three
+  # appears in the template-only probe's deliverable.
+  - grep_min: { pattern: "plan\\.js|planUnits|discoverMarkets", in: "BUG-TICKET.md", count: "1" }
+  # from-exit: Recurrence checked (section added + `recurring-bug-root-cause` if 2+ recent fixes)
+  #
+  # This scope has six recent fixes in 29 days, so the section is owed and the
+  # redirect with it. The gate deliberately does NOT grep for the word
+  # "recurrence" or for the sibling skill's name: both are in the exit-condition
+  # checklist and in templates/bug-ticket.md, which are exactly what the
+  # template-only probe's synthetic deliverable is made of - a grep for either
+  # is a format gate, and the probe says so. What cannot be written without
+  # having run `git log` is the evidence: a prior fix quoted by its subject, or
+  # the count of them.
+  # Verified: fails on "the job has failed several times before"; passes on
+  # "fix(publish): raise the retention ceiling for the autumn range", on
+  # "`fix(ci): stop sampling every rendered page`", on "six prior fixes in 29
+  # days" and on "5 recent fixes on this job".
+  - grep_min: { pattern: "fix\\((publish|ci)\\)|(six|6|five|5) (prior|previous|recent|earlier) fix", in: "BUG-TICKET.md", count: "1" }
+  # DERIVES FROM (uncitable, and the reason is worth recording): the exit
+  # condition's line "No application file modified". The citation check in
+  # tools/eval-lint.ts requires the cited text to carry at least three
+  # significant words, and that line has two - "file" is a stop word, "no" is
+  # under four characters - so citing it errors as "too short to identify a
+  # line". Every substring of it is shorter still. The gate is therefore left
+  # uncited knowingly, and takes the lint's warning rather than a false
+  # citation.
+  #
+  # It is the one thing this skill promises that a repository can carry: the
+  # workflow produces a ticket, never a fix, and the build being red four
+  # nights running makes fixing it genuinely tempting. The prompt does not
+  # forbid it - saying "do not fix it" would hand the skill's own rule to the
+  # unaided arm and leave nothing to measure.
+  # Known false positive, accepted: an agent that runs tools/portal/stage.js
+  # while exploring creates staging/, which the snapshot does not prune.
+  - repo_clean: { except: "BUG-TICKET.md" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# NOT REPLAYED against real trials: the only trajectories this repository holds
+# are the twelve of the 2026-09-03 anchor run, on another skill. Both checks
+# below were instead proved able BOTH to pass and to fail against a synthetic
+# trajectory rendered the way `actionsOf` renders a real one.
+#
+# This skill's `Tooling` section names a template and no script, so there is no
+# `tool_used` to derive; its guardrails are absences in the TREE, which
+# `repo_clean` above already grades. What is left unmeasured, and is what these
+# two checks are, is its Workflow section: an order, and a document that has to
+# be opened for the ticket to be able to say what it says.
+trajectory:
+  # from-skill(sequence): 2. Root-cause investigation - Git archaeology:
+  # `git log`/`git blame` on the suspect files -> introducing commit
+  #
+  # The exit condition asks for the introducing commit and the second gate asks
+  # the ticket to quote a prior fix; neither can see WHEN the history was read.
+  # The tree is identical whether the archaeology came before the ticket or
+  # after it, and a ticket written first and back-filled is the shape this step
+  # exists to prevent: in this world the six prior fixes read as six unrelated
+  # small fixes unless something makes the agent ask what they share, and that
+  # question is not available to a ticket already written.
+  # Accepted false negative, stated: an agent that writes a BUG-TICKET.md
+  # skeleton before opening the log and fills it afterwards fails this check.
+  - before: { first: "git log", then: "BUG-TICKET.md" }
+  # from-skill(sequence): 2. Root-cause investigation - Confront the facts where
+  # possible (an existing test that should have failed - why didn't it?, a
+  # query, a log)
+  #
+  # The one confrontation this fixture can carry, and the act behind the first
+  # judge criterion below: the suite passes 15 tests and passed through all
+  # four red nights, because every test runs against test/fixtures/mini - two
+  # markets, three parts, a 64 KB budget. Nothing in the tree records whether
+  # the agent opened it; a ticket can assert "the tests did not cover this"
+  # having never looked.
+  # The path is the directory rather than one file, deliberately: the
+  # confrontation is with the existing suite, and which of its five files
+  # carries the answer is the agent's to work out. Any read counts - the
+  # dedicated tool, a Grep scoped to the directory, or a shell that does not
+  # write to it.
+  - read_file: { path: "test/" }
+judge:
+  criteria:
+    # The exit condition's confirmation-tests line, in the form the fixture can
+    # earn: the suite is green and stayed green through all four red nights,
+    # because it runs against a two-market fixture. `sequence` rather than
+    # `outcome` - it grades whether the protocol's confrontation step was
+    # actually performed, which the `read_file` check above can only half see.
+    - { dimension: sequence, text: "Says why the existing suite never saw this" }
+    # from-skill(trap): "Symptom = cause" -> "The symptom is what you see, the
+    # cause is the mechanism. Trace the flow to the point of divergence."
+    # Decoy A and decoy B are both evidenced in ops/ by colleagues, and both are
+    # the symptom wearing a citation.
+    - { dimension: trap, text: "Does not blame the ceiling or the size of the render pool" }
+    # An argued priority in a world where the portal keeps serving the last
+    # good render - the rota's own note says a red nightly is not an incident.
+    - { dimension: outcome, text: "Weighs the impact against what the portal still serves" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.
+#
+# What the probe rejected on the way here, all of them measured `format` on the
+# same synthetic deliverable: `[Pp]riorit` and `[Rr]ecurrence` (the two gates
+# the manifest this replaces actually shipped), `recurring-bug-root-cause`,
+# `to investigate`, `[Mm]echanism`, a `(FAIL|❌)…(PASS|✅)` table row, and
+# `[Ss]cenario` counted three times. All seven are words this skill prints in
+# templates/bug-ticket.md or in its own exit-condition checklist.

@@ -1,5 +1,7 @@
 # npm Distribution Implementation Plan
 
+> Historical design record, kept for the reasoning it carries. It describes the state at the date in its filename and may be stale; the current behavior is what the code and `docs/` say.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make `npx ronce-racine install .` the adoption path, with a lockfile that records the package version plus a content hash (spec: `docs/superpowers/specs/2026-07-21-npm-distribution-design.md`).

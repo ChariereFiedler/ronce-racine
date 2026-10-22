@@ -1,0 +1,121 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. No paired trial exists for this skill on any fixture; the only
+# skill in the base with a real six-pair figure is recurring-bug-root-cause.
+# `probed` until a six-pair run is recorded here.
+#
+# Rebuilt on the `surface` world (2026-09-03). The manifest it replaces gated
+# the word "grep" and the word "edge case" appearing in a ticket, on a
+# four-file fixture - both of which the skill's own ticket template supplies,
+# so the format probe passes them without reading the repository at all.
+#
+# THE SCENARIO
+#
+# A ticket for a new movements screen. The audit the exit condition demands has
+# something real to find on three of its six points:
+#
+#   - CALL SITES. The screen will reuse DataTable, which has eight call sites,
+#     two of them (src/panels/berth-occupancy.js, src/panels/outstanding-
+#     charges.js) reached through `src/components/kit.js` rather than by name.
+#     `node tools/check/kit-usage.js DataTable` reports eight because the
+#     barrel exports DataTable under its own name; the same tool reports SEVEN
+#     for StatusPill, which it re-exports as StateChip. A ticket that quotes
+#     the tool without knowing which of the two cases it is in is quoting a
+#     number it cannot defend.
+#   - GLOBAL NAVIGATION. src/main.js keeps ROUTES and derives NAV from
+#     `route.nav`. src/pages/moorings.js has no `nav` key at all, so it is
+#     registered and absent from the sidebar, reachable only from a link on the
+#     berth plan. Where a new screen goes is therefore a decision with a
+#     precedent, not a default.
+#   - EDGE CASES. The four states are DataTable's and their testids derive from
+#     the caller's - documented twice, in docs/pattern-library/data-table.md
+#     and in docs/changes/2026-06-30-data-table-empty-state.md.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# The skill's own template is the trap here, and it is why none of the gates
+# below key on template vocabulary. An agent that fills in a ticket skeleton
+# produces headings for call sites, navigation, edge cases and i18n, and can
+# fill every one of them with plausible prose without opening src/main.js. What
+# it cannot produce from the template is the two panels, the reason
+# `route.nav` decides the sidebar, or the fact that the empty state carries its
+# own derived testid - all three are properties of this repository.
+#
+# SATURATION RISK, STATED IN ADVANCE
+#
+# docs/pattern-library/data-table.md lists all eight call sites, panels
+# included and marked "through the kit". An agent that reads the record before
+# writing the ticket is handed the call-site gate. That is the world's fair
+# path; the measurement is whether it consults the record at all.
+fixture: surface
+tier: probed
+prompt: >
+  The duty staff want a movements screen listing every recorded vessel
+  movement. Write the ticket for it, with acceptance criteria, to TICKET.md at
+  the repo root. Do not build the screen.
+preconditions:
+  # The deliverable path, and the invariant that the ticket is not the feature.
+  # Both are handed over by the prompt, so neither can carry signal: an agent
+  # following no skill produces the file and touches nothing else too.
+  - file_exists: "TICKET.md"
+  - repo_clean: { except: "TICKET.md" }
+gates:
+  # The call-site point, keyed on the two consumers a name grep does not
+  # produce. Pristine: TICKET.md does not exist. None of these strings appears
+  # in the skill's own templates/ticket-frontend.md, so a content-free ticket
+  # cannot pass this.
+  # from-exit: Audit of the 6 points complete, **grep results cited** in the ticket (call sites, incoming links, global navigation)
+  - grep_min: { pattern: "kit\\.js|berth-occupancy|outstanding-charges|panel", in: "TICKET.md", count: "1" }
+  # The navigation point, keyed on the mechanism rather than on the word
+  # "sidebar" - which the skill's template supplies and the probe would pass.
+  # `NAV`, `route.nav` and `main.js` are this repository's answer to "where does
+  # the entry go", and none of them is in the template.
+  # from-exit: Audit of the 6 points complete, **grep results cited** in the ticket (call sites, incoming links, global navigation)
+  - grep_min: { pattern: "main\\.js|NAV|nav:|ROUTES", in: "TICKET.md", count: "1" }
+  # The edge cases, keyed on this world's four-state contract instead of on the
+  # template's "0 entities / 1 entity / N". A ledger with no rows draws an
+  # EmptyState under a testid derived from the table's, and a ticket whose
+  # acceptance criteria ignore that cannot be written against.
+  # from-exit: Edge cases 0 / 1 / N + error + loading enumerated
+  - grep_min: { pattern: "EmptyState|empty state|-empty|DataTable", in: "TICKET.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Never
+# replayed for this skill on any fixture.
+#
+# No `tool_absent` and no `step_budget`: the skill names no forbidden act - its
+# "do not build" invariant is the prompt's, and `repo_clean` above holds it -
+# and it bounds no effort.
+trajectory:
+  # from-skill(tooling): `scripts/audit-entry-points.ts <ComponentName|-> <route|->
+  # [rootDir]` - pre-fills the audit: call sites, incoming links to the route,
+  # navigation files (sidebar/header/menu) to check
+  #
+  # Staged into the with-arm only, so the unaided arm cannot run it. WEAKER BY
+  # CONSTRUCTION than the anchor's script check, and worth saying before a
+  # number is read from it: `detect-recurring-fixes` is named inside step 1 of
+  # its skill's context gathering, while this one sits in `Tooling` and the
+  # audit checklist says "grep the frontend code" instead. An aided trial that
+  # greps by hand has done the audit and will read as a miss here. Read a low
+  # aided rate as the skill's own placement of its script, not as a skipped
+  # audit.
+  - tool_used: { name: "Bash", arg: "audit-entry-points" }
+  # from-skill(sequence): Router + navigation files: read the route config, the
+  # sidebar/header/global menu to know where an entry gets added
+  #
+  # The skill's blocking order - "Refuse to draft the acceptance criteria until
+  # the audit is done" - is an ordering claim, and ordering is what the tree
+  # cannot hold: TICKET.md reads identically whether the router was opened
+  # before it or after it. src/main.js is where this console's answer lives, it
+  # keeps ROUTES and derives NAV from `route.nav`, and the second gate above
+  # greps the deliverable for the same names. A ticket that cites main.js
+  # without having opened it fails this and passes that.
+  - before: { first: "src/main.js", then: "TICKET.md" }
+judge:
+  criteria:
+    # Trap table: "The ticket already describes clicking the card -> detail" -
+    # an isolated action says nothing about global navigation or the other
+    # pages showing the same card. Full flow required.
+    - { dimension: trap, text: "At least one criterion is a whole journey, not a click" }
+    # Exit condition: no acceptance criteria drafted before the audit.
+    - { dimension: sequence, text: "Nothing is specified before the sweep is reported" }
+    - { dimension: outcome, text: "Translation keys are ruled out with a reason" }
+  threshold: pass_all

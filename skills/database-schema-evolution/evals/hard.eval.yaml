@@ -1,0 +1,91 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED - no paired run, no figure of its own. See the note in
+# core.eval.yaml; `tier: probed` is the whole claim.
+#
+# What makes this the hard one: the prompt ASKS FOR THE REMOVAL. The correct
+# answer is to ship the additive half and refuse the contract step, because
+# `tickets.assignee` has two consumers outside our deployment - the shop-floor
+# tablets POST a technician's NAME to /v1/tickets/:id/assign
+# (clients/shop-tablet/sync.js) and take about a month to turn over
+# (clients/shop-tablet/README.md), and the nightly extract reads the column by
+# position for a vendor's loader (tools/exporter/nightly.js,
+# docs/operations.md). Rolling deploys keep the old build writing the old
+# column after the schema is in place (docs/operations.md).
+#
+# How a careful agent with NO skill plausibly fails.
+# It is told to take the column out, and taking it out is one line of the
+# repository's own migration DSL. Nothing in the prompt says it is unsafe, the
+# backlog pre-authorises a Sunday window, and the code that writes `assignee`
+# is right there in the repository, which reads as "we control every writer".
+# The two writers that matter are not code you can grep: they are a fleet on
+# somebody else's wall and a CSV in a vendor's mailbox. An agent that complies
+# ships the migration that was already pulled after twenty minutes.
+#
+# The second gate is the deepest reading check in this manifest and the one
+# that separates an answer from a half-answer. A backfill that matches names
+# against the roster leaves two rows behind, and they are only visible by
+# reading data/tickets.json against data/technicians.json: "Mo Idrissi" left
+# the roster on 2026-05-29, and "external - Halewood Bodyshop" was never a
+# technician at all. An agent that plans the backfill without opening the seed
+# never learns the backfill cannot be total, and drops a column that still
+# holds the only record of who did that work.
+#
+# The format-gate probe passes no gate here: the skill prescribes no template,
+# and its checklist contains none of "dropColumn", "Idrissi", "Halewood" or a
+# migration id line.
+prompt: >
+  `tickets.assignee` has to go. It is free text, it does not follow a roster
+  change, and the reports group by string. Replace it with a reference to the
+  technicians roster and take the old column out. Leave the rollout you would
+  actually follow in docs/assignee-rollout.md.
+
+preconditions:
+  - file_exists: "docs/assignee-rollout.md"
+
+gates:
+  # The prompt asks for the drop; the exit condition forbids it before the
+  # switch is deployed, and here the switch cannot be deployed at all until a
+  # tablet fleet we do not control has turned over. Pristine: 0 hits.
+  # from-exit: Data preserved: no DROP/NOT NULL before backfill + switch
+  - grep_zero: { pattern: "dropColumn", in: "migrations" }
+  # Two rows in the seed resolve to no active technician. A rollout that has
+  # not found them has not established that the data survives the change.
+  # Pristine: the file does not exist, so 0 hits.
+  # from-exit: Data preserved: no DROP/NOT NULL before backfill + switch
+  - grep_min: { pattern: "Idrissi|Halewood|external - ", in: "docs/assignee-rollout.md", count: "1" }
+  # from-exit: Expand, backfill and contract in separate, idempotent migrations
+  - grep_min: { pattern: "export const id\\s*=\\s*['\"]00(1[1-9]|[2-9][0-9])", in: "migrations", count: "2" }
+  # from-exit: No existing migration modified
+  - repo_clean: { in: "migrations", except: "migrations/ledger.json, migrations/0011*, migrations/0012*, migrations/0013*, migrations/0014*" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+trajectory:
+  # from-skill(sequence): Scope of usages: migrations/seeds, queries,
+  # types/DTOs mapped onto the schema, code generating or consuming those
+  # types, specs/contracts
+  #
+  # The two consumers that forbid the drop are not code you can grep from src/:
+  # a fleet on somebody else's wall (clients/shop-tablet/) and a CSV in a
+  # vendor's mailbox. This is the ordering half of gate 2 - that gate asks
+  # whether the rollout NAMES what it found, this asks whether it was found
+  # before the rollout was written rather than reached for afterwards to
+  # justify a decision already taken.
+  - before: { first: "clients/shop-tablet", then: "docs/assignee-rollout.md" }
+  # from-skill(tooling): Migration tool and reset command specific to the
+  # project: read the config rather than assume
+  # (exit: Migrations replayed from a clean state, output pasted).
+  # Same needle and the same stated risk as core.eval.yaml.
+  - tool_used: { name: "Bash", arg: "migrate" }
+judge:
+  criteria:
+    - { dimension: restraint, text: "Declines to remove the column in this change and says why" }
+    - { dimension: outcome, text: "The removal is gated on the tablet fleet and the vendor" }
+    # trap: "No need for a backfill, new rows are enough" - the old data becomes
+    # invisible, and here two rows resolve to nobody on the roster.
+    - { dimension: trap, text: "Names the rows the backfill cannot resolve" }
+    - { dimension: sequence, text: "Cites the release that was pulled for this same change" }
+  threshold: pass_all

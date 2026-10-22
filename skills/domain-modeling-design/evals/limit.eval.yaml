@@ -1,0 +1,94 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED - no paired run, no figure of its own. `tier: probed`.
+#
+# The restraint scenario. The proposal in the prompt is to model something that
+# is not a model: the dashboard header is three numbers recomputed on every
+# page load (src/infrastructure/read/dashboard-view.js), it owns no state, it
+# guarantees nothing between two requests, and "one transaction, one aggregate"
+# has nothing to bite on because it never writes. The state it reports already
+# belongs to the work order aggregate.
+#
+# The reason given for the proposal is real and is a defect, not a modelling
+# gap: ops/backlog.md records that "the count on the dashboard header does not
+# agree with the list underneath it", attributes it to caching, and says nobody
+# has sat down with it. The right answer says so - no aggregate, and the
+# disagreement is a bug to be found - and stops. The old base had no scenario
+# where producing the requested design was the failure.
+#
+# How a careful agent with NO skill plausibly fails.
+# The request is specific, sounds senior, and comes with a symptom. Designing a
+# DashboardHeader aggregate with an invariant like "the count equals the list"
+# is a satisfying answer that explains the symptom and is wrong twice: it
+# invents a consistency boundary for a projection, and it papers over a defect
+# by making it a rule nobody enforces. The second failure is going the other
+# way and calling it a read model without ever looking at what the numbers
+# actually do, which is the same answer with no evidence under it.
+#
+# The format-gate probe passes no gate here: "dashboard-view", "read model" and
+# "projection" appear nowhere in this skill's exit checklist, which is its
+# whole skeleton.
+#
+# SATURATION RISK, admitted. "Is this really an aggregate" is a question models
+# answer conservatively without help, so the unaided arm may reach "read model,
+# not aggregate" on its own and sit at the ceiling on all three gates. The
+# argument above for how it fails is real but I rate it weaker than the core and
+# hard scenarios in this skill, and the two-pair probe should be read as a test
+# of THAT rating before six pairs are paid for.
+prompt: >
+  Somebody has proposed making the shop dashboard header its own aggregate,
+  with its own invariants, so the numbers stop disagreeing with the list
+  underneath them. Work out whether that is the right shape and leave your
+  answer in MODEL.md.
+
+preconditions:
+  - file_exists: "MODEL.md"
+
+gates:
+  # Restraint has to reach the tree: no aggregate, no port, no stub.
+  # from-exit: Spec produced, NO implementation started
+  - repo_clean: { in: "src" }
+  # An answer either way is worth nothing until it says what the header IS
+  # today, and that is a read model over the tables with an address.
+  # Pristine: 0 - MODEL.md does not exist.
+  # from-exit: Placement decided with rejected alternatives documented
+  - grep_min: { pattern: "dashboard-view|infrastructure/read|read model|projection", in: "MODEL.md", count: "1" }
+  # The state the header reports is a work order's. Saying which aggregate
+  # already owns it is what makes "not an aggregate" an argument rather than a
+  # refusal. Pristine: 0.
+  # from-exit: Aggregates, entities, value objects identified; consistency boundary (1 transaction = 1 aggregate) justified
+  - grep_min: { pattern: "work order|work-order|tickets", in: "MODEL.md", count: "1" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# The saturation risk this manifest admits - that a model may reach "read
+# model, not aggregate" unaided and sit at the ceiling on all three gates -
+# is the reason the trajectory is worth reading here even if the gates come
+# back identical. The right answer with nothing under it and the right answer
+# from the file look the same in MODEL.md and different in the trajectory.
+trajectory:
+  # from-skill(sequence): Map the existing landscape: which bounded contexts /
+  # modules already exist, where neighboring concepts live
+  #
+  # The thing proposed as an aggregate has an address, and what it does there -
+  # three numbers recomputed per request, owning no state - is the whole
+  # argument. Gate 2 accepts the words "read model" in MODEL.md, which an agent
+  # can write from the shape of the question alone.
+  - before: { first: "src/infrastructure/read/dashboard-view.js", then: "MODEL.md" }
+  # from-skill(sequence): Read an already-modeled neighboring aggregate and
+  # copy its conventions ... before inventing anything
+  #
+  # The aggregate that already owns the state the header reports. Saying which
+  # one it is is what turns "not an aggregate" into an argument rather than a
+  # refusal, and it is the second judge criterion below.
+  - read_file: { path: "src/domain/work-order.js" }
+judge:
+  criteria:
+    - { dimension: restraint, text: "Concludes the header is not an aggregate" }
+    - { dimension: outcome, text: "Says which aggregate already owns the state it reports" }
+    - { dimension: outcome, text: "Treats the disagreeing numbers as a defect to find" }
+    - { dimension: restraint, text: "Invents no invariant for a thing that writes nothing" }
+  threshold: pass_all

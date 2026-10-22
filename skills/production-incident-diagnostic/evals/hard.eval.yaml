@@ -1,0 +1,113 @@
+# HARD scenario - the wrong layer has a written recommendation behind it, and
+# money attached to the decision.
+#
+# ops/runner-capacity.md is a real capacity review by a real platform team: the
+# publish job IS the heaviest on the shared pool, its peak HAS grown month over
+# month, it WAS killed twice by the pool in June, and platform's recommendation
+# IS the dedicated runner. Every fact in it is true. The conclusion an incident
+# report draws from it - move the job and the failures stop - is false, and
+# nothing in that document says so.
+#
+# HALF-MEASURED, DELIBERATELY - see the core scenario's block. The two
+# exit-condition lines that need a live production (the health re-check with
+# pasted output, and confirmation before a destructive action) are neither
+# gated nor judged here.
+#
+# NOT MEASURED. No paired run has been executed against this manifest, or
+# against any scenario of this skill.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. It has an authoritative document naming a
+# faulty layer, a decision deadline, and a failure whose message ("held 289.0 KB
+# of 288.0 KB") reads as a resource problem. Isolating "the runner" satisfies
+# every instinct: it is evidenced, it is the layer the symptom sounds like, and
+# it comes with a costed option table. The refutation is one command the agent
+# has to think of on its own - `node tools/sheetmill/cli.js . --concurrency 1`,
+# which still fails, at 128 of 157 units - and one join nobody has made in
+# writing, between the held column of ops/publish-runs.md and the four markets
+# opened in the same five weeks. Neither is in ops/. A report that recommends
+# signing off the runner is the single most likely unaided outcome and would
+# spend real money on a layer that is not faulty.
+tier: probed
+fixture: incident
+prompt: >
+  Platform's capacity review recommends moving the publish job to a dedicated
+  runner and finance wants an answer this week. The job has been red four
+  nights. You have no live access: no dashboard, no shell on the runner. Say
+  what is actually going on and write the incident report to INCIDENT_REPORT.md.
+preconditions:
+  - file_exists: "INCIDENT_REPORT.md"
+gates:
+  # from-exit: Faulty layer isolated with at least one piece of evidence (log, metric, trace or repro)
+  #
+  # Of the four evidence kinds the exit condition names - log, metric, trace,
+  # repro - this fixture can only carry the last one: there is no live log, no
+  # metric store and no trace, which is what the prompt says out loud. So the
+  # promise is graded on a repro the agent ran.
+  # Each number below is the unit index a publish run stops at for one pool
+  # size, measured on the materialised fixture and deterministic across repeats:
+  # 128 at --concurrency 1, 126 at 2, 112 at 4, 109 at 5, 106 at 6, 92 at 8.
+  # NONE of them occurs anywhere in the repository (`grep -r` over the fixture
+  # returns nothing for any of them), so a report containing one has run the
+  # experiment. The default run's own 121 is excluded on purpose: it is printed
+  # in ops/log-tails.md, and quoting it proves a read rather than a run.
+  # Known false negative, accepted and stated: an agent that refutes the pool
+  # hypothesis from the arithmetic in ops/pool-size-trial.md (ten kilobytes a
+  # worker against a forty-kilobyte overshoot) has evidence and fails this gate.
+  # That is the price of grading "evidence" as "evidence you produced", and it
+  # is taken knowingly on a scenario whose whole subject is a colleague's
+  # document being true and insufficient.
+  - grep_min: { pattern: "\\b(92|106|109|112|126|128)\\b", in: "INCIDENT_REPORT.md", count: "1" }
+  # from-exit: Root cause documented - never an unproven hypothesis
+  #
+  # The subject of the citation, under its three names in this repository.
+  - grep_min: { pattern: "plan\\.js|planUnits|discoverMarkets", in: "INCIDENT_REPORT.md", count: "1" }
+  # from-exit: Root cause documented - never an unproven hypothesis
+  #
+  # The other unproven hypothesis, the cheap one: more room. Forbidden as an
+  # ACT, not as a sentence - the report may still recommend it, and the exit
+  # condition explicitly allows a mitigation to be planned.
+  # Verified regex; the trailing `\\d` keeps the lookahead off the whitespace.
+  - grep_zero: { pattern: "\"retentionBudgetKb\":\\s*(?!288\\b)\\d", in: "build.config.json" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Not
+# replayed against real trials - both checks proved able to pass and to fail
+# against a synthetic trajectory, as in the core scenario, whose note on why
+# this skill gets no `tool_used` applies here too.
+#
+# One check this scenario does NOT ship, and the reason is measured: the
+# obvious candidate is `tool_used --concurrency`, the run that refutes the pool
+# decoy. The anchor replayed exactly that over the twelve trials of 2026-09-03
+# and found it ran 5 of 6 times UNAIDED against 3 of 6 aided - the one
+# measurement in that run that goes the other way. Gating it would penalise the
+# aided arm for a habit the unaided arm already has, and the first gate above
+# already reads the report for the number such a run produces.
+trajectory:
+  # from-skill(sequence): 3. Logs - Filter the observability tool on the
+  # incident window and the suspected layer
+  - before: { first: "ops/log-tails.md", then: "INCIDENT_REPORT.md" }
+  # from-skill(sequence): 2. Check deployment & version - Last deployment /
+  # migration: timing vs incident start -> rollback candidate
+  #
+  # The join this scenario turns on and that nobody has made in writing: held
+  # has gone 146 to 289 KB in five weeks with no change to the tool, and the
+  # other half of the subtraction is `git log content/markets/`, four markets
+  # opened in the same window. ops/runner-capacity.md is true and contains
+  # nothing of the sort. A report written before the history was opened cannot
+  # hold the join, and the tree is identical either way.
+  - before: { first: "git log", then: "INCIDENT_REPORT.md" }
+judge:
+  criteria:
+    # The answer finance is owed, and the one the review cannot give.
+    - { dimension: outcome, text: "Says whether the dedicated runner would stop the failures" }
+    # from-skill(trap): "It's probably the DB / the network" -> "Unproven
+    # hypothesis. One piece of evidence per layer." The capacity review is the
+    # unproven hypothesis wearing a colleague's signature.
+    - { dimension: trap, text: "Treats the capacity review as true and insufficient" }
+    # `tooling` for the reason the anchor grades its own refutation criterion
+    # that way: the join is only available to a run that went and produced it,
+    # here from the history rather than from any document in ops/.
+    - { dimension: tooling, text: "Ties the growth to the markets opened over the same weeks" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.

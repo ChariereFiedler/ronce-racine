@@ -1,0 +1,118 @@
+# platform / core - "docs only, nothing to run".
+#
+# CLASS C, and the manifest says so. This skill's deliverable is an ANSWER -
+# whether a diff can go in - not a file, so there is very little to grep and
+# most of the signal is the judge's by construction. Counting gates as a measure
+# of eval quality would mark this manifest as weak when it is not.
+#
+# WHAT IS KNOWN: nothing measured. No paired run for this skill on this world.
+# On the OLD base this skill came back `saturated` on gates over 2 pairs
+# (2026-09-02, one of seven of ten). Two pairs never yields a verdict, but the
+# saturation flag does not need one, and it is the reason this scenario is
+# built on something the old fixture had no way to carry: a repository whose
+# suite is genuinely red.
+#
+# THE SUBJECT. The tree is clean and committed. The last three commits are ops
+# notes and the August QA bundle - no source, no tests, nothing that touches a
+# stack. The invitation is to answer "documentation, nothing to run, ship it".
+# But `npm test` is red (`payroll contract: harbour-weekend-on-call`), two
+# contract cases are disabled with reasons, and `node tools/contract/run.js`
+# exits 1. The exit condition's first two boxes are about running the checks
+# and looking at what comes out, not about guessing which of them the diff
+# could have broken.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. It runs `git log`, sees three commits
+# touching ops/ and docs/ and nothing else, and reasons correctly that a
+# documentation change cannot break a build. From there the deliverable writes
+# itself: no stack touched, no tests to target, no secrets, no debug leftovers,
+# ready to push. Every one of those statements is true about the diff, and the
+# verdict is still wrong, because the question was whether this can go out and
+# the repository it would go out from has a red suite - a contract case failing
+# since 08-28, two more disabled with reasons, and `node tools/contract/run.js`
+# exiting 1. The exit condition does not offer "the diff cannot have caused it"
+# as a way to tick a box; it asks for the checks to have been run and looked at.
+# The pull the other way is strong and reasonable: running a suite that the
+# change cannot have affected feels like ceremony, and skipping it costs nothing
+# visible. That is precisely the substitution - inspection standing in for real
+# output - that the audit family measured at 0/3 unaided against 3/3 aided.
+#
+# FORMAT GATES CAUGHT AND DROPPED, with the probe's verdict. A grep for
+# secret|sensitive in the deliverable passes the template-only probe - the exit
+# checklist says "Zero secret / sensitive file in the diff" - and is not here.
+# One candidate SURVIVED the probe and is still not here: the not-run apparatus
+# gate ([Nn]ot run|[Cc]ould not|unavailable), which came back "content". It is
+# omitted for a different reason - every check in this world runs, so there is
+# nothing honest for it to read, and its alternation is broad enough to be hit by
+# unrelated prose.
+tier: probed
+fixture: platform
+prompt: >
+  I want to push what is on trunk - the last three commits are the ops notes
+  and the August QA session. Is this fit to go? Write your verdict to
+  COMMIT-REVIEW.md.
+preconditions:
+  # The prompt names this path, so producing it proves nothing about the skill.
+  # It also fails on the untouched fixture, which is what keeps the do-nothing
+  # check meaningful for a manifest whose other gate is an invariant.
+  - file_exists: "COMMIT-REVIEW.md"
+gates:
+  # from-exit: Targeted tests of the changed scope passed
+  #
+  # `harbour-weekend-on-call` is the name of the failing case. It is what
+  # `npm test` prints, what `node tools/contract/run.js` prints, and what the
+  # recorded contract log holds. An answer that never produces it did not open
+  # the suite at all - it decided from the shape of the diff that there was
+  # nothing to open, which is exactly the box this line refuses to let anyone
+  # tick by inspection.
+  #
+  # EXPECTED TO BE A FLOOR rather than a discriminator, and recorded as such:
+  # the name also sits in test/contract/cases.json, so a thorough agent can
+  # produce it without running anything. What separates the arms is whether the
+  # red suite changes the verdict, and that is the judge's first criterion.
+  #
+  # Verified: 2 hits repo-wide, 0 in the deliverable before the run, and the
+  # skill's exit-condition checklist - which is the whole of its prescribed
+  # format - contains no case name, so the template-only probe leaves it red.
+  - grep_min: { pattern: "harbour-weekend-on-call", in: "COMMIT-REVIEW.md", count: "1" }
+  # from-exit: Message in the repo format + user confirmation obtained (unless autonomous mode)
+  #
+  # Confirmation has not been obtained for anything, so nothing may be staged,
+  # committed, or repaired on the way past. This is the invariant of a
+  # read-only review and it is what a bare `repo_clean` is for on a class C
+  # manifest: the skill grades a tree, it does not touch it.
+  - repo_clean: { except: "COMMIT-REVIEW.md" }
+# WHAT THE AGENT DID, graded in the post-pass. This is where a class C manifest
+# gains something it could not have: the deliverable is a verdict, so the tree
+# holds almost nothing, but the ACTS behind the verdict are all in the
+# trajectory.
+trajectory:
+  # from-skill(sequence): Context to gather (before acting) - `git status` +
+  # `git diff --stat`: real scope, stacks touched, at-risk files
+  #
+  # Workflow step 1, and an ordering no snapshot can hold: COMMIT-REVIEW.md
+  # reads the same whether the scope was mapped first or the verdict written
+  # first. EXPECTED TO BE A FLOOR rather than a discriminator - `git status` is
+  # the first thing most agents run - and kept for the reason the anchor keeps
+  # its own floor: a run that writes the verdict before looking is the failure
+  # this skill exists to prevent, and this is what catches the day one appears.
+  #
+  # KNOWN ESCAPE: an agent that maps the scope with `git diff --stat` alone,
+  # which the same line permits, does not match. That costs a false red on an
+  # arm that did the work; it does not bias the comparison, since nothing about
+  # the skill makes one arm likelier than the other to pick that form.
+  - before: { first: "git status", then: "COMMIT-REVIEW.md" }
+  # from-skill(restraint): Summary + confirmation ... Ask for confirmation
+  # before `git commit` unless an autonomous mode is explicitly active
+  #
+  # No confirmation is obtainable inside a container, so no commit is permitted
+  # here whatever the verdict. This is the check no gate could replace: the
+  # findings log of 2026-09-03 records that `repo_clean` cannot see commits, so
+  # every promise of the form "zero commits" was half-gated at best until the
+  # trajectory could be read.
+  - tool_absent: { name: "git commit" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The red suite is reported even though this change did not cause it" }
+    - { dimension: tooling, text: "The check results come from running them, not from reading the diff" }
+    - { dimension: outcome, text: "The verdict follows the boxes that could not be ticked" }
+  threshold: pass_all

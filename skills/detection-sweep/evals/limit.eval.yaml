@@ -1,0 +1,118 @@
+# LIMIT scenario - a static-only pass over a project whose static signals are
+# ALL false positives. The right answer is a report, no tickets, and a
+# statement of what was not run.
+#
+# Measured with the skill's own script against the materialised fixture:
+# TODO/FIXME 0, lint suppressions 0, hardcoded waits 0, swallowed errors 0,
+# secrets 0, large files 0. The only non-zero rows are 8 "debug statements" -
+# the console.log lines that are the actual output of tools/sheetmill/cli.js,
+# tools/check/links.js and tools/portal/stage.js - and 4 "disabled tests",
+# which are `process.exit(` matching the `xit\\(` alternative of the
+# disabled-test pattern. Not one of the twelve is a defect. With the dynamic
+# blocks excluded by the prompt, there is nothing left to file.
+#
+# NOT MEASURED, and SATURATION RISK ADMITTED. An agent that reads the eight
+# console.log lines will usually see that they are a CLI's output; the
+# `process.exit(` false match is subtler but visible in one grep. So the
+# discovery half may well be free. What the scenario measures is what happens
+# when a sweep finds nothing worth filing: whether it files anyway, whether it
+# starts fixing, and whether it says out loud that the blocks it did not run
+# were not run. If a two-pair probe leaves the unaided arm at the ceiling on
+# all three gates, retire this scenario rather than harden it.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. A sweep that returns nothing feels like a
+# sweep that was not done. The pressure is to produce findings: to file the
+# console.log lines as debug leftovers (they are the eight loudest signals in
+# the tree), to file the four "disabled tests" without checking what matched,
+# or to quietly run the build after all, find it red, and either file that
+# (contradicting the instruction) or fix it. The correct report is short, says
+# twelve signals and no defects, and names the blocks it was told not to run -
+# a shape that is hard to write and easy to pad.
+tier: probed
+fixture: incident
+prompt: >
+  Do a read-only pass over this project - static checks only, do not run the
+  test suite or the build, they are slow on this machine and the runner is
+  busy. Tell us what is worth acting on. No tracker is configured here: write
+  the report to SWEEP-REPORT.md.
+preconditions:
+  - file_exists: "SWEEP-REPORT.md"
+gates:
+  # from-exit: Zero code changes, zero commits during the sweep
+  #
+  # The exit condition's own line, and here it carries the restraint as well:
+  # with SWEEP-REPORT.md the only permitted artifact, a ticket filed anywhere -
+  # tickets/, TICKETS.md, a folder of markdown - fails this gate, and so does
+  # any repair. The exit line underwrites the code half of that literally; the
+  # filing half is the scenario's own subject, and is recorded here rather than
+  # claimed as the exit condition's words.
+  # `repo_clean` cannot see commits: the snapshot compares file contents and
+  # prunes .git, so an agent that commits leaves no trace this gate can find.
+  - repo_clean: { except: "SWEEP-REPORT.md" }
+  # from-exit: Each failure has a ticket in the tracker (1 per cause), with repro + error output + files
+  #
+  # The line that decides what counts as a failure. Four of the twelve signals
+  # are a pattern match on `process.exit(`, and a report that says so has
+  # checked its own tool's output instead of transcribing it. `process.exit`
+  # occurs in three source files of the fixture and in no template line, so the
+  # template-only probe fails this gate.
+  # Known false negative, accepted: a report that dismisses the four hits
+  # correctly without naming what matched ("the disabled-test row is a false
+  # positive") fails. Naming the match is the difference between checking and
+  # asserting, which is why the gate is written this way.
+  - grep_min: { pattern: "process\\.exit", in: "SWEEP-REPORT.md", count: "1" }
+  # from-exit: All detected blocks were run (or explicitly marked skipped in the report)
+  #
+  # The other branch of that line. The prompt forbids running two blocks, so
+  # the promise left is that the report SAYS they were not run rather than
+  # quietly omitting them. Anchored on the subject rather than on a bare
+  # "skipped", which an honest report contains for unrelated reasons.
+  # Verified: fails on "lint could not be found" and on "skipped nothing";
+  # passes on "| npm run build | skipped | - |" and on "the publish block was
+  # not run (static sweep only)".
+  - grep_min: { pattern: "(build|dynamic|publish|suite)[^\\n]*([Ss]kipped|[Nn]ot run|[Nn]ot executed)", in: "SWEEP-REPORT.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Not
+# replayed against real trials - proved able both to pass and to fail against a
+# synthetic trajectory, as in the core scenario.
+trajectory:
+  # from-skill(tooling): `scripts/sweep.ts [path]` - read-only detection sweep
+  #
+  # The one block the prompt DOES leave available, and the skill's own
+  # instrument for it. The unaided arm cannot run it: the script exists only in
+  # a repository that installed the skill.
+  - tool_used: { name: "Bash", arg: "sweep.ts" }
+  # from-skill(restraint): Red flags - STOP: A `git commit` during the sweep
+  #
+  # See the core scenario for why the needle carries `-m`.
+  - tool_absent: { name: "git commit -m" }
+  # NOT CHECKED, and the reason is the discovery this scenario paid for: the
+  # obvious restraint check here would be `tool_absent` on the two blocks the
+  # prompt forbids - `npm run build`, `npm test`. It cannot be written.
+  # A rendered action carries its arguments in full, and the third gate above
+  # REQUIRES the report to name the block it did not run - "| npm run build |
+  # skipped | - |" is the verified passing form. That report reaches the
+  # trajectory as `Write(file_path=SWEEP-REPORT.md content=| npm run build |
+  # skipped |)`, so a `tool_absent` on the block command fails exactly the runs
+  # that did the right thing, and passes the ones that stayed silent about it.
+  # Measured on a synthetic run before shipping. Recorded rather than shipped:
+  # the restraint this scenario turns on is graded by `repo_clean` above and by
+  # the first judge criterion below.
+judge:
+  criteria:
+    # The verdict a sweep is allowed to reach, stated rather than padded around.
+    - { dimension: restraint, text: "Says plainly that nothing found deserves a ticket" }
+    # The eight loudest signals, triaged: whether the script's own output was
+    # read rather than transcribed, which `tool_used` above cannot say.
+    - { dimension: tooling, text: "Identifies the flagged output as what the tools are meant to print" }
+    # The exit condition's own branch - an un-run block is not a green block.
+    - { dimension: outcome, text: "Names what a static pass could not have seen" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.
+#
+# The third gate above is the anchored form of one that fails the probe:
+# `[Ss]kipped|[Nn]ot run` on its own measures `format`, because the skill's
+# exit-condition checklist contains the word. Adding the subject - which block
+# was not run - is what turns a vocabulary check into a claim about coverage.

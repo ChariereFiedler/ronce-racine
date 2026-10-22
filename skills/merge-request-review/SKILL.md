@@ -71,9 +71,3 @@ If there is a conflict with the target: rebase/merge the target into the source,
 - [ ] If merged: green pipeline confirmed and no sensitive files
 
 As long as a blocking point remains, do not approve.
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.0 (2026-06-19) - initial version, derived from an MR review workflow; forge/tracker/auto-merge coupling removed

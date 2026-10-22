@@ -1,0 +1,129 @@
+# audit-quality / core - the control that controls nothing.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run has ever been made against this scenario or
+# against the `maturity` world. `recurring-bug-root-cause` on the `incident`
+# world is the only skill in this repository carrying a real paired figure, and
+# nothing here inherits from it. `tier: probed` is therefore the honest
+# declaration: the cheap admission checks have been run (eval-lint clean,
+# eval.ts --dry-run parses, eval-probe passes none of the gates below), the
+# six-pair run has not. Raise to `measured` only when that run exists and its
+# figures are recorded in this block.
+#
+# WHY THE GATES LOOK LIKE THIS
+# Nine audit skills share this world. What is expected to discriminate is WHICH
+# questions get marked N/A and WHICH level each one carries, against a world
+# whose answer is known - never the vocabulary. The fixture ships the house
+# format itself (docs/audits/TEMPLATE.md plus three filled reports, two with
+# populated non-auditable sections), so the words "confidence" and
+# "non-auditable" are free to both arms by construction: the 2026-08-24 figure
+# of 0.33 against 1.00 on audit-security came from grepping for exactly those
+# two words, and no gate below greps for either.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# EXPECTED.md is generated from playground/fixtures-def/bases/maturity.ts and is
+# not this manifest's to extend, so the argument lives here. Three sources tell
+# the agent the quality gate blocks: README.md ("All three have to be green
+# before the branch can go in"), the `quality` job in ci/pipeline.yml, and
+# docs/audits/2026-02-11-intake-summary.md ("the repository's own rules run on
+# every merge request and stop it going in"). None of them is lying; all three
+# were written when it was true. Establishing otherwise needs either
+# `npm run gate; echo $?` or noticing a flag that is NOT in package.json, and
+# nothing points at either. The gate's own output - five untidy things - reads
+# as a healthy gate doing its job. The retention drift is downstream of the same
+# regression: both undeclared tables were added after the gate stopped blocking.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Run a QA & DevOps and data-quality audit of this project.
+  Write the report to AUDIT-QUALITY.md.
+preconditions:
+  # The fixture has no tracker, so the prompt has to name the file it lands in.
+  # An agent following no skill at all produces it too: unearnable credit, kept
+  # out of the gates where it would inflate the verdict.
+  - file_exists: "AUDIT-QUALITY.md"
+gates:
+  # from-exit: Report produced in the output format
+  # The deliverable is a report; an audit must not edit the repository it grades.
+  - repo_clean: { except: "AUDIT-QUALITY.md" }
+  # from-exit: The 16 QA questions scored 0-4 or N/A, with justification and confidence
+  # THE decision of this world. QA-04 (CI/CD quality gates, must) is level 0-1:
+  # `npm run gate` exits 0 whatever it finds, because package.json drops the
+  # `--enforce` the script needs. Scoring it 3 "a quality gate exists, is
+  # configured and is green" is the single most likely wrong answer here, and it
+  # is supported by two documents and by the pipeline file. The gate keys on the
+  # level cell of the QA-04 row, not on any wording.
+  - grep_min: { pattern: "[Qq][Aa]-04[^\n]*\|\s*[01]\s*\|", in: "AUDIT-QUALITY.md", count: "1" }
+  # from-exit: Verification commands executed for every scored question
+  # The flag itself. Reachable only by reading tools/quality/gate.js against
+  # package.json, or by running the script twice and comparing exit codes.
+  # Two spellings are accepted; a report that concludes the gate blocks contains
+  # neither.
+  - grep_min: { pattern: "--enforce|[Ee]nforce flag", in: "AUDIT-QUALITY.md", count: "1" }
+  # from-exit: Verification commands executed for every scored question
+  # One of the two warehouse tables the gate reports as having no retention
+  # entry (QU-08). It comes out of running the gate, or of diffing db/schema.sql
+  # against data/retention.json - eight tables against six. A report that trusts
+  # the green pipeline never sees the list.
+  - grep_min: { pattern: "intake_attachments", in: "AUDIT-QUALITY.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-QUALITY.md" would match that todo
+# at step 1 and fail an ordering the agent in fact kept. A check nobody can
+# pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 2. **QA & DevOps section**: read
+  # reference/qa-devops.md. For each question QA-01 to QA-14, run the listed
+  # bash commands - step 5 of the same protocol is **Produce the report**.
+  #
+  # THE decision of this world, as an ordering. Three documents say the gate
+  # blocks and none of them is lying; the one file that contradicts them is the
+  # script itself, where the `--enforce` that package.json does not pass is
+  # visible. A report written before it was opened has already agreed with the
+  # three documents, and the finished file is identical either way.
+  - before: { first: "tools/quality/gate.js", then: "file_path=AUDIT-QUALITY.md" }
+judge:
+  criteria:
+    - { dimension: tooling, text: "QA-04 rests on the gate's exit code, not on the job existing" }
+    - { dimension: trap, text: "Treats the 2026-02-11 review as stale rather than as evidence" }
+    - { dimension: outcome, text: "The five outstanding rule failures are named as unactioned" }
+  threshold: pass_all

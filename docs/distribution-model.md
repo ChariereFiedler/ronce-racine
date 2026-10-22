@@ -128,3 +128,30 @@ Rules are always-on context and hooks execute code on your machine. Both are
 things a team should see in a reviewed diff rather than inherit from a
 subscription. Pick the plugin to try the skills on your own machine; pick the
 CLI when a team and a CI depend on the result.
+
+## With the ronce mod: one channel per layer
+
+The `ronce` mod (`mods/ronce/`) runs the guardrails, output shaping and quality
+checks in process, from a per-repository policy in `.claude/ronce.json`. Once it
+is installed, the command hooks the CLI copies are redundant, and so are the
+skill copies the plugin already serves.
+
+| Layer | Channel | Why there |
+|---|---|---|
+| Rules | `install <repo> --rules-only` | always-on context, reviewed in the repository |
+| Skills and agents | the `ronce-racine` plugin, user scope | one up-to-date copy per machine instead of one per repository |
+| Hooks | the `ronce` mod and the repository's `.claude/ronce.json` | the code is the plugin's; what it enforces is a reviewed policy file |
+
+Moving an adopted repository over:
+
+```bash
+npx ronce-racine uninstall <repo> --dry-run   # check what goes
+npx ronce-racine uninstall <repo>
+npx ronce-racine install <repo> --rules-only
+```
+
+`uninstall` keeps a locally edited artifact as `*.pre-uninstall.bak`. Read it,
+then either move it out of the repository (the plugin now serves the catalog
+version) or `detach` it before uninstalling to keep the repository's own copy.
+Hooks the repository wired itself are left in `settings.json`; remove the ones
+the mod covers by hand.

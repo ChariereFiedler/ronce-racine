@@ -77,7 +77,3 @@ A good domain model is designed **before** the code, otherwise it gets inferred 
 ## Tooling
 
 - No script: manual design. The output (domain spec) then feeds the layer-by-layer implementation skill.
-
-## Changelog
-
-- 1.0.0 (2026-06-19) - initial generic version extracted from a project workflow, decoupled from any stack and any tracker

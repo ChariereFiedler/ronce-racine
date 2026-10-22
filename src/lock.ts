@@ -30,6 +30,24 @@ export function isValidToken(token: string): boolean {
   return TOKEN_SHAPE.test(token) && !token.includes("..");
 }
 
+/**
+ * Where a backup of an installed artifact belongs.
+ *
+ * NOT next to the file it backs up. Claude Code loads every directory under
+ * `.claude/skills/`, so a skill backed up in place as
+ * `commit-readiness-review.pre-install.bak/` was loaded as a SECOND skill - the
+ * same instructions, under a name ending in `.bak`, offered to the model
+ * alongside the real one. One install of a 20-skill toolkit put 35 of those in
+ * front of it. The same applies to `.claude/agents/`.
+ *
+ * A dot-directory of our own keeps the backup (its whole point: the user's work
+ * is still there) without adding anything to what the harness scans.
+ */
+export function backupPath(repo: string, token: string, suffix: string): string {
+  const [kind, name] = token.split(":")
+  return join(repo, ".claude/.ronce-racine-backups", kind, `${name}.${suffix}`)
+}
+
 /** Resolves canonical + target for a "kind:name" token. */
 export function tokenPaths(token: string, repo: string): { canon: string; inst: string; isDir: boolean } {
   // Callers reading a lockfile filter with isValidToken first and report what
@@ -60,7 +78,7 @@ export function canonicalHash(tokens: string[]): string {
     h.update(token);
     if (!existsSync(canon)) { h.update("\0absent"); continue; }
     if (isDir) {
-      for (const rel of listFiles(canon).filter((f) => !f.endsWith(".test.ts") && f !== "eval.yaml" && f !== "README.md")) {
+      for (const rel of listFiles(canon).filter(isDistributed)) {
         h.update(rel);
         h.update(readFileSync(join(canon, rel)));
       }
@@ -133,10 +151,40 @@ export function copyPath(src: string, dst: string, filter?: (s: string) => boole
     for (const e of readdirSync(src, { withFileTypes: true })) {
       copyPath(join(src, e.name), join(dst, e.name), filter);
     }
+    // A directory whose every file the filter rejected would otherwise be
+    // installed as an empty shell - `skills/<name>/evals/` holds nothing but
+    // eval manifests, and none of them is distributed.
+    if (readdirSync(dst).length === 0) rmSync(dst, { recursive: true, force: true });
     return;
   }
   mkdirSync(dirname(dst), { recursive: true });
   copyFileSync(src, dst);
+}
+
+/**
+ * Whether a file of a canonical artifact directory is distributed to a target
+ * repository. Test procedures, eval manifests (`eval.yaml` and the per-scenario
+ * `evals/<name>.eval.yaml`) and per-skill READMEs stay in this repository.
+ *
+ * The installer's copy filter and `compareToken` MUST read the same predicate.
+ * They did not until 2026-09-03: the copy excluded `endsWith("eval.yaml")`
+ * while drift control excluded only the exact name `eval.yaml`, so the moment
+ * skills gained `evals/<scenario>.eval.yaml` every fresh install reported as
+ * drifted - and uninstall, reading that drift as local edits, kept the skill
+ * directories instead of deleting them.
+ *
+ * Matching is on the base name, so a source path and a repository-relative path
+ * are read alike, and a file merely ENDING in those characters (`retrieval.yaml`)
+ * is not caught by accident.
+ */
+export function isDistributed(path: string): boolean {
+  const name = path.split(/[\\/]/).pop() ?? path;
+  if (name.endsWith(".test.ts")) return false;
+  if (name === "eval.yaml" || name.endsWith(".eval.yaml")) return false;
+  // A per-skill CHANGELOG.md is history for whoever maintains the skill. The
+  // agent reads the SKILL.md and can act on none of it, so it stays here.
+  if (name === "CHANGELOG.md") return false;
+  return name !== "README.md";
 }
 
 export function listFiles(root: string): string[] {
@@ -158,8 +206,9 @@ export function compareToken(token: string, repo: string): string | null {
   if (!existsSync(inst)) return "absent";
   if (!existsSync(canon)) return "canonical-removed";
   if (!isDir) return readFileSync(canon).equals(readFileSync(inst)) ? null : "modified";
-  // Test procedures and eval manifests are never distributed (see copyToken) - exclude them from drift.
-  const canonFiles = listFiles(canon).filter((f) => !f.endsWith(".test.ts") && f !== "eval.yaml" && f !== "README.md");
+  // Test procedures and eval manifests are never distributed (see copyToken and
+  // isDistributed) - exclude them from drift, or every fresh install reads as drifted.
+  const canonFiles = listFiles(canon).filter(isDistributed);
   const probs = [
     ...canonFiles.filter((f) => !existsSync(join(inst, f))).map((f) => `-${f}`),
     ...canonFiles.filter((f) => existsSync(join(inst, f)) && !readFileSync(join(canon, f)).equals(readFileSync(join(inst, f)))).map((f) => `~${f}`),

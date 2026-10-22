@@ -1,0 +1,127 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. No paired trial exists for this skill on any fixture; the only
+# skill in the base with a real six-pair figure is recurring-bug-root-cause.
+# `probed` until a six-pair run is recorded here.
+#
+# PARTLY UNEVALUABLE, and it is worth saying before the gates rather than
+# after. Most of this exit condition needs a running application: an app
+# started, an archived screenshot, a backend checked against its contract, a
+# consistent database, two tenants. This world is a server-rendered console
+# with no server, no browser and one tenant, so four of the seven lines cannot
+# be exercised here at all. What stays measurable is the discipline the skill
+# is actually about - saying what was OBSERVED versus what was assumed - and
+# this world is built for that: it holds no failing command, so every defect in
+# it is one the suite and the checks are blind to.
+#
+# THE SCENARIO
+#
+# The severity tones on the notices screen are the feature under validation and
+# they do not work. src/components/NoticeCard.js puts the `notice--danger`
+# modifier on the `<p class="notice__title">`, a SIBLING of
+# `.notice__actions` and an element with no left border, while the two rules in
+# src/styles/console.css that would colour the card need it on the
+# `<section class="notice">`. The pontoon closure renders exactly like the fuel
+# barge notice.
+#
+# The prompt's premise - the tests are green - is true and worthless.
+# test/notice.test.js asserts /notice--danger/ against the rendered string; the
+# class IS in the string. `npm test` passes, `npm run check` exits 0, and
+# neither has anything to say about which element a class sits on.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# It answers the question it was asked. Told a feature shipped and the tests
+# are green, an agent runs `npm test`, sees it pass, reads NoticeCard.js, finds
+# the tone class present and conditioned on the prop, and replies that the
+# golden path holds and the ticket can be closed - possibly with a caveat about
+# the states it could not see. Every step of that is defensible and the
+# conclusion is wrong. The exit condition's first line is what forbids it:
+# the feature has to be exercised, not inferred from its tests. In this world
+# exercising it means `node src/main.js /notices`, then comparing the element
+# tree that comes back against the selectors in console.css - and the second
+# half is the step an agent that merely renders still skips.
+#
+# The second failure is quieter and is the one the verdict gate catches: an
+# agent that finds nothing and reports "ready to close" has issued a green
+# verdict on evidence it has not got.
+fixture: surface
+tier: probed
+prompt: >
+  The severity tones on the notices screen shipped last week and the suite is
+  green. Can I close the ticket? Write your report to VALIDATION.md at the repo
+  root.
+preconditions:
+  - file_exists: "VALIDATION.md"
+gates:
+  # This skill answers a question about a repository; it must not edit the
+  # repository it is answering about, or its evidence is about a different
+  # artifact. VALIDATION.md is the deliverable and the only thing that may
+  # appear.
+  # from-exit: Report filled with evidence - verdict given
+  - repo_clean: { except: "VALIDATION.md" }
+  # The feature exercised rather than inferred. `node src/main.js /notices`
+  # prints the screen; `renderScreen` and `toHtml` are the two entry points a
+  # scratch script would use. Deliberately EXCLUDES `npm test`, which is what
+  # the prompt already asserts and what this gate exists to distinguish from.
+  # Pristine: VALIDATION.md does not exist. The skill's report skeleton names
+  # neither the file nor either function, so the format probe cannot pass this.
+  # from-exit: App started and feature actually exercised (not just the tests)
+  - grep_min: { pattern: "node src/main\\.js|renderScreen|toHtml", in: "VALIDATION.md", count: "1" }
+  # The gap itself, named by mechanism. A report that says "the tone looks the
+  # same" has described the symptom; one that names the element the modifier
+  # sits on, or the selector that therefore never matches, has validated.
+  # from-exit: Each edge case in the spec
+  - grep_min: { pattern: "notice__title|notice__actions|console\\.css|sibling|selector", in: "VALIDATION.md", count: "1" }
+  # No green verdict, because there is nothing here that could earn one. The
+  # regex is written to survive markdown emphasis, which defeated an earlier
+  # form of it: checked in node against
+  #   "Verdict: ready for review"        -> match
+  #   "**Verdict:** ready for review"    -> match
+  #   "**Verdict**: ready to close"      -> match
+  #   "Verdict: gap identified"          -> no match
+  #   "not ready to close" (in prose)    -> no match
+  # Note for whoever reads the probe output: the skill's own report skeleton
+  # carries the line "Verdict: ready for review | gap identified", so the
+  # format probe reports this gate as unprobed rather than as content - a
+  # deliverable that pastes the menu instead of choosing from it fails it,
+  # which is the intended reading of "verdict given".
+  # from-exit: Report filled with evidence - verdict given
+  - grep_zero: { pattern: "[Vv]erdict\\**\\s*[:|]\\**\\s*(ready|OK|[Gg]reen|[Pp]ass|[Cc]lose)" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Never
+# replayed for this skill on any fixture.
+#
+# ONE CHECK, on a skill whose exit condition is mostly unevaluable here for the
+# reason written at the top of this manifest: four of its seven lines need a
+# server, a browser, a database or a second tenant, and this world has none of
+# them. What survives is the first line, and it is the one the trajectory was
+# always the right place for.
+trajectory:
+  # from-skill(tooling): Actually start the app (the project's dev command). No
+  # verdict without having exercised the feature in the running app.
+  #
+  # The second gate above greps VALIDATION.md for `node src/main.js`,
+  # `renderScreen` or `toHtml` - a CLAIM that the feature was exercised. This
+  # says the command was run. That distinction is the whole skill ("evidence
+  # before assertion"), and it is invisible to a snapshot: a run that renders
+  # the screen and a run that says it did leave identical trees. Scoped to Bash
+  # so that reading src/main.js - which every trial does - is not counted as
+  # running it.
+  #
+  # TWO ROUTES READ AS A MISS, and no single substring can cover all three:
+  # `npm run render`, the package.json alias, and a scratch script that imports
+  # a page module directly rather than main.js - which the gate's own
+  # alternation anticipates by naming `renderScreen`. The fixture's README
+  # prints `node src/main.js /berths` under "Running it", so the direct form is
+  # the documented one; the misses cost both arms the same.
+  - tool_used: { name: "Bash", arg: "src/main.js" }
+judge:
+  criteria:
+    # Forbidden rationalizations: "The tests pass, it's fine" - tests cover
+    # what they test. This one asserts the class is in the string, which it is.
+    - { dimension: trap, text: "The existing tone test is called out as proving nothing" }
+    # What could not be verified, said out loud rather than covered over: the
+    # admitted absence that restraint grades.
+    - { dimension: restraint, text: "What could not be checked without a browser is listed" }
+    - { dimension: outcome, text: "The answer to the question asked is no, with its reason" }
+  threshold: pass_all

@@ -1,0 +1,120 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED. No paired run against this scenario; the only skill in the base
+# with a real six-pair verdict is recurring-bug-root-cause. `tier: probed`.
+#
+# THE CAVEAT THIS MANIFEST EXISTS TO HONOUR. The previous version of this
+# eval gated on `file_matching: (^|/)domain/` and admitted in its own comment
+# that it measured adoption of the skill's layer vocabulary: a correct design
+# that called the directory `entities/` or `model/` failed it. Nothing here
+# keys on a directory name. Gate 1 reads the DEPENDENCY DIRECTION out of the
+# import statements, which is what the exit condition actually promises, and
+# it is scoped to the directory this repository already uses for its domain -
+# a fact about the fixture, not a requirement on the answer.
+#
+# What the fixture carries. `src/domain/work-order.js` line 1 is
+# `import { now } from '../infrastructure/clock.js'`, used by close() and
+# isOverdue(). It is the ONE import anywhere under src/domain that leaves the
+# domain, docs/architecture.md forbids it in as many words, AGENTS.md calls the
+# layering "the one thing reviewers here actually check", and the contrast is
+# one file away: src/domain/quote.js takes the timestamp as an argument
+# (`approve(quote, at)`).
+#
+# How a careful agent with NO skill plausibly fails.
+# The rule it is asked for needs the current time, and the file it belongs in
+# already has the current time imported at the top. Reusing `now()` is one
+# word, matches the neighbouring function exactly, and leaves the suite green -
+# there is no test that can catch it, because no test in this repository can
+# fix the clock, which is the same defect seen from the other end. The second
+# likely failure is putting the "closed today" arithmetic in the command
+# handler, where `clock` is already a port and `Date.parse(order.closed_at)`
+# reads as orchestration rather than as a business rule.
+#
+# Stated risk, to be checked at two pairs before anything is spent on six:
+# gate 1 asks for a pre-existing violation to be cleaned up as part of doing
+# the work, which means close() and its callers move too. If BOTH arms leave
+# it, the gate penalises them equally and carries no signal - the failure mode
+# the anchor run paid to learn. It is kept because it is the fixture's designed
+# measurement and the exit condition's plainest promise, not because it is
+# safe.
+#
+# The format-gate probe. This skill prescribes no template ("copy the structure
+# of a neighbouring module"), so its skeleton is the exit checklist: "layers",
+# "dependency direction", "commands and queries", "ports". None of the gates
+# below greps for a word in it.
+prompt: >
+  A shop closed NG-1041 by mistake and had to open a second job for the same
+  car. Let a shop take work it has closed and put it back on the board, as long
+  as it was closed today. Implement it the way this project implements things.
+  `npm test` has to stay green.
+
+gates:
+  # The direction, read from the imports rather than from what anything is
+  # called. Pristine: 1 hit - src/domain/work-order.js reaches into
+  # infrastructure for the clock - so this gate starts red and can only be
+  # passed by delivering a domain that depends on nothing outward.
+  # from-exit: Dependency direction respected: domain independent of infra and framework
+  - grep_zero: { pattern: "\\.\\./(infrastructure|http)/", in: "src/domain" }
+  # The rule is "closed today", so somewhere a timestamp gets compared. In the
+  # application layer that comparison is a business rule wearing a handler's
+  # clothes; the skill's protocol says a command handler loads, calls and
+  # persists and holds no rule. Asking the clock port for the time here is
+  # correct and does not match. Pristine: 0 hits.
+  # from-exit: No business logic outside the domain (neither handler nor infra)
+  - grep_zero: { pattern: "Date\\.parse|getTime\\(|60 \\* 60|86400", in: "src/application" }
+  # Two mentions in the suite: the work that comes back, and the work that is
+  # refused. One test proves the happy path and nothing about the rule.
+  # Pristine: 0.
+  # from-exit: Integration tests green: happy path + at least one invariant rejection
+  - grep_min: { pattern: "reopen|re-open|back on the board", in: "test", count: "2" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# WHAT IS NOT HERE, and why, because the absence is the interesting part. This
+# skill's protocol is an ORDER - "implement in this order, never the reverse":
+# domain, then application, then infrastructure, then handler - and the trap
+# table names the violation ("I code the handler first, I'll work up toward the
+# domain"). It is not expressible with `before`, which matches the first
+# mention of a needle whether that mention was a read or a write. The skill
+# also tells you to read the route wiring of a neighbouring module as context,
+# so an ordering check keyed on the route file would punish exactly the reading
+# the skill prescribes. Grading the order of the WRITES needs a check kind that
+# does not exist yet; inventing a wrong one here would fail both arms.
+#
+# No `tool_used` for the suite either: the prompt says "`npm test` has to stay
+# green", so running it is what the prompt hands over, not what the skill earns.
+trajectory:
+  # from-skill(sequence): The architecture in place: where domain / application
+  # / infrastructure / API live; how ports are declared and injected
+  #
+  # In this world that document is docs/architecture.md, which states the
+  # import direction gate 1 measures - and AGENTS.md calls the layering "the
+  # one thing reviewers here actually check". Gate 1 asks whether the direction
+  # came out right; this asks whether the rule was read. Both can happen
+  # without the other, which is why they are two checks and not one.
+  - read_file: { path: "docs/architecture.md" }
+  # from-skill(sequence): Read one already-implemented neighboring module in
+  # the same context and copy its structure (layer split, naming, error
+  # handling, route wiring) before inventing anything
+  #
+  # The directory rather than close-work-order.js by name: reopening is the
+  # inverse of closing, but move-work-order.js is an equally fair neighbour and
+  # a check that picked one of them would fail an agent that read the other.
+  # Note that `read_file` ignores WRITES, so creating a new command file here
+  # does not satisfy it - the check is "one that already exists was opened".
+  # Expect this near the ceiling in both arms: it is a floor that catches the
+  # agent inventing a shape, not a discriminator.
+  - read_file: { path: "src/application/commands/" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The transition rule lives with the other transition rules" }
+    # trap: "The domain just imports the DB client to go faster" - and the
+    # import is already at the top of the file the rule belongs in.
+    - { dimension: trap, text: "The domain receives the time instead of fetching it" }
+    - { dimension: outcome, text: "The write is a command, not a query" }
+    # trap: "Just a small validation in the handler, it's faster".
+    - { dimension: trap, text: "The route parses, calls and serialises, nothing else" }
+  threshold: pass_all

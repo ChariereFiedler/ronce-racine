@@ -174,7 +174,10 @@ Every reported measurement carries:
 
 - the **command** that produces it, verbatim and re-runnable
 - the **noise floor** of the machine at the time
-- the **sample count** and the **p-value** for any A/B claim
+- the **sample count**, and the **p-value** for any A/B claim where the harness
+  computes one. `benchstat` does; `tinybench` and `mitata` report ops/s and a
+  coefficient of variation instead. Where there is no p-value, report the delta
+  against the measured noise floor - a claim carrying neither is refused.
 - a **verdict**: confirmed / refuted / **inconclusive**
 
 "Inconclusive" is a first-class outcome. A campaign that refutes three of its own

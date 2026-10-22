@@ -1,12 +1,31 @@
+# SMOKE, and it will stay smoke. This skill is a template plus a set of
+# computation rules, consumed by the other audit skills rather than run against
+# a repository: `audit-security` and `audit-testing` both send the reader here
+# for the score rule, the confidence levels and the handling of non-auditable
+# items. There is no work of its own for a fixture to make hard.
+#
+# So this manifest answers one question - does the skill still produce its
+# deliverable - and it may never publish a causal verdict. The two grep gates
+# below are format gates by construction, and that is the honest shape for a
+# skill whose deliverable IS a format. They are kept because a consolidated
+# report that scores without ranking what to do first is half the deliverable,
+# and losing that would be a regression worth catching.
+tier: probed
 fixture: audit-target
 prompt: >
   Consolidate these already-produced domain audit scores into the
   audit report template: security 1.0/4 (weight 0.20), ci-cd 0.5/4
   (weight 0.12), testing 1.5/4 (weight 0.12), quality 2.0/4 (weight 0.12).
   Write the consolidated report to AUDIT-CONSOLIDATED.md.
-gates:
+preconditions:
   - file_exists: "AUDIT-CONSOLIDATED.md"
+gates:
   - repo_clean: { except: "AUDIT-CONSOLIDATED.md" }
+  # The judge checks the weighted average. The exit condition also asks for a
+  # maturity class and MUST/SHOULD/COULD prioritisation - a consolidated report
+  # that scores without ranking what to do first is half the deliverable.
+  - grep_min: { pattern: "MUST|SHOULD|COULD", in: "AUDIT-CONSOLIDATED.md", count: "1" }
+  - grep_min: { pattern: "[Mm]aturity", in: "AUDIT-CONSOLIDATED.md", count: "1" }
 judge:
   criteria:
     - "Applies the weighted average to compute the global score"

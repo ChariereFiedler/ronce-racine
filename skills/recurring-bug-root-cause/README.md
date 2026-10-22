@@ -7,6 +7,7 @@
 | **Type** | Skill (on-demand workflow) |
 | **Category** | `bug` |
 | **Artifact** | [`SKILL.md`](SKILL.md) |
+| **Evaluation** | [`eval.yaml`](eval.yaml) - the blocking guardrail its exit condition demands was measured 0/7 without the skill, 7/7 with it (2026-08-24), and is gated |
 | **Tooling** | [`scripts/detect-recurring-fixes.ts`](scripts/detect-recurring-fixes.ts), [`templates/postmortem-recidive.md`](templates/postmortem-recidive.md) |
 
 ## What it is

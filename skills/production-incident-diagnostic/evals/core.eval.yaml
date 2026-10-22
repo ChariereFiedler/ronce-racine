@@ -1,0 +1,135 @@
+# CORE scenario - the diagnosis half of the skill, which is the half a fixture
+# can carry.
+#
+# HALF-MEASURED, DELIBERATELY. Two of this skill's six exit-condition lines act
+# on something no repository can provide. "Prod re-checked: health endpoint OK
+# and symptom gone (output pasted)" has no endpoint to check here, and
+# "Mitigation applied ...; destructive actions confirmed by the user" has
+# nothing to restart and nobody to confirm with. Neither is gated, and neither
+# is judged: a criterion nobody can meet penalises both arms equally and
+# dilutes the signal, which this repository has already paid to learn twice
+# (the audit domain score, 0/3 on both arms; the per-question verification
+# command, 0/4 on both arms, added without checking and reverted). What is
+# measured here is the diagnosis: symptom scoped, layer isolated on evidence,
+# cause documented rather than guessed.
+#
+# NOT MEASURED. No paired run has been executed against this manifest, or
+# against any scenario of this skill. The precedent the rebuild plan records
+# for the half-measured pair is `ci-pipeline-orchestration`, whose diagnosis
+# half separated the arms by +0.50 once its prompt stopped listing what the
+# plan needed - which is the reason this prompt lists nothing.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. The evidence available is a repository and
+# two pasted run tails, and it points three ways at once. ops/runner-capacity.md
+# is a platform review recommending a dedicated runner - true, written by
+# someone competent, and irrelevant to the growth. ops/pool-size-trial.md is a
+# measured experiment showing the pool size moves the peak - true, reproducible,
+# and expired: `--concurrency 1` still fails today, at 128 of 157 units. The
+# failure message names a budget that sits on one line of build.config.json.
+# An incident report that isolates "the runner" or "the render pool" as the
+# faulty layer cites real evidence for an unproven hypothesis, which is the one
+# thing this skill's exit condition forbids by name.
+tier: probed
+fixture: incident
+prompt: >
+  Nothing has reached the portal since Friday and the nightly publish has been
+  red four nights running. There is no live access from here: no dashboard, no
+  shell on the runner, nothing beyond what is in this repository. Work out what
+  is going on and write the incident report to INCIDENT_REPORT.md.
+preconditions:
+  # Named by the prompt because the fixture has no tracker; produced by both
+  # arms; carries no signal of its own.
+  - file_exists: "INCIDENT_REPORT.md"
+gates:
+  # from-exit: Root cause documented - never an unproven hypothesis
+  #
+  # The subject of the citation, under the three names it has in this
+  # repository. Everything the error message points at - retention.js, where
+  # the guard throws, build.config.json, where the number lives - is downstream
+  # of the cause: plan.js had already returned before the guard ever ran.
+  # Not in the skill's templates/incident-report.md, so the template-only probe
+  # fails it.
+  - grep_min: { pattern: "plan\\.js|planUnits|discoverMarkets", in: "INCIDENT_REPORT.md", count: "1" }
+  # from-exit: Faulty layer isolated with at least one piece of evidence (log, metric, trace or repro)
+  #
+  # The one piece of evidence this world hands over for free, and the floor
+  # rather than the signal: the failure's own name. It is in ops/log-tails.md,
+  # so quoting it proves a read of the pasted tail or a run of the build -
+  # either counts as having reached the failure at all. Kept as a floor and
+  # labelled as one: a report that never gets as far as naming the exception is
+  # not isolating anything.
+  - grep_min: { pattern: "RetentionBudgetExceeded", in: "INCIDENT_REPORT.md", count: "1" }
+  # from-exit: Root cause documented - never an unproven hypothesis
+  #
+  # Raising the ceiling is acting on the hypothesis that the run needs more
+  # room, which is exactly what the exit condition refuses to let a report
+  # assert without proof - and this one cannot be proved, because held has gone
+  # 146 to 289 KB in five weeks with no change to the tool. The gate forbids
+  # only the value moving; a mitigation PLANNED in the report's own words is
+  # untouched, as the exit condition allows.
+  # The trailing `\\d` is what forces the negative lookahead onto the value:
+  # `\\s*(?!288\\b)` alone matches the untouched line. Verified on 288, on 288
+  # with no trailing comma, on 512, on 2880 and on the key removed.
+  - grep_zero: { pattern: "\"retentionBudgetKb\":\\s*(?!288\\b)\\d", in: "build.config.json" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# NOT REPLAYED against real trials: the only trajectories this repository holds
+# are the twelve of the 2026-09-03 anchor run, on another skill. Both checks
+# below were instead proved able BOTH to pass and to fail against a synthetic
+# trajectory rendered the way `actionsOf` renders a real one.
+#
+# HALF-MEASURED HERE TOO, and for the same reason the gates are: this skill's
+# `Tooling` section names `curl -v` on a health endpoint, an observability
+# dashboard and a read-only database query, and this world has none of the
+# three - which the prompt says out loud. So there is no `tool_used` to derive
+# that any run could satisfy. What survives is the ordering: the protocol's
+# first two steps are things to do BEFORE the report exists, and a snapshot
+# holds neither.
+trajectory:
+  # from-skill(sequence): 3. Logs - Filter the observability tool on the
+  # incident window and the suspected layer
+  #
+  # The only log this world has is ops/log-tails.md, where the run tails are
+  # pasted, and the second gate above is keyed on the exception name it
+  # contains. That gate cannot say WHEN it was read; a report written first and
+  # decorated afterwards leaves the same tree. This says the log came before
+  # the conclusion, which is the whole of "evidence before conclusion".
+  # Expected to be a floor rather than a discriminator - a report on a failure
+  # nobody can watch live has to start there.
+  - before: { first: "ops/log-tails.md", then: "INCIDENT_REPORT.md" }
+  # from-skill(sequence): 2. Check deployment & version - Last deployment /
+  # migration: timing vs incident start -> rollback candidate
+  #
+  # There is no deployment system here, and the history is what stands in for
+  # one: the job went red on 08-31, and what changed under it is four markets
+  # opened over five weeks, visible only in `git log content/markets/`. The
+  # correlation this step exists to establish is the whole diagnosis, and an
+  # incident report written before the log was opened cannot carry it.
+  # Accepted false negative, stated: an agent that writes an INCIDENT_REPORT.md
+  # skeleton first and fills it after the archaeology fails this check.
+  - before: { first: "git log", then: "INCIDENT_REPORT.md" }
+judge:
+  criteria:
+    # Scope delimited: the checks job is green, the preview job is green, and
+    # the portal keeps serving the last good render.
+    - { dimension: outcome, text: "Says what is still working, not only what is broken" }
+    # from-skill(trap): "It's probably the DB / the network" -> "Unproven
+    # hypothesis. One piece of evidence per layer, otherwise you treat the wrong
+    # one." Both rivals are written up in ops/ by colleagues, which is what
+    # makes adopting one feel like evidence.
+    - { dimension: trap, text: "Rules out the runner and the render pool rather than ignoring them" }
+    # from-skill(tooling): 4. Metrics & alerts - "Should an alert have fired? If
+    # not, an observability gap to track too". The instrument existed
+    # (tools/sheetmill/sampler.js), was deleted eight days ago, and the
+    # held/peak column of ops/publish-runs.md went blank with it.
+    - { dimension: tooling, text: "Notices that the measurement of this job stopped being recorded" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.
+#
+# Rejected here, all measured `format` on the synthetic deliverable:
+# `[Ff]aulty layer`, `[Rr]oot cause`, `[Ee]vidence` and `[Mm]itigation`. All
+# four are section headings of templates/incident-report.md, which is exactly
+# what the probe's deliverable is built from.

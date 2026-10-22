@@ -127,9 +127,3 @@ npm run lint
 ## Tooling
 
 - Reuse the current repo's scripts and commands (lint, typecheck, type generation). No generic tool provided here: detecting uncleaned subscriptions is framework-dependent - write it in the project skill.
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.0 (2026-06-19) - initial version, generalized from a project-specific Vue/Nuxt/Pinia workflow (stack coupling removed)

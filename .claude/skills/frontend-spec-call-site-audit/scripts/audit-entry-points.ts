@@ -60,7 +60,10 @@ if (component !== '-') {
     .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
     .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
     .toLowerCase()
-  section(`Call sites of ${component}`, grep(new RegExp(`<${component}[\\s/>]|<${kebab}[\\s/>]|\\b${component}\\b`)))
+  // component comes from argv: a metacharacter in it would become regex syntax.
+  const esc = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const [c, k] = [esc(component), esc(kebab)]
+  section(`Call sites of ${component}`, grep(new RegExp(`<${c}[\\s/>]|<${k}[\\s/>]|\\b${c}\\b`)))
 }
 if (route && route !== '-') {
   const esc = route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')

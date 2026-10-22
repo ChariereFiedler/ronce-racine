@@ -102,9 +102,3 @@ Tickets: <list of follow-up tickets created>
 ## Tooling
 
 - `reference/testing-advanced.md` - advanced techniques loaded on demand: quality gates, mutation testing, fuzzing, API snapshots, UAT, pyramid detail. Read it when the strategy must rely on automated safeguards.
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - the exclusion clause now names the skill it redirects to
-
-- 1.0.0 (2026-06-19) - initial release, generalized from a project workflow (coverage matrix, risk prioritization, pyramid), stack/tracker coupling removed.

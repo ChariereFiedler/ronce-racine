@@ -14,10 +14,10 @@
  * @last-reviewed 2026-08-24
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { rankSkills, type SkillVocab } from "./skill-scoring.ts";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const MIN_TRIGGER_LEN = 4; // ignore triggers that are too short (noise)
 const MAX_SUGGESTIONS = 3;
 
 function readStdin(): string {
@@ -38,17 +38,8 @@ function skillsDir(): string | undefined {
   return candidates.find((p) => existsSync(p));
 }
 
-/** A skill's triggers: quoted strings from the description + words of the name. */
-function triggers(name: string, description: string): string[] {
-  const quoted = [...description.matchAll(/"([^"]+)"|«\s*([^»]+?)\s*»/g)].map((m) => m[1] || m[2]);
-  const nameWords = name.split("-").filter((w) => w.length >= MIN_TRIGGER_LEN);
-  return [...quoted, ...nameWords]
-    .map((t) => t.toLowerCase().trim())
-    .filter((t) => t.length >= MIN_TRIGGER_LEN);
-}
-
-function loadSkills(dir: string): { name: string; triggers: string[] }[] {
-  const out: { name: string; triggers: string[] }[] = [];
+function loadSkills(dir: string): SkillVocab[] {
+  const out: SkillVocab[] = [];
   for (const name of readdirSync(dir)) {
     const p = join(dir, name, "SKILL.md");
     if (!existsSync(p)) continue;
@@ -60,7 +51,7 @@ function loadSkills(dir: string): { name: string; triggers: string[] }[] {
     // which would keep a trailing \r.
     const fm = /^---\r?\n([\s\S]*?)\r?\n---/.exec(raw);
     const desc = fm && /description:\s*([^\r\n]*)/.exec(fm[1]);
-    if (desc) out.push({ name, triggers: triggers(name, desc[1]) });
+    if (desc) out.push({ dir: name, description: desc[1] });
   }
   return out;
 }
@@ -77,14 +68,12 @@ function main(): void {
   }
   if (!prompt) return;
 
-  const scored = loadSkills(dir)
-    .map((s) => ({ name: s.name, hits: s.triggers.filter((t) => prompt.includes(t)).length }))
-    .filter((s) => s.hits > 0)
-    .sort((a, b) => b.hits - a.hits)
-    .slice(0, MAX_SUGGESTIONS);
+  const scored = rankSkills(prompt, loadSkills(dir), MAX_SUGGESTIONS);
 
+  // Naming nothing is a legitimate answer: a hook that always names three skills
+  // spends its credibility on the prompts that call for none.
   if (!scored.length) return;
-  const list = scored.map((s) => s.name).join(", ");
+  const list = scored.map((s) => s.dir).join(", ");
   console.log(
     `Skills potentially relevant to this request: ${list}. Invoke them via the Skill tool if they apply.`,
   );

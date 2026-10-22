@@ -1,0 +1,124 @@
+# platform / core - the refactor that kept every test green and broke the
+# promise underneath them.
+#
+# WHAT IS KNOWN: nothing measured. No paired run for this skill on this world.
+# The one thing this manifest inherits from the previous round is a NEGATIVE
+# result worth writing down: the base manifest's verdict gate - a grep for
+# "request changes" or "blocking" - is a format gate on this skill. The skill
+# ships templates/mr-review-report.md, whose verdict line reads
+# `> **APPROVE** | **REQUEST CHANGES**` and whose checklist names sensitive
+# files, debug leftovers and disabled tests, so the template-only probe passes
+# any gate keyed on that vocabulary. It was probed and dropped rather than
+# shipped. Nothing below greps a word the template supplies.
+#
+# THE SUBJECT. `2e9a592 refactor(payroll): pull block merging out of the export`
+# extracted src/payroll/blocks.js and rewrote the grouping. Two things went with
+# it: the `splitAtMidnight` call, and a grouping key of staff AND day. The
+# comment that stated the rule went too. Nothing failed at the time - no
+# contract case had an overnight shift in it until four commits later - which
+# is why the commit does not look like the culprit and why the unit tests the
+# same commit ADDS all pass.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. The commit is a good-looking refactor. It
+# extracts a helper into a new module, ADDS a unit-test file for it, and wires
+# that file into the pipeline's unit job in the same diff - every signal a
+# reviewer reads for care is present. The whole suite passes at that commit and
+# still passes now except for one contract case added four commits later, which
+# is not in the diff and did not exist when it landed. So a review that stays
+# inside the diff finds nothing: the extraction is faithful, the tests are new,
+# the naming is fine, and the honest verdict from that reading is approve. What
+# it misses is a deletion. `splitAtMidnight` and a grouping key of staff AND day
+# went out with the old private helper, and the comment that stated the rule went
+# with them, so the diff removes its own evidence. Reaching the finding means
+# asking what the removed call did, noticing it now has no caller anywhere in
+# src/, and then leaving the diff for docs/contracts/payroll-export.md to learn
+# that a block is attributed to a calendar day and never spans one.
+#
+# FORMAT GATES CAUGHT AND DROPPED, with the probe's verdict. Three candidates
+# were written and probed: [Rr]equest changes|[Bb]locking (the gate the previous
+# manifest actually shipped), [Ss]ensitive file|debug leftover|disabled test, and
+# a line-anchored APPROVE verdict. The template-only probe passes ALL THREE,
+# because templates/mr-review-report.md is the skeleton: it carries
+# "> **APPROVE** | **REQUEST CHANGES**", a "## Blocking points" heading and a
+# nine-line checklist naming sensitive files, debug leftovers and disabled tests.
+# None of them is in this manifest.
+tier: probed
+fixture: platform
+prompt: >
+  The commit "refactor(payroll): pull block merging out of the export" is on
+  trunk and nobody reviewed it. Read it as the change in front of you and
+  write the outcome to REVIEW.md.
+preconditions:
+  # The prompt names this path, so producing it proves nothing about the skill.
+  - file_exists: "REVIEW.md"
+gates:
+  # from-exit: Full diff read (not just the forge summary)
+  #
+  # `splitAtMidnight` is removed by the diff and has no caller anywhere in src/
+  # afterwards - grep it. It is still exported from src/rota/shifts.js and still
+  # unit-tested in test/shifts.test.js, so the deletion leaves a live function
+  # with nothing calling it and a suite that stays green. Naming it is the trace
+  # of having read what the diff took AWAY rather than what it added, which is
+  # what "not just the forge summary" is about.
+  #
+  # Verified: 0 hits under src/payroll/ after the refactor; 0 hits in REVIEW.md,
+  # which does not exist before the run; the skill's template and checklist
+  # contain no such name, so the template-only probe leaves this gate red.
+  - grep_min: { pattern: "splitAtMidnight", in: "REVIEW.md", count: "1" }
+  # from-exit: Whole checklist worked through; every gap → blocking or justified
+  #
+  # The gap this change opens is not in the diff: docs/contracts/payroll-export.md
+  # states "Blocks are attributed to a calendar day ... a block never spans one",
+  # and grouping by staff alone breaks exactly that. The phrase "calendar day"
+  # appears in that contract document and nowhere in the diff, so a review that
+  # produces it went and read the promise instead of reading the patch.
+  #
+  # `payroll-export\.md` is deliberately NOT in the alternation: the diff's own
+  # added comment says "The shape of a row is fixed by
+  # docs/contracts/payroll-export.md", so quoting the patch would score the hit
+  # without the reading. Verified: 4 hits repo-wide for "calendar day", none of
+  # them in the commit under review, 0 in the deliverable before the run.
+  - grep_min: { pattern: "calendar day", in: "REVIEW.md", count: "1" }
+  # from-exit: Verdict issued: approve or request changes, with reasons
+  #
+  # A review's deliverable is a verdict, not a patch. `except` allows the
+  # outcome and nothing else, so an agent that repairs the export it is
+  # reviewing - the helpful move, and the one that ends a review before it is
+  # finished - fails here rather than being credited for it.
+  - repo_clean: { except: "REVIEW.md" }
+# WHAT THE AGENT DID, graded in the post-pass. One check, and it is the skill's
+# own first sentence: "Approving = having read the diff line by line."
+trajectory:
+  # from-skill(sequence): Context to gather (before acting) - The full diff of
+  # the source branch against the target: `git fetch <remote> <source-branch>`
+  # then `git diff <remote>/<target>...<remote>/<source-branch>` (not just the
+  # forge summary)
+  #
+  # The ordering a snapshot loses: REVIEW.md reads the same whether the commit
+  # was opened before the verdict or after it, and this scenario's whole
+  # difficulty is that the diff removes its own evidence - so a review written
+  # from the files as they stand now, without ever opening 2e9a592, cannot see
+  # the deletion at all.
+  #
+  # Keyed on the hash rather than on one command, because every route to the
+  # diff carries it: `git show 2e9a592`, `git diff 2e9a592^ 2e9a592` and
+  # `git log -p ... 2e9a592` all match the substring.
+  #
+  # KNOWN ESCAPE: a relative reference - `git show HEAD~5` - reaches the same
+  # commit without naming it. The prompt hands the hash over, so that route is
+  # unlikely, and it is the only way this check reddens an arm that did read the
+  # diff.
+  # A SUBJECT, never an id. All three prompts here named a short SHA and no
+  # such object existed: setup.ts pins the commit author but not the date, so
+  # every regeneration produces different ids. The agent searched for
+  # something that was not there and would have returned a null result -
+  # indistinguishable from "the skill does not help". A subject survives a
+  # regeneration and any later edit of the history. eval-lint now refuses a
+  # prompt naming an id the fixture cannot resolve.
+  - before: { first: "refactor(payroll): pull block merging out of the export", then: "REVIEW.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The grouping change is called a break of a stated promise" }
+    - { dimension: trap, text: "Green unit tests are not taken as evidence the export is right" }
+    - { dimension: outcome, text: "Approval is withheld while that stands" }
+  threshold: pass_all

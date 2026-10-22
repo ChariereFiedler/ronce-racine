@@ -1,0 +1,100 @@
+# audit-architecture / hard - a recovery path that is real, and one that is not.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world; the previous manifest for this skill inherited another skill's figure
+# on a fixture that no longer exists. `tier: probed`.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# "A rollback script exists and nobody can say when it was last run" is the
+# stock finding, and this repository ships the shape that invites it: one shell
+# script, one node script, no infrastructure code. It is wrong here in both
+# directions at once. tools/release/rollback.js reads ops/deploys.md - the real
+# deploy log, with an outcome column - and `npm run rollback -- --dry-run`
+# answers with the tag it would go back to; test/rollback.test.js exercises the
+# parsing and the choice of the previous good release. That is more than most
+# audited services can show. And the half that genuinely cannot be judged from
+# here is the other one: the warehouse, its loader and its restores belong to
+# the platform group, so data recovery is not the same question as artifact
+# rollback and must not be answered with it. Running one command and opening one
+# test file separates the two; reading the pipeline file does not.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit how this service recovers from a bad release: rollback, restart and
+  data recovery. Write the report to AUDIT-RECOVERY.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: unearnable credit.
+  - file_exists: "AUDIT-RECOVERY.md"
+gates:
+  # from-exit: Report produced via `audit-report` (summary, per-question detail
+  - repo_clean: { except: "AUDIT-RECOVERY.md" }
+  # from-exit: Every level rests on evidence from running the verification commands
+  # The rollback path is covered by a test. Reachable only by opening test/ and
+  # matching it to tools/release/; a report that grades the script by its
+  # existence names neither the test nor what it asserts.
+  - grep_min: { pattern: "rollback\.test\.js|test/rollback", in: "AUDIT-RECOVERY.md", count: "1" }
+  # from-exit: Every level rests on evidence from running the verification commands
+  # The answer the dry run prints: live is on 2026-08-26.1 and the previous good
+  # live release is 2026-08-14.3. Quoting it is the difference between a level
+  # that rests on a run and one that rests on a filename. If a paired run shows
+  # both arms at zero here, this gate has to come back out - a criterion nobody
+  # meets penalises both sides equally; that has already happened once in this
+  # repository, to a "verification command cited per question" criterion, and it
+  # was reverted rather than kept.
+  - grep_min: { pattern: "2026-08-14\.3|--dry-run", in: "AUDIT-RECOVERY.md", count: "1" }
+  # from-exit: Every question is scored 0-4 or marked N/A (conditional questions included)
+  # Data recovery is not artifact rollback. The cluster, the dump and the
+  # restore rehearsal are the platform group's, so at least one question keeps
+  # its row with N/A rather than being scored from an absence.
+  - grep_min: { pattern: "\|\s*N/A\s*\|", in: "AUDIT-RECOVERY.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-RECOVERY.md" would match that todo
+# at step 1 and fail an ordering the agent in fact kept. A check nobody can
+# pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): For each question: run the listed **verification
+  # commands**. - step 2 of the audit protocol, whose step 5 is **Produce the
+  # report** via `audit-report`.
+  #
+  # The rollback question turns on a file that is not the script: the test that
+  # exercises the parsing and the choice of the previous good release. Opening
+  # it after the verdict is written is grading the script by its existence,
+  # which is the stock finding this scenario is built to refuse.
+  - before: { first: "rollback.test.js", then: "file_path=AUDIT-RECOVERY.md" }
+judge:
+  criteria:
+    - { dimension: tooling, text: "The rollback is judged on a run and a test, not on the script existing" }
+    - { dimension: outcome, text: "The warehouse's restore path is not answered with the artifact one" }
+    - { dimension: outcome, text: "The in-memory notify queue is named as lost on restart" }
+  threshold: pass_all

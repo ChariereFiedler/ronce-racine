@@ -11,7 +11,7 @@
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { ROUTING_CASES, routingFailures } from "./routing-cases.ts";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SKILLS = join(ROOT, "skills");
@@ -71,6 +71,20 @@ function referencedPaths(body: string): string[] {
 }
 
 /**
+ * Refs to ANOTHER skill's material, resolved from the skills/ root.
+ *
+ * Both spellings mean the same file and both are accepted: the bare
+ * `audit-report/reference/x.md`, and the `../audit-report/reference/x.md` an
+ * installed skill actually walks, since skills land side by side under
+ * `.claude/skills/`. Rejecting the relative form used to make authors write the
+ * path twice in one sentence - the lint dictating the prose.
+ */
+export function crossSkillPaths(body: string): string[] {
+  const re = /(?<![\w./-])(?:\.\.\/)?([\w-]+\/(?:reference|scripts|templates)\/[\w./-]+)/g;
+  return [...new Set([...body.matchAll(re)].map((m) => m[1]))];
+}
+
+/**
  * A ": " inside an unquoted scalar makes the whole frontmatter invalid YAML.
  * Claude Code does not fail loudly on it: the artifact loads with EMPTY
  * metadata, so a skill silently stops routing and an agent loses its tool
@@ -116,7 +130,11 @@ function validateSkill(dir: string): string[] {
   if (!cat) errs.push(`${dir}: metadata.category missing`);
   else if (!CATEGORIES.includes(cat)) errs.push(`${dir}: category "${cat}" not in the allowed list`);
 
-  if (!/^##\s+Changelog\s*$/m.test(body)) errs.push(`${dir}: ## Changelog section missing`);
+  // The changelog moved out of the text the agent reads on 2026-09-03: it is
+  // history, and a SKILL.md is a procedure. Still required, still versioned,
+  // just no longer competing with the instruction for the agent's attention.
+  if (/^##\s+Changelog\s*$/m.test(body)) errs.push(`${dir}: the changelog belongs in CHANGELOG.md, not in SKILL.md`);
+  if (!existsSync(join(SKILLS, dir, "CHANGELOG.md"))) errs.push(`${dir}: CHANGELOG.md missing`);
 
   // The human page sits next to the skill (a skill is a folder, so it has room
   // for one) and is never distributed. It must point at what it documents,
@@ -129,8 +147,7 @@ function validateSkill(dir: string): string[] {
   for (const ref of referencedPaths(body)) {
     if (!existsSync(join(SKILLS, dir, ref))) errs.push(`${dir}: broken link → ${ref}`);
   }
-  // Cross-skill refs (`other-skill/reference/x.md`) resolve from the skills/ root.
-  for (const ref of body.match(/(?<![\w./-])[\w-]+\/(?:reference|scripts|templates)\/[\w./-]+/g) ?? []) {
+  for (const ref of crossSkillPaths(body)) {
     if (!existsSync(join(SKILLS, ref))) errs.push(`${dir}: broken cross-skill link → ${ref}`);
   }
 
@@ -454,7 +471,7 @@ function docsCheck(): void {
     errors.push(`README.md: no link to https://www.npmjs.com/package/${pkg.name}`);
 
   // 6. Documented commands must name a file that exists.
-  for (const rel of ["README.md", "docs/adopting-a-repo.md", "docs/developing.md"]) {
+  for (const rel of ["README.md", "docs/adopting-a-repo.md", "docs/developing.md", "playground/README.md"]) {
     for (const m of read(rel).matchAll(/npx tsx ((?:tools\/|playground\/)[\w./-]+\.ts)/g)) {
       if (!existsSync(join(ROOT, m[1]))) errors.push(`${rel}: documents ${m[1]}, which does not exist`);
     }
@@ -467,18 +484,20 @@ function docsCheck(): void {
   console.log("✓ documentation matches what the installer actually does");
 }
 
-const cmd = process.argv[2] ?? "validate";
-if (cmd === "validate") validate();
-else if (cmd === "templates") templatesCheck();
-else if (cmd === "docs") docsCheck();
-else if (cmd === "list") list();
-else if (cmd === "triggers") triggersCheck();
-else if (cmd === "rules") rulesCheck();
-else if (cmd === "scripts") scriptsCheck();
-else if (cmd === "hooks") hooksCheck();
-else if (cmd === "agents") agentsCheck();
-else if (cmd === "routing") disambiguationCheck();
-else {
-  console.error("usage: skills.ts <validate|list|triggers|rules|scripts|hooks|agents|templates|docs>");
-  process.exit(2);
+// Guarded like the other tools: the tests import this file for its path
+// helpers, and an import must not run a command or exit the process.
+const isMain = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
+if (isMain) {
+  const cmd = process.argv[2] ?? "validate";
+  const commands: Record<string, () => void> = {
+    validate, templates: templatesCheck, docs: docsCheck, list,
+    triggers: triggersCheck, rules: rulesCheck, scripts: scriptsCheck,
+    hooks: hooksCheck, agents: agentsCheck, routing: disambiguationCheck,
+  };
+  const run = commands[cmd];
+  if (!run) {
+    console.error(`usage: skills.ts <${Object.keys(commands).join("|")}>`);
+    process.exit(2);
+  }
+  run();
 }

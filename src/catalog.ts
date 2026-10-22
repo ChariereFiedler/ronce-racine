@@ -85,9 +85,13 @@ export const CATALOG: Item[] = [
   // scripts (standalone, read-only)
   { kind: "script", name: "subscription-leak-scan.ts", when: ["frontend"], reason: "detects subscriptions/listeners/timers without teardown" },
   // hooks
-  { kind: "hook", name: "skill-reminder.ts", when: "always", reason: "suggests the relevant skills for the prompt", wiring: [{ event: "UserPromptSubmit", commandFile: "skill-reminder.ts" }] },
+  { kind: "hook", name: "skill-reminder.ts", when: "always", reason: "suggests the relevant skills for the prompt", files: ["skill-reminder.ts", "skill-scoring.ts"], wiring: [{ event: "UserPromptSubmit", commandFile: "skill-reminder.ts" }] },
   { kind: "hook", name: "bash-npm-silent.ts", when: ["code"], reason: "silences npm install/ci (less noise)", wiring: [{ event: "PreToolUse", matcher: "Bash", commandFile: "bash-npm-silent.ts" }] },
   { kind: "hook", name: "truncate-output.ts", when: ["code"], reason: "caps verbose output (cargo/git/docker…)", files: ["truncate-output.ts", "truncate-bash-output.ts"], wiring: [{ event: "PreToolUse", matcher: "Bash", commandFile: "truncate-output.ts" }] },
+  // Opt-in: it DENIES a tool call, which is a stronger contract than rewriting
+  // one. An adopter takes that trade knowingly — a blocked turn against the
+  // context a shell read pours in, and keeps paying for, call after call.
+  { kind: "hook", name: "shell-read-guard.ts", when: ["code"], reason: "sends shell file reads back to Read/Write", optional: true, wiring: [{ event: "PreToolUse", matcher: "Bash", commandFile: "shell-read-guard.ts" }] },
   { kind: "hook", name: "session-writer.ts", when: "always", reason: "per-branch session memo (writer/inject/precompact)", optional: true, files: ["session-writer.ts", "session-inject.ts", "session-precompact.ts"], wiring: [{ event: "Stop", commandFile: "session-writer.ts" }, { event: "SessionStart", matcher: "compact", commandFile: "session-inject.ts" }, { event: "PreCompact", commandFile: "session-precompact.ts" }] },
   { kind: "hook", name: "worktree-env-setup.ts", when: "always", reason: "symlink .env into git worktrees", optional: true, wiring: [{ event: "SessionStart", commandFile: "worktree-env-setup.ts" }] },
   // Opt-in: it spends an API call per push, so it is a cost the adopter accepts

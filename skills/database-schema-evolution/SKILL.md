@@ -101,9 +101,3 @@ A missing box = do not apply in production.
 
 - Adapt the scan's `grep -rn` to the current project's extensions and folders
 - Migration tool and reset command specific to the project: read the config rather than assume
-
-## Changelog
-
-- 1.0.1 (2026-08-08) - dropped the fictional example projects from the precedence note
-
-- 1.0.0 (2026-06-19) - initial version; provider-agnostic generalization of a project-specific `bulk-db-migration` workflow into a zero-downtime expand-contract protocol

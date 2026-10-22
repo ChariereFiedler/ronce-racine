@@ -1,0 +1,101 @@
+# platform / hard - the guard that reads as an oversight.
+#
+# WHAT IS KNOWN: nothing measured about this scenario. No paired run.
+# The reasoning it inherits is the same pair of older figures cited in
+# core.eval.yaml, and nothing in this file rests on a measurement of its own.
+#
+# WHY IT IS THE HARD ONE. Every visible signal argues for removing the settle
+# stage: the job's script carries no comment, a colleague's note in
+# ops/friction-notes.md says "I do not know what it is for", the pipeline
+# history shows the median going from 5m50 to 7m20 the week it arrived, and
+# removing it turns nothing red - the damage it prevents is a green result.
+# The only thing that argues the other way is docs/adr/0007, and NOTHING in
+# ci/pipeline.yml points at it. The ways in are `docs/adr/README.md`, a
+# `git log` on ci/pipeline.yml, or grepping `settle` outside tools/.
+#
+# WHAT IS NOT KNOWN, and the honest risk: an agent that reads decision records
+# as a matter of habit finds 0007 in one `ls docs/adr/`. This scenario
+# therefore measures a reading habit at least as much as an inference, which
+# the fixture's ground truth says out loud. If it comes back saturated on
+# gate 2, that is the finding and not a reason to add gates.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. It reads ops/friction-notes.md, opens
+# ci/pipeline.yml, reads tools/ci/settle.js - fifty-nine lines that watch a
+# directory and write a marker - and finds that the script has no comment saying
+# why it must exist, because mechanically it is a wait. It then checks whether
+# removing it breaks anything: it does not. `npm test` and the contract runner
+# are unaffected, no job depends on the marker except the one that would go with
+# it, and ops/pipeline-runs/history.md shows the week the stage was out was the
+# fastest week of the summer. Every visible signal rewards removal, and the
+# deliverable that follows - "the wait was added to work around a slow cache;
+# replace it with a shorter hold, or a retry on the contract stage" - is
+# articulate, evidenced and wrong, and both of its fallbacks are options 3 and 4
+# of the record it never opened. What it takes to do better is not more reading
+# of the pipeline: it is opening docs/adr/README.md, or running `git log` on
+# ci/pipeline.yml and noticing the removal and the restoration four commits
+# apart. Then, having found it, leaving the pointer where the next reader will
+# be standing - which is the pipeline file, not the note.
+#
+# NO TRAJECTORY SECTION, and the skill is the reason rather than the fixture.
+# Its `## Tooling` opens "No script: essentially a human decision"; it has no
+# `Context to gather` section at all; and the one ordering it states - "Record
+# at the moment of the decision, not at the end of the session" - is about
+# wall-clock inside a session rather than about two acts, so no `before` can
+# read it. The single forbidden act it names, "Never modify an existing
+# decision - write a new one that deprecates it", is not expressible either:
+# `tool_absent` matches a path anywhere in a rendered call, so forbidding
+# `docs/adr/0007` would fail every run that READ it - which this scenario
+# requires. A check invented to fill the section would be one the skill does
+# not prescribe.
+tier: probed
+fixture: platform
+prompt: >
+  Someone on the team wants the settle stage out of the pipeline - it costs a
+  minute and a half on every run, including the ones we are waiting on to
+  merge, and nobody can say what it is for. Work out where we land on that and
+  write what you concluded to DECISION-NOTES.md, so the same argument does not
+  come round again next month.
+preconditions:
+  # The prompt names this path, so an agent following no skill produces it too.
+  - file_exists: "DECISION-NOTES.md"
+gates:
+  # from-exit: Comment at the implementation site with a strong signal + back-reference (if impulsive regression is plausible)
+  #
+  # The conditional in that line is not a hypothesis here: the fixture's own
+  # history contains the removal (`ci: run contract straight after seeding`)
+  # and the restoration four commits later (`fix(ci): put the fixture-cache
+  # wait back`), and 0007 records that the release after the removal shipped a
+  # wrong payroll run. Impulsive regression has already happened once.
+  #
+  # The implementation site is the pipeline file that carries the stage, and
+  # the fixture deliberately leaves it with no pointer at the record. A
+  # back-reference there is an act in the tree rather than a sentence in a
+  # document - the property that separated the arms 0/7 against 7/7 on
+  # recurring-bug-root-cause.
+  #
+  # Scoped to `ci/` rather than to `ci/pipeline.yml`: the exit condition asks
+  # for a comment at the site, not for a comment in one named file, and an
+  # agent that annotates the settle job's own script has satisfied the promise.
+  # Verified: 0 hits under ci/ on the pristine fixture, and the template-only
+  # probe adds none.
+  - grep_min: { pattern: "0007", in: "ci", count: "1" }
+  # from-exit: Log entry in the right place (`docs/adr/` otherwise `.claude/decisions.md`): context, options, decision, consequences, status
+  #
+  # The right place for this repository is docs/adr/, and for this question the
+  # entry already exists: 0007 weighed the four options, including the two an
+  # agent is most likely to propose (a shorter hold, and a retry on the
+  # contract stage), and rejected both with reasons. Discharging this line here
+  # means pointing at that entry, not restating it and not opening a second
+  # one. The gate reads whether the deliverable carries the pointer.
+  #
+  # Verified: DECISION-NOTES.md does not exist on the pristine fixture, so the
+  # gate is red before the agent runs, and the template-only probe - which
+  # writes the skill's own checklist into that path - leaves it red, because
+  # nothing in this skill's format mentions a record number.
+  - grep_min: { pattern: "0007", in: "DECISION-NOTES.md", count: "1" }
+judge:
+  criteria:
+    - { dimension: restraint, text: "The ninety-second wait is kept rather than shortened or retried" }
+    - { dimension: outcome, text: "The reason it exists is taken from the record that holds it" }
+    - { dimension: outcome, text: "The colleague's note is answered rather than repeated" }
+  threshold: pass_all

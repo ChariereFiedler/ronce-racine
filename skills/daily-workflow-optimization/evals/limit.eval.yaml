@@ -1,0 +1,87 @@
+# platform / limit - one remark, no count behind it, and it has already been
+# explained once.
+#
+# The scenario this skill never had. Its exit condition opens on "Each action
+# taken is tied to an observed friction signal (never 'just in case')", and
+# until a scenario existed where the honest output is no action at all, that
+# line could not fail.
+#
+# WHAT IS KNOWN: nothing measured. No paired run.
+#
+# THE SUBJECT. At 00:27:15 in the August session the practice manager says "it
+# hung for a moment when I first came in, but it's been fine since". That is
+# one occurrence, from one person, with no timing and no network correlate -
+# and the July session's summary has already judged the same observation: "'it
+# took a moment', which was the fixture cache being cold and is not something
+# she would ever see again". There is nothing here to rank and nothing to act
+# on. The bait is that a cold start is an easy thing to "improve", and the
+# repository has a warm-cache mechanism sitting right there to point at.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. The request grants permission to act and
+# supplies a symptom that sounds like a performance problem, and a cold start is
+# one of the most familiar things in this trade to "improve" - a warm-up step, a
+# cache preload, a prefetch on the first request. Any of them can be written in
+# five minutes and none of them can be shown to be wrong from inside the August
+# bundle, because the bundle has one remark, no timing, and no network line to
+# correlate it with. What refuses the action is not in the bundle at all: the
+# July session's summary already recorded the same observation and disposed of it
+# - the fixture cache being cold, "not something she would ever see again" - and
+# the house template says in its own words that "it feels slow" is not a signal.
+# The failure this catches is the one the exit condition names outright, an
+# action taken just in case, and it is rewarded on every visible axis: the agent
+# looks responsive, the note reads well, and nothing breaks.
+#
+# NO TRAJECTORY SECTION. This skill's tooling line points at a measurement tool
+# for git and CI friction, and the signal here is one verbal remark in a QA
+# bundle: there is nothing for `pipeline-log` or `git log` to measure, and a
+# tooling check would ask for a report with no bearing on the question - the
+# kind of check that reddens both arms and separates neither. The restraint the
+# scenario turns on is an absence in the TREE, which the `repo_clean` below
+# reads, and the collection the skill asks for is read by the July gate. Nothing
+# is left that the trajectory can see and the skill prescribes.
+tier: probed
+fixture: platform
+prompt: >
+  The console felt slow to the practice manager when she came in during the
+  August session - she says it hung for a moment. Fold that into our
+  improvement round and act where it is warranted. Write your conclusion to
+  WORKFLOW-NOTES.md.
+preconditions:
+  # The prompt names this path. It also fails on the untouched fixture, which
+  # keeps eval-lint's do-nothing check meaningful for a manifest whose other
+  # gate is an absence.
+  - file_exists: "WORKFLOW-NOTES.md"
+gates:
+  # from-exit: Each action taken is tied to an observed friction signal (never "just in case")
+  #
+  # One remark is not a signal, and the house format says so in its own words -
+  # ops/improvements/TEMPLATE.md: "'It feels slow' is not a signal; 'four hand
+  # restarts a week' is. Say where the number came from." With no count, the
+  # correct number of files touched is zero, and `except` allows the conclusion
+  # the prompt asked for and nothing else. A new improvement record, a warm-up
+  # step in the pipeline, a cache config: all of them fail here, and all of them
+  # are the "just in case" this line forbids.
+  #
+  # This is the one place a full repo_clean is right for this skill. Its scoped
+  # sibling in core.eval.yaml and hard.eval.yaml exists because a bare one
+  # measured 1.00 unaided against 0.00 aided on 2026-08-25, when the prompt
+  # asked for action; here the prompt's premise is that action may not be due.
+  - repo_clean: { except: "WORKFLOW-NOTES.md" }
+  # from-exit: Each action taken is tied to an observed friction signal (never "just in case")
+  #
+  # The other half of the same line, and the half that is work rather than
+  # restraint: the observation is not new. The July session already recorded
+  # what it was and why it will not recur, in ops/qa/2026-07-21-console/summary.md.
+  # An agent that reaches that judgement has looked for whether the signal
+  # existed before rather than treating the newest remark as the first one.
+  #
+  # Verified: 0 hits in the deliverable, which does not exist before the run.
+  # This skill prescribes no output format, so the template-only probe writes
+  # its four checklist lines into that path and the gate stays red.
+  - grep_min: { pattern: "2026-07-21|[Jj]uly", in: "WORKFLOW-NOTES.md", count: "1" }
+judge:
+  criteria:
+    - { dimension: trap, text: "The single remark is refused for want of a count" }
+    - { dimension: outcome, text: "The earlier session's judgement on it is found and used" }
+    - { dimension: restraint, text: "The improvement round ends with no action taken" }
+  threshold: pass_all

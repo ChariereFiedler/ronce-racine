@@ -7,6 +7,7 @@
 | **Type** | Skill (on-demand workflow) |
 | **Category** | `audit` |
 | **Artifact** | [`SKILL.md`](SKILL.md) |
+| **Evaluation** | [`eval.yaml`](eval.yaml) - confidence per question and stated non-auditable items: 0/3 without the skill, 3/3 with it (2026-08-24), both gated. the computed domain score this page describes was produced by no run, aided or not (0/3), and is not gated |
 | **Tooling** | None (analysis-driven; bash checks per question in `reference/`) |
 
 ## What it is

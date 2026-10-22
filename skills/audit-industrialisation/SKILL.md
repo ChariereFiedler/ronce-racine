@@ -243,9 +243,3 @@ If `$ARGUMENTS` contains domain names (`ci`, `testing`, `security`, `observabili
 - [ ] Weighted global score computed (N/A excluded), maturity classification assigned
 - [ ] Prioritised action plan (MUST/SHOULD/COULD) + impact projection
 - [ ] Markdown report saved to `docs/audit/`; evidence cited per question
-
-## Changelog
-
-- 1.0.1 (2026-07-20) - audit-report invocation wording fixed (never invoked, template reused); performance-frontend added to $ARGUMENTS domains
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition)

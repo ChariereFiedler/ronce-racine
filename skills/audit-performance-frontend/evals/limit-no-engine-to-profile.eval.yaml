@@ -1,0 +1,104 @@
+# audit-performance-frontend / limit - a grid built for a browser nobody ran.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world. `tier: probed`: admission checks run, six-pair run not.
+#
+# WHY THIS IS THE LIMIT SCENARIO
+# The prompt asks for an engine and rendering audit of browser code that is
+# three files long, has no build step, no bundler, no fonts, no images, no
+# service worker and no measurement of any kind - and there is no profiler, no
+# browser and no trace in the environment the audit runs in. Most of this grid
+# is about JSC structures, inline caches, compilation tiers, NaN-boxing, GC
+# pauses and GPU memory; none of that can be established by reading
+# thirty-two lines of ES5. The honest deliverable keeps the rows, marks them
+# with the reason, still reports the one or two defects that ARE visible in the
+# markup and the redraw, and does not recommend machinery the page has no use
+# for. The failure is twenty-nine confident zeroes and a recommendation list
+# that would fit any web application except this one.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# Frontend performance advice is the most template-shaped output there is:
+# code-splitting, lazy loading, modern image formats, font-display, a service
+# worker, a performance budget in CI. Every one of those is a sensible thing to
+# say and every one of them is meaningless against a single 32-line script and a
+# stylesheet of eleven lines. An agent with no grid and no scoping rule has
+# nothing that distinguishes "this question does not apply to this artefact"
+# from "this project fails this question", and an absent optimisation reads as a
+# finding rather than as a category error.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit the JavaScript engine and rendering behaviour of this project's browser
+  code. Write the report to AUDIT-ENGINE-PERF.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: unearnable credit.
+  - file_exists: "AUDIT-ENGINE-PERF.md"
+gates:
+  # from-exit: Report produced in the output format, with strengths/weaknesses, prioritized recommendations, and non-auditable items
+  - repo_clean: { except: "AUDIT-ENGINE-PERF.md" }
+  # from-exit: All 29 questions reviewed (scored 0-4 or marked N/A with justification)
+  # The restraint, counted. At least six of the twenty-nine keep their row with
+  # N/A rather than a zero. The skill's own output format writes every level
+  # cell as "X", so this pattern matches nothing the template hands over.
+  - grep_min: { pattern: "\|\s*N/A\s*\|", in: "AUDIT-ENGINE-PERF.md", count: "6" }
+  # from-exit: Project type detected and matching variant applied
+  # The scoping fact the whole answer rests on: nothing is compiled, bundled or
+  # transformed on the way to the browser.
+  - grep_min: { pattern: "[Nn]o build|[Nn]o bundler|[Nn]othing to install|[Nn]o build step", in: "AUDIT-ENGINE-PERF.md", count: "1" }
+  # from-exit: All 29 questions reviewed (scored 0-4 or marked N/A with justification)
+  # The over-eager failure: recommending the standard optimisation kit for a
+  # page that has no bundle, no images, no web font and no worker. Marking those
+  # questions non-applicable, with or without naming the technique, does not
+  # match; proposing to adopt one does.
+  - grep_zero: { pattern: "([Ii]mplement|[Aa]dopt|[Ii]ntroduce|[Aa]dd|[Uu]se|[Ss]witch to)[^\n]{0,40}(code[- ]splitting|lazy[- ]loading|font-display|WebP|AVIF|a service worker|tree[- ]shaking)", in: "AUDIT-ENGINE-PERF.md" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-ENGINE-PERF.md" would match that
+# todo at step 1 and fail an ordering the agent in fact kept. A check nobody
+# can pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 1. **Detect the project type**: SPA, SSR, PWA,
+  # embedded WebKit, component library - step 11 of the same protocol is
+  # **Produce the report**.
+  #
+  # The scoping fact the whole answer rests on - nothing is compiled, bundled
+  # or transformed on the way to the browser - is established from
+  # package.json, which declares no dependencies and no build script. Detecting
+  # the type after writing the report is not detecting it.
+  - before: { first: "package.json", then: "file_path=AUDIT-ENGINE-PERF.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The absence of a profiler is stated as the limit of the audit" }
+    - { dimension: restraint, text: "The engine questions are marked rather than guessed" }
+    - { dimension: outcome, text: "The one visible rendering defect is still reported" }
+  threshold: pass_all

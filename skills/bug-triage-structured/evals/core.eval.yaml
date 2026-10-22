@@ -1,0 +1,118 @@
+# CORE scenario - reproduce, root-cause, decide. The world's main defect, and
+# the decision the skill exists to make: fix now, or open a ticket.
+#
+# NOT MEASURED. No paired run has been executed against this manifest or
+# against any scenario of this skill. The world itself was measured once, on
+# `recurring-bug-root-cause`'s default manifest (2026-09-03, 6 pairs): the
+# unaided gate baseline fell to 0.00 there and the judge separated the arms
+# 0.67 against 0.94. Nothing in that transfers to this skill's gates.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. Reproduction is free - `npm run build`
+# fails in ten seconds with a message naming a byte count and a budget - and
+# that is the trap, because the reproduction hands over a wrong subject.
+# build.config.json holds the budget on one line, ops/backlog.md pre-authorises
+# raising it, and `--budget-kb 512` completes all 157 units (measured). The
+# decision "fix now, it is one line" then follows honestly from a real
+# reproduction and a real citation, in retention.js or build.config.json. The
+# actual cause is a `??` in tools/sheetmill/plan.js, off the path from the
+# error: plan.js finished before retention.js threw. And the six prior fixes,
+# which are what makes "fix now" the wrong decision, live only in `git log`.
+tier: probed
+fixture: incident
+prompt: >
+  The nightly publish job is red and has been for four nights. Reproduce it,
+  work out what is causing it, and decide whether to fix it now or open a
+  ticket. No tracker is configured here: write the triage sheet to TRIAGE.md.
+preconditions:
+  - file_exists: "TRIAGE.md"
+gates:
+  # from-exit: Root cause = mechanism + `file:line`
+  #
+  # The citation's subject, not its shape. `retention.js:31` is where the error
+  # is raised and satisfies any `\\.js:[0-9]+` gate; it is not the cause. The
+  # three alternatives are the three names the cause has in this repository.
+  # Verified against realistic passing and failing lines; none of them appears
+  # in the skill's templates/bug-triage.md, so the template-only probe fails it.
+  - grep_min: { pattern: "plan\\.js|planUnits|discoverMarkets", in: "TRIAGE.md", count: "1" }
+  # from-exit: Recurrence checked - `recurring-bug-root-cause` applied if 2+ recent fixes
+  #
+  # Six recent fixes on this scope, so the check is owed and its outcome
+  # changes the decision. The gate keys on the EVIDENCE of the check rather
+  # than on the word "recurrence" or on the sibling skill's name: both of those
+  # are in the exit-condition checklist and in the skill's own template, which
+  # is what the template-only probe's synthetic deliverable is built from.
+  - grep_min: { pattern: "fix\\((publish|ci)\\)|(six|6|five|5) (prior|previous|recent|earlier) fix", in: "TRIAGE.md", count: "1" }
+  # from-exit: Recurrence checked - `recurring-bug-root-cause` applied if 2+ recent fixes
+  #
+  # What "applied" means, in the one place this world can check it: the sibling
+  # skill exists to stop the Nth one-line fix, and the Nth one-line fix here is
+  # a bigger number in build.config.json. This gate leaves every other route
+  # open - declaring the market set, capping the plan, streaming the index -
+  # and forbids only the move the recurrence check exists to prevent.
+  # The trailing `\\d` is not cosmetic: `\\s*(?!288\\b)` alone matches the
+  # untouched line, because the star can consume nothing and the lookahead then
+  # succeeds against the whitespace. That exact error cost a ten-dollar run on
+  # 2026-09-03. Re-verified on 288, on 288 without a trailing comma, on 512,
+  # on 2880 and on the key removed.
+  - grep_zero: { pattern: "\"retentionBudgetKb\":\\s*(?!288\\b)\\d", in: "build.config.json" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# NOT REPLAYED against real trials: the only trajectories this repository holds
+# are the twelve of the 2026-09-03 anchor run, on another skill. Both checks
+# below were instead proved able BOTH to pass and to fail against a synthetic
+# trajectory rendered the way `actionsOf` renders a real one - a check nobody
+# can pass penalises both arms equally.
+trajectory:
+  # from-skill(tooling): 5. Check for recurrence (run it, do not eyeball it):
+  # `git log --oneline -20 --grep="fix(<scope>)"`
+  #
+  # The skill prints the command and says in its own heading that eyeballing
+  # does not count, and the changelog records why: "1.1.0 - recurrence check
+  # made mechanical (git log command, count stated even when zero); eval runs
+  # showed agents skipping it". This is the check that can see whether it was
+  # skipped. The gate above reads the sheet for the six fixes; a sheet can name
+  # them from a plain `git log --oneline`, which is not the check the skill
+  # asks for.
+  # `--grep` rather than `git log`: the bare command is what any careful agent
+  # runs anyway, so it measures nothing, while the flag is the recurrence
+  # question asked of the history. Known false negative, accepted and stated:
+  # an agent that counts the fixes with `git log --oneline tools/sheetmill/`
+  # has done the work and fails this check.
+  - tool_used: { name: "Bash", arg: "--grep" }
+  # from-skill(sequence): Context to gather (before acting) - Project test/lint/
+  # build commands (`package.json` / `Cargo.toml` / `Makefile` / CI config) - to
+  # reproduce and to target the confirmation test
+  #
+  # "Before acting" is an ordering claim and the tree cannot hold it: the same
+  # sheet exists whether the project's commands were read first or never. The
+  # act, in a scenario whose only permitted artifact is the sheet, is writing
+  # the sheet.
+  # Expected to be a floor rather than a discriminator. Two accepted false
+  # negatives, both stated: an agent that takes its commands from ci/pipeline.yml
+  # - which the same skill line allows - fails this check, and so does one that
+  # writes a TRIAGE.md skeleton before gathering anything and fills it later.
+  - before: { first: "package.json", then: "TRIAGE.md" }
+judge:
+  criteria:
+    # The decision is the skill's own deliverable and the criteria have to be
+    # stated, not implied.
+    - { dimension: outcome, text: "Says on what basis it chose between fixing and ticketing" }
+    # from-skill(trap): "Symptom = cause" -> "The symptom is observed, the cause
+    # is the mechanism. Trace to the point of divergence." Both decoys are the
+    # symptom's own vocabulary, and both are evidenced in ops/ by colleagues.
+    - { dimension: trap, text: "Does not settle on the ceiling or the size of the render pool" }
+    # from-skill(sequence): Protocol 2 - "Confront the facts: an existing test
+    # that should have failed (why didn't it?)". The step is in the protocol;
+    # whether it was performed shows only in what the sheet says about the suite.
+    - { dimension: sequence, text: "Explains why a green suite proves nothing here" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.
+#
+# Rejected here, all measured `format`: `[Rr]ecurrence` and `[Dd]ecision` (the
+# two gates the manifest this replaces shipped), `[Ii]ntermittent`, and
+# `file:line|\.js:[0-9]+`. The last one is the instructive failure: it grades
+# citation FORMAT, so `retention.js:31` - the wrong file, the one the error
+# message points at - passes it exactly as well as the right one.

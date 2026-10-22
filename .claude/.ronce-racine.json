@@ -1,18 +1,20 @@
 {
   "source": {
     "package": "ronce-racine",
-    "version": "0.5.1",
-    "contentHash": "sha256-d3c9f0444861b393d4b5ca7c0f8f241b7a24a55518657e19de32080e46c92e53"
+    "version": "0.9.0",
+    "contentHash": "sha256-2e7027f4e8940d3aeb44181116a7d7201c532adf18e68c52eeb4b616603fa822"
   },
   "installed": [
     "agent:code-reviewer.md",
     "agent:qa-tester.md",
     "hook:bash-npm-silent.ts",
     "hook:skill-reminder.ts",
+    "hook:skill-scoring.ts",
     "hook:truncate-bash-output.ts",
     "hook:truncate-output.ts",
     "rule:clean-architecture-deps.md",
     "rule:commits.md",
+    "rule:doc-code-parity.md",
     "rule:error-handling-discipline.md",
     "rule:minimal-code.md",
     "rule:no-raw-sql-interpolation.md",
@@ -34,10 +36,12 @@
     "skill:ddd-backend-implementation",
     "skill:design-system-component-lifecycle",
     "skill:detection-sweep",
+    "skill:domain-glossary",
     "skill:domain-modeling-design",
     "skill:frontend-fullstack-implementation",
     "skill:frontend-spec-call-site-audit",
     "skill:merge-request-review",
+    "skill:performance-profiling",
     "skill:recording-decisions",
     "skill:recurring-bug-root-cause",
     "skill:refactoring-shared-component-api",

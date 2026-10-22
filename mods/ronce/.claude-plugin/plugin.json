@@ -1,0 +1,7 @@
+{
+  "name": "ronce",
+  "version": "0.5.2",
+  "description": "Guardrails, output shaping and telemetry for Claude Code sessions, driven by a per-project policy",
+  "author": { "name": "Cedric Chariere Fiedler", "url": "https://github.com/ChariereFiedler" },
+  "types": "./types/index.d.ts"
+}

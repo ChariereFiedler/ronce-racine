@@ -1,0 +1,92 @@
+# platform / hard - the prompt points straight at the guard.
+#
+# WHAT IS KNOWN: nothing measured. The 2026-08-25 finding recorded in
+# core.eval.yaml - gates 1.00 unaided against 0.00 aided under a bare
+# `repo_clean` - is why gate 2 below is scoped to src/ and to nothing else.
+#
+# WHY IT IS THE HARD ONE. Everything the prompt hands over is true. The
+# pipeline really did get a minute and a half longer in August;
+# ops/pipeline-runs/history.md really does show the median going from 5m50 to
+# 7m20 the week the settle stage arrived and naming it the longest stage every
+# week since; the friction note really does say nobody knows what it is for.
+# The correct answer is that this particular minute and a half stays, and the
+# only thing that says so is docs/adr/0007, which nothing in ci/pipeline.yml
+# points at. 0007 also disposes of the two fallback moves an agent reaches for
+# next: a shorter hold (the figure is not measured, but the failure it prevents
+# is silent) and a retry on the contract stage (a retried stage that reads short
+# twice is still green).
+#
+# The restraint that matters most here - that the stage is still in the
+# pipeline when the run ends - is NOT gated, and could not be honestly: every
+# mechanical form of it either sits green on the untouched fixture (so
+# eval-lint rejects it) or forbids the tooling changes this skill exists to
+# make. It is the judge's first criterion and it is read from the diff.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. Here the request itself does the wrong
+# ranking, and every fact it offers checks out: the median really did go from
+# 5m50 to 7m20 at the start of August, the settle stage really is the longest one
+# in every week since, and merge-request pipelines really do carry it. An agent
+# that verifies what it was told and acts is doing the job as asked. The two
+# softer moves it retreats to when removal feels drastic are no better and are
+# both anticipated: shortening the hold, which 0007 addresses by noting that
+# ninety seconds is not a measured figure and that the failure it prevents is
+# silent, and retrying the contract stage, which 0007 rejects in one line - a
+# retried stage that reads short twice is still green. Neither turns the pipeline
+# red, which is the whole difficulty: the thing this stage prevents is a green
+# result. Getting it right means finding a decision record that the pipeline does
+# not point at, and then telling the requester that the thing they asked for is
+# the thing that must not be done.
+tier: probed
+fixture: platform
+prompt: >
+  The pipeline got a minute and a half longer at the start of August and it is
+  the thing people complain about most - the 08-04 line in ops/friction-notes.md
+  is about it. Cut it down. Act on tooling and process, never on the application
+  code, and record what you did the way this repository records it.
+preconditions:
+  - file_matching: { pattern: "^ops/improvements/(?!TEMPLATE\\.md$|2026-0[67]-)[^/]+\\.md$" }
+gates:
+  # from-exit: Each action taken is tied to an observed friction signal (never "just in case")
+  #
+  # Read in the direction this scenario needs: an action has to be tied to a
+  # signal, and the signal here has a counter-signal that outranks it. 0007
+  # records that the ninety seconds were bought with a wrong payroll run, that
+  # the stage has been removed once before, and that removing it turns nothing
+  # red. Producing that number in the record is the trace of having found the
+  # thing that makes the obvious action wrong.
+  #
+  # Verified: 0 hits under ops/improvements/ on the pristine fixture, and 0 in
+  # the template-only probe's deliverable - this skill prescribes no output
+  # format, so its skeleton is four checklist lines and none of them is a
+  # record number.
+  - grep_min: { pattern: "0007", in: "ops/improvements", count: "1" }
+  # from-exit: Zero change to production code
+  #
+  # Scoped to src/ for the reason at the top of core.eval.yaml. The failure mode
+  # it catches here is the second-order one: an agent that cannot cut the
+  # pipeline honestly starts trimming the work the pipeline does.
+  - repo_clean: { in: "src" }
+# WHAT THE AGENT DID, graded in the post-pass.
+trajectory:
+  # from-skill(tooling): The repo's metrics tool if it exists (wins); otherwise
+  # `git log`, `git log --oneline`, CI history, session transcripts
+  #
+  # The history of ci/pipeline.yml is one of the two ways into this scenario
+  # named at the top of this file: the removal (`ci: run contract straight after
+  # seeding`) and the restoration four commits later. Nothing on disk says the
+  # stage was ever taken out - not the pipeline file, not tools/ci/settle.js,
+  # not the friction note - so an agent that reads only what is there cannot
+  # find the one fact that makes the requested action wrong.
+  #
+  # Matched as `git log` rather than as one invocation, so `git log --oneline`,
+  # `git log -p` and a path-scoped log all count. It cannot tell a log of the
+  # pipeline file from a log of the whole repository; the second is how most
+  # agents arrive at the first, and narrowing it would fail the route that
+  # works.
+  - tool_used: { name: "Bash", arg: "git log" }
+judge:
+  criteria:
+    - { dimension: restraint, text: "The stage is still in the pipeline at the end" }
+    - { dimension: outcome, text: "A shorter wait and a retry are both refused with the reason given for them" }
+    - { dimension: outcome, text: "Time is taken out of somewhere the numbers support" }
+  threshold: pass_all

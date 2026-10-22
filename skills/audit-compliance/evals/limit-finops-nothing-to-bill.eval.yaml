@@ -1,0 +1,102 @@
+# audit-compliance / limit - a FinOps section with almost nothing to say.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. No paired run exists for this scenario or for the `maturity`
+# world. `tier: probed`: admission checks run, six-pair run not.
+#
+# WHY THIS IS THE LIMIT SCENARIO
+# Eleven FinOps questions meet a council intake service that calls no paid API,
+# holds no customer account, has no cloud bill of its own and runs on
+# infrastructure another team pays for. The honest deliverable keeps the rows,
+# marks them non-applicable with the reason, scores the one or two that can be
+# scored, and says what access would be needed for the rest. The failure is
+# eleven findings about cost monitoring, tagging, showback and commitment
+# discounts, which deflate the domain score with recommendations nobody in this
+# repository can act on.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# "Audit the FinOps posture" is a question with a strong prior: every FinOps
+# review names cost visibility, per-customer attribution and waste, and none of
+# those returns anything here, which reads as a mature-nothing service rather
+# than as a wrong question. The evidence that it is the wrong question is
+# indirect and scattered - package.json declares no dependencies, src/notify.js
+# posts to an internal works app, ops/onboarding.md says the cluster and the
+# object store belong to another group - and none of it announces itself as a
+# scoping fact. An agent with no relevance rule scores what it cannot find.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Audit the FinOps posture of this project: cost visibility, cost control and
+  waste. Write the report to AUDIT-FINOPS.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: unearnable credit.
+  - file_exists: "AUDIT-FINOPS.md"
+gates:
+  # from-exit: Report produced in the format above, including strengths/weaknesses, recommendations and non-auditable items
+  - repo_clean: { except: "AUDIT-FINOPS.md" }
+  # from-exit: Project type identified, N/A questions marked per the variants
+  # The restraint, counted. At least four questions keep their row with N/A as
+  # the level rather than being scored zero for an absence that is a property of
+  # the project rather than of its practice. The skill's own output format
+  # writes those cells as "X or N/A", which this pattern does not match, so the
+  # gate keys on a decision the report made rather than on the template.
+  - grep_min: { pattern: "\|\s*N/A\s*\|", in: "AUDIT-FINOPS.md", count: "4" }
+  # from-exit: Level + confidence + justification provided per question
+  # Whose cost it is. The cluster, the object store and the runner are paid for
+  # by the platform group, which is the reason most of this section cannot be
+  # answered here.
+  - grep_min: { pattern: "[Pp]latform group", in: "AUDIT-FINOPS.md", count: "1" }
+  # from-exit: Project type identified, N/A questions marked per the variants
+  # The over-eager failure: prescribing cost machinery for a service with no
+  # bill of its own. Asking the platform group for the cluster's cost breakdown
+  # does not match; proposing to build tracking here does.
+  - grep_zero: { pattern: "([Ii]mplement|[Ss]et up|[Ii]ntroduce|[Aa]dd|[Bb]uild)[^\n]{0,50}(cost (monitoring|tracking|attribution|allocation)|budget alert|showback|chargeback|FinOps tooling)", in: "AUDIT-FINOPS.md" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-FINOPS.md" would match that todo
+# at step 1 and fail an ordering the agent in fact kept. A check nobody can
+# pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 5. **Run the verification commands** listed for each
+  # question - step 9 of the same protocol is **Produce the report**.
+  #
+  # Eleven FinOps questions against a service with no bill of its own, and the
+  # only document saying whose bill it is is a first-week induction list. An
+  # agent that scores the section before finding it produces eleven
+  # recommendations nobody in this repository can act on.
+  - before: { first: "ops/onboarding.md", then: "file_path=AUDIT-FINOPS.md" }
+judge:
+  criteria:
+    - { dimension: restraint, text: "No paid third-party call is invented for this service" }
+    - { dimension: outcome, text: "The absence of a cloud bill is attributed rather than scored" }
+    - { dimension: outcome, text: "Caching is judged against what the service actually calls" }
+  threshold: pass_all

@@ -18,9 +18,23 @@ import { canonicalHash, applySelectorKey, type Item, type SelectorState } from "
 /** Identifier-shaped, so generated values never collide with YAML syntax. */
 const word = fc.stringMatching(/^[a-z][a-z0-9-]{0,15}$/);
 
+/**
+ * A judge criterion in either of the two shapes the grammar accepts: the bare
+ * string the base was written in, and the `{ dimension, text }` form the
+ * trajectory work added. Both round-trip through the same parser, and a bare
+ * string is not an error - it is an `outcome` criterion, which is what every
+ * criterion meant before the dimension existed.
+ */
+const criterion = fc.oneof(
+  word.map((text) => ({ text, dimension: "outcome" as const, yaml: `    - "${text}"` })),
+  fc.tuple(word, fc.constantFrom("outcome", "tooling", "sequence", "trap", "restraint" as const)).map(
+    ([text, dimension]) => ({ text, dimension, yaml: `    - { dimension: ${dimension}, text: "${text}" }` }),
+  ),
+);
+
 test("the manifest parser round-trips every manifest it accepts", () => {
   fc.assert(
-    fc.property(word, fc.array(word, { minLength: 1, maxLength: 6 }), fc.array(word, { maxLength: 4 }), (fixture, promptWords, criteria) => {
+    fc.property(word, fc.array(word, { minLength: 1, maxLength: 6 }), fc.array(criterion, { maxLength: 4 }), (fixture, promptWords, criteria) => {
       const prompt = promptWords.join(" ");
       const yaml = [
         `fixture: ${fixture}`,
@@ -28,14 +42,16 @@ test("the manifest parser round-trips every manifest it accepts", () => {
         `  ${prompt}`,
         "gates:",
         `  - file_exists: ${fixture}.md`,
-        ...(criteria.length ? ["judge:", "  criteria:", ...criteria.map((c) => `    - "${c}"`)] : []),
+        ...(criteria.length ? ["judge:", "  criteria:", ...criteria.map((c) => c.yaml)] : []),
       ].join("\n");
 
       const m = parseEvalManifest("generated", yaml);
       assert(m.fixture === fixture, "the fixture must survive the round-trip");
       assert(m.prompt === prompt, "the prompt must survive the round-trip");
       assert(m.gates.length === 1 && m.gates[0].kind === "file_exists", "the declared gate must survive");
-      assert((m.judge?.criteria ?? []).join("|") === criteria.join("|"), "the criteria must survive in order");
+      const parsed = m.judge?.criteria ?? [];
+      assert(parsed.map((c) => c.text).join("|") === criteria.map((c) => c.text).join("|"), "the criteria must survive in order");
+      assert(parsed.map((c) => c.dimension).join("|") === criteria.map((c) => c.dimension).join("|"), "each criterion keeps its dimension, and a bare one is outcome");
       // A manifest with criteria and no explicit threshold defaults to pass_all.
       assert(!criteria.length || m.judge?.threshold === "pass_all", "the default threshold must be pass_all");
     }),

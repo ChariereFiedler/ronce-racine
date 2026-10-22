@@ -9,6 +9,7 @@ import {
   test, assert, contains, absent, cli, freshRepo, readLock, initWork, finish, WORK, ROOT,
 } from "./helpers.js";
 import { canonicalHash, CATALOG, copyPath, wiredHookName, type CommandHook } from "../install.js";
+import { backupPath } from "../src/lock.js";
 
 initWork();
 
@@ -76,7 +77,7 @@ test("install ships only what the agent consumes, no repo-internal material", ()
   // machine, so documenting what executes there is transparency, not clutter.
   const INTERNAL = (rel: string, name: string): boolean =>
     rel.endsWith("/hooks/README.md") ? false
-      : name.endsWith(".test.ts") || name === "eval.yaml" || name === "README.md";
+      : name.endsWith(".test.ts") || name.endsWith("eval.yaml") || name === "README.md";
   const repo = freshRepo("no-internal-files");
   cli(["install.ts", "install", repo]);
   const found: string[] = [];
@@ -233,8 +234,10 @@ test("FIRST install backs up a pre-existing artifact instead of clobbering it", 
   const r = cli(["install.ts", "install", repo]);
   assert(r.status === 0, `install exit ${r.status}: ${r.stderr}`);
   contains(r.stdout, "pre-install.bak", "install should report the backup");
-  assert(existsSync(`${rulePath}.pre-install.bak`), "pre-existing file must be backed up");
-  assert(readFileSync(`${rulePath}.pre-install.bak`, "utf8") === HOMEMADE, "backup must hold the user's version");
+  const firstBackup = backupPath(repo, "rule:commits.md", "pre-install.bak");
+  assert(existsSync(firstBackup), "pre-existing file must be backed up");
+  assert(readFileSync(firstBackup, "utf8") === HOMEMADE, "backup must hold the user's version");
+  assert(!existsSync(`${rulePath}.pre-install.bak`), "a backup must not sit next to the artifact it backs up");
   absent(readFileSync(rulePath, "utf8"), "homemade", "canonical version must be installed in place");
 
   // Re-install: tokens are now tracked by the lockfile - no second backup pass.
@@ -578,7 +581,7 @@ test("a second install after a failed one does not destroy the first backup", ()
   writeFileSync(settings, "{}\n");
   chmodSync(settings, 0o444);
   cli(["install.ts", "install", repo, "--yes"]);
-  const backup = `${rulePath}.pre-install.bak`;
+  const backup = backupPath(repo, "rule:commits.md", "pre-install.bak");
   assert(readFileSync(backup, "utf8") === USER_WORK, "run 1 must back up the user's version");
 
   // Run 2: the user retries. Without a lockfile the installer believes nothing
@@ -602,7 +605,7 @@ test("a dangling symlink in the target does not abort the install", () => {
   assert(r.status === 0, `a dangling symlink must not abort the install: ${r.stderr}`);
   assert(existsSync(join(repo, ".claude/.ronce-racine.json")), "the install must complete");
   // Recreated as a link, like cpSync without dereference - not followed.
-  const copied = join(repo, ".claude/skills/detection-sweep.pre-install.bak/dangling.md");
+  const copied = join(backupPath(repo, "skill:detection-sweep", "pre-install.bak"), "dangling.md");
   assert(readlinkSync(copied) === "/nowhere/missing.md", "the backup must preserve the link itself");
 });
 
@@ -681,7 +684,7 @@ test("uninstall restores the file the install backed up", () => {
 
   cli(["install.ts", "uninstall", repo]);
   assert(readFileSync(rulePath, "utf8") === USER_WORK, "uninstall must give the user's file back");
-  assert(!existsSync(`${rulePath}.pre-install.bak`), "the consumed backup must not be left behind");
+  assert(!existsSync(backupPath(repo, "rule:commits.md", "pre-install.bak")), "the consumed backup must not be left behind");
 });
 
 /**
@@ -778,7 +781,7 @@ test("uninstall keeps a locally modified artifact as a backup", () => {
   const r = cli(["install.ts", "uninstall", repo]);
   assert(r.status === 0, `uninstall exit ${r.status}: ${r.stderr}`);
   assert(!existsSync(rulePath), "the artifact itself is still removed");
-  assert(readFileSync(`${rulePath}.pre-uninstall.bak`, "utf8") === EDIT, "a local edit must not vanish silently");
+  assert(readFileSync(backupPath(repo, "rule:commits.md", "pre-uninstall.bak"), "utf8") === EDIT, "a local edit must not vanish silently");
   contains(r.stdout, "pre-uninstall.bak", "the user must be told the backup exists");
 });
 
@@ -892,9 +895,18 @@ test("a legacy wiring is repaired even when this run does not select that hook",
   // not pick, which is the whole point. Picking whichever hook came first made
   // this test pass against the unfixed code, because it landed on one that is
   // always selected anyway.
-  const optionalHook = CATALOG.find((i) => i.kind === "hook" && i.optional)!;
+  //
+  // Picked from what the lock actually holds, not from the head of the catalog:
+  // `--all` checks every CANDIDATE, and a hook gated on a signal this bare repo
+  // lacks (`when: ["code"]` with no package.json) is never a candidate. Reading
+  // the catalog instead made the test depend on the order of a list it does not
+  // own, and adding one entry broke it without anything being wrong.
+  const installed = readLock(repo).installed;
+  const optionalHook = CATALOG.find(
+    (i) => i.kind === "hook" && i.optional && installed.includes(`hook:${i.name}`),
+  )!;
+  assert(optionalHook, "--all must install at least one optional hook for this test to mean anything");
   const degraded = optionalHook.name.replace(/\.ts$/, "");
-  assert(readLock(repo).installed.includes(`hook:${optionalHook.name}`), `--all must install ${degraded}`);
 
   const settingsPath = join(repo, ".claude/settings.json");
   const settings = JSON.parse(readFileSync(settingsPath, "utf8"));
@@ -993,3 +1005,18 @@ test("install then uninstall survive a project path containing a space", () => {
 });
 
 finish("installer");
+
+test("the toolkit installed into this repo is current, not a stale snapshot", () => {
+  // The repo installs its own toolkit into .claude/ and commits the result, so
+  // a contributor working here reads the same artifacts a user would. That only
+  // holds while the copy tracks the canonical source: an install left behind
+  // shadows skills/ and rules/ with an older text, and nothing notices, because
+  // every other install test runs against a fresh temp repo instead of this one.
+  //
+  // Found stale on 2026-09-02: installed from 0.5.1 while the repo ran 0.8.0,
+  // 24 drifted artifacts, 20 of 21 SKILL.md two minor versions behind.
+  const r = cli(["install.ts", "check", ROOT]);
+  assert(r.status === 0, `check exit ${r.status}: ${r.stderr}`);
+  absent(r.stdout, "drift", "resync the self-install: npx tsx install.ts install .");
+  absent(r.stdout, "stale:", "resync the self-install: npx tsx install.ts install .");
+});

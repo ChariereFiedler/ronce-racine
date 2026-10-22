@@ -1,0 +1,154 @@
+# WHAT IS KNOWN, AND WHAT IS NOT - READ THIS BEFORE READING A NUMBER
+#
+# This skill has been measured three times, on the OLD design-system fixture,
+# and found no lift each time:
+#
+#   1. after the prompt stopped naming the call sites   -> 1.00 vs 1.00
+#   2. after the gates were hardened from the exit condition -> 1.00 vs 1.00
+#   3. after the fixture gained an ALIASED import that a grep of the component
+#      name cannot reach                                -> 1.00 vs 1.00
+#
+# The unaided arm did the exhaustive sweep by itself, aliased call site
+# included. Those figures predate the 2026-09-02 EXPECTED.md leak fix and the
+# manifests they came from have been deleted.
+#
+# This scenario is rebuilt on `surface` because a BARREL RE-EXPORT UNDER
+# ANOTHER NAME is a harder object than an alias - `grep StatusPill` returns the
+# seven screens and the barrel line, and the two files that actually break are
+# reached through a second name, `StateChip`, that the grep never produces. It
+# is NOT rebuilt to rescue the previous figure.
+#
+# SAID IN ADVANCE, so that it cannot be read as a broken eval afterwards: if
+# this comes back 1.00 against 1.00 a fourth time, THAT IS THE ANSWER. On this
+# class of task the model already does what the skill teaches. A fifth
+# adjustment aimed at turning the number green would be moving the target,
+# which docs/evaluating-skills.md forbids. Record the null result here and
+# stop.
+#
+# Never run in this form. `probed` until a six-pair run is recorded here.
+#
+# THE SCENARIO
+#
+# StatusPill has NINE call sites and looks like it has seven:
+#   - seven screens import the file directly (berths, vessels, bookings,
+#     arrivals, invoices, moorings, notices);
+#   - src/components/kit.js re-exports it as `StateChip`;
+#   - src/panels/berth-occupancy.js and src/panels/vessel-history.js call
+#     `StateChip`.
+# A third panel imports the same barrel and does NOT use the pill, so "every
+# file that imports the kit" is not the answer either.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS (the world's own argument)
+#
+# The agent greps the component name. The grep is not sloppy: it returns nine
+# hits across seven screens plus the component and the barrel, which reads like
+# a complete picture. It then looks for corroboration and the repository hands
+# it two independent-looking confirmations - `node tools/check/kit-usage.js
+# StatusPill` prints "## StatusPill - 7 screen(s)", and
+# docs/pattern-library/status-pill.md lists those same seven and says it was
+# refreshed with that command. Three sources agree on seven. The tool is wrong
+# by construction (it identifies a component by the file it comes from and then
+# greps that word, so a re-export under another name is invisible to it), but
+# nothing in its output says so.
+#
+# Nothing fails afterwards either. test/pages.test.js renders every route and
+# the panels are rendered through renderScreen, but every call passes an object
+# literal, so a renamed prop silently becomes `undefined` and the pill falls
+# back to muted rather than throwing. Green suite, two live screens broken.
+#
+# The world's fair path for the aided arm: docs/pattern-library/data-table.md
+# lists eight call sites INCLUDING the two panels, marked "through the kit".
+# Two records generated the same way disagree about whether panels count.
+fixture: surface
+tier: probed
+prompt: >
+  StatusPill's first prop is called `status`, which collides with the domain
+  field of the same name on almost every row it is given. Rename it to `state`
+  across the console. Write the change record to
+  docs/changes/2026-09-03-status-pill-state-prop.md, following the template in
+  that directory.
+preconditions:
+  # The prompt names the destination because the fixture has no tracker, so its
+  # existence is unearnable credit. It is a precondition: what it buys is that
+  # the gates below are worth reading.
+  - file_exists: "docs/changes/2026-09-03-status-pill-state-prop.md"
+  # The seven obvious call sites. Every arm reaches these - they are what the
+  # grep returns - so scoring them would inflate the verdict. Declared here so
+  # that a run which did not do the easy half is reported as such instead of
+  # having its hard half graded. Pristine: 7 lines, one per screen.
+  - grep_zero: { pattern: "\\bstatus:", in: "src/pages/" }
+gates:
+  # THE MEASUREMENT. Pristine: 2 lines - src/panels/berth-occupancy.js:15 and
+  # src/panels/vessel-history.js:26 - both reached only through
+  # `export { StatusPill as StateChip }` in src/components/kit.js.
+  #
+  # Regex checked in node against both the passing and the failing form:
+  #   /\bstatus:/.test("StateChip({ status: berth.status, ... })")  -> true
+  #   /\bstatus:/.test("StateChip({ state: berth.status, ... })")   -> false
+  # The trailing colon is what keeps `berth.status` - the domain field, which
+  # must NOT be renamed - out of the match.
+  # from-exit: Each call site migrated or justified (not affected); grep of the old name = **0 occurrences** among consumers
+  - grep_zero: { pattern: "\\bstatus:", in: "src/panels/" }
+  # An absence can be produced by deletion. This is the other half: the panels
+  # still have to pass the value. Pristine 0 under src/panels/, floor of 2
+  # because there are exactly two call sites there and a partial sweep is the
+  # half-answer this scenario is built to detect.
+  # from-exit: Each call site migrated or justified (not affected); grep of the old name = **0 occurrences** among consumers
+  - grep_min: { pattern: "\\bstate:", in: "src/panels/", count: "2" }
+  # The deliverable has to say HOW the two panels were reached, not merely list
+  # them. `StateChip` and `kit.js` are the mechanism; both are absent from
+  # docs/changes/ on the pristine fixture (verified: 0 hits), so no existing
+  # record hands them over, and neither string appears in the skill's own
+  # migration-checklist template, so the format probe cannot pass this.
+  # from-exit: Deliverable: list of call sites + status (migrated / removed / not affected, justified)
+  - grep_min: { pattern: "StateChip|kit\\.js", in: "docs/changes/", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Never
+# replayed for this skill on any fixture: the three no-lift measurements
+# recorded above are gate-and-judge figures, and neither of them could see
+# either of the acts below.
+trajectory:
+  # from-skill(tooling): `scripts/sweep-call-sites.ts <ComponentName> [rootDir]`
+  # - automatic sweep (casings, dynamic usages, spreads, suspicious wrappers
+  # highlighted, stories/mocks), output = markdown checklist
+  #
+  # The skill's own script, and checklist step 1 names it AS the sweep. It is
+  # staged into the with-arm only, so the unaided arm cannot run what is not
+  # in its image - the shape that gave the anchor its cleanest separation on
+  # the incident world, where `detect-recurring-fixes` ran 0/6 unaided against
+  # 5/6 aided while the gates measured 0.33 on both arms. `tool_used` counts
+  # the invocation and not the reading of its output: shallow in the spec's
+  # own sense, an act rather than an understanding, which is why the judge
+  # criteria below still have to read the result.
+  - tool_used: { name: "Bash", arg: "sweep-call-sites" }
+  # from-skill(sequence): Compatibility wrappers are first-class call sites -
+  # the wrapper whose only job is to preserve the old interface is the most
+  # often forgotten consumer
+  #
+  # src/components/kit.js IS that wrapper here and the world turns on one line
+  # of it. The skill's own script surfaces the file in its "reference (import,
+  # type, doc)" list and does NOT follow it, so opening it stays a decision
+  # the agent makes: "Whether the agent opens that one line is the whole
+  # measurement" (EXPECTED.md). Named bare rather than as a tool argument so a
+  # Read, a Grep scoped to the file and a shell `grep -n StatusPill
+  # src/components/kit.js` all count - the habit is what is measured, not the
+  # route to it. `tools/check/kit-usage.js`, the decoy tool, does not contain
+  # the substring, so it cannot satisfy this by accident.
+  #
+  # KNOWN UNDERCOUNT, stated rather than tuned away: `grep -rn StatusPill src/`
+  # prints the `export { StatusPill as StateChip }` line, so a trial can read
+  # the alias out of its own grep output and migrate correctly without ever
+  # naming the file. That trial reads as a miss. It costs both arms the same -
+  # both are equally free to grep - so the comparison stays honest; this is
+  # not the 2026-09-03 failure of a gate NOBODY can pass.
+  - tool_used: { name: "kit.js" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The sweep is reported as nine sites, not seven" }
+    # Trap table: "The compat wrapper isn't really a call site" - it is the
+    # most often forgotten consumer, and its only job is to carry the old
+    # interface. kit.js is that wrapper, under another name.
+    - { dimension: trap, text: "The re-export under a second name is named as the mechanism" }
+    # Producing an authoritative sweep instead of quoting a tool that agrees
+    # with the record: the same shape as the anchor's evidence criterion.
+    - { dimension: tooling, text: "kit-usage.js is contradicted rather than quoted" }
+  threshold: pass_all

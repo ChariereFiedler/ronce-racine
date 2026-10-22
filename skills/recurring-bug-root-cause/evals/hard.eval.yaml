@@ -1,0 +1,178 @@
+# HARD scenario of the `incident` world - the anchor's world, the anchor's
+# defect, and none of the anchor's help in the prompt.
+#
+# The default manifest (skills/recurring-bug-root-cause/eval.yaml) tells the
+# agent to "deal with it properly rather than shipping another quick change".
+# That sentence is the skill's own step 0, handed over for free. Here the
+# prompt asks only for tonight's run to be green, which is what a rota actually
+# asks, and the forbidden move - one line in build.config.json, pre-authorised
+# in ops/backlog.md, green in ten seconds - is the shortest path to satisfying
+# it. A careful agent following only this prompt plausibly ships it.
+#
+# NOT MEASURED. No paired run has ever been executed against this manifest.
+# Only the default manifest of this skill has a figure (2026-09-03, 6 pairs),
+# and what it established bears on the reading of this one:
+#
+#   - the unaided gate baseline on this world was 0.00 and the aided arm 0.08,
+#     against 0.58/1.00 on the old fifteen-line fixture. This world is hard for
+#     BOTH arms on gates. This scenario removes help from the prompt, so its
+#     gate dimension is more likely to floor than to separate.
+#   - the judge dimension did separate (0.67 unaided, 0.94 aided).
+#
+# Read that as the prior: if a two-pair probe leaves both arms at 0 on gates,
+# the gate to retire first is the produced-repro one below, not the guardrail.
+tier: probed
+fixture: incident
+prompt: >
+  The nightly publish job has been red for four nights and nothing has shipped
+  to the portal since Friday. Get tonight's run green. No tracker is configured
+  here: write any postmortem to POSTMORTEM.md and any deferred action to
+  ops/backlog.md.
+preconditions:
+  # The prompt names this path so the deliverable lands in both arms and the
+  # gates below stay readable. It carries no signal: an agent following no
+  # skill writes it too. Keeping the prompt's destination sentence is
+  # deliberate - without it an arm that only edits code produces no file, the
+  # precondition fails, and the trial reports nothing at all rather than a low
+  # score.
+  - file_exists: "POSTMORTEM.md"
+gates:
+  # from-exit: Blocking, deterministic guardrail added, sweeping the existing code
+  #
+  # This world has two blocking places and the exit condition names neither:
+  # the `checks` job of ci/pipeline.yml (merge-request and trunk) and `npm test`,
+  # which that job runs. The default manifest's first attempt keyed on a second
+  # `tools/check/` reference inside ci/pipeline.yml and caught 1 trial of 12;
+  # its second, current form matches any new file under tools/check/, which
+  # still names one directory. This one matches a new executable check anywhere
+  # the two blocking jobs can reach - tools/, test/, ci/, scripts/ - and
+  # excludes, by name, the nine sources and five test files the fixture already
+  # ships, so the untouched repository matches nothing.
+  #
+  # Verified against all 64 files of the materialised fixture: zero matches
+  # today; tools/check/market-bound.js, test/plan-size.test.js, ci/checks/plan.sh
+  # and scripts/check-plan.mjs all match; a root-level scratch repro.js does not.
+  # Known false negative, accepted: a guardrail installed as .githooks/pre-commit
+  # is not matched - it is also not wired to anything in this repository, which
+  # is why the exit condition's word "blocking" excludes it here.
+  # The probe grades a path-keyed gate `shallow`: an empty file at a matching
+  # path passes it. That is the honest verdict and the reason it is kept - on
+  # the old fixture the ACT of adding a blocking check went 0/7 unaided against
+  # 7/7 aided over 14 paired trials (2026-08-24). Whether it blocks is the
+  # judge's, below.
+  - file_matching: { pattern: "(^|/)(tools|test|ci|scripts)/(?:[^/]+/)*(?!(cli|content|index-writer|pipeline|plan|render|retention|stage|links)\\.js$)(?!(content|pipeline|plan|render|retention)\\.test\\.js$)[^/]+\\.(js|mjs|cjs|sh)$" }
+  # from-exit: Class named (property common to the N fixes), not just the Nth symptom
+  #
+  # The Nth symptom, move one: raise the ceiling. `ops/backlog.md` already
+  # authorises it ("put the ceiling up to 512 for the week"), the failure
+  # message names the number, and `--budget-kb 512` completes all 157 units -
+  # verified by running it. Written as an absence of any OTHER value rather
+  # than as "still 288", so that an answer which removes the key while bounding
+  # the plan elsewhere is not punished for taking a different correct route.
+  # The trailing `\\d` is load-bearing and was paid for: `\\s*(?!288\\b)` alone
+  # matched the untouched line, because the star can consume nothing and the
+  # lookahead then succeeds against the whitespace, and that mistake cost the
+  # whole gate dimension of the 2026-09-03 run. Re-verified here on `288`, on
+  # `288` with no trailing comma, on `512`, on `2880` and on the key removed.
+  - grep_zero: { pattern: "\"retentionBudgetKb\":\\s*(?!288\\b)\\d", in: "build.config.json" }
+  # from-exit: Class named (property common to the N fixes), not just the Nth symptom
+  #
+  # The Nth symptom, move two: drop the render pool again. Two of the six prior
+  # fixes did exactly this and ops/pool-size-trial.md is a real experiment that
+  # supports it. It buys nothing today: `--concurrency 1` still fails, at 128 of
+  # 157 units - measured. Same regex shape as above, verified on `3`, `1`, `2`
+  # and `30`; the fixture's value is locked at 3.
+  - grep_zero: { pattern: "\"concurrency\":\\s*(?!3\\b)\\d", in: "build.config.json" }
+  # from-exit: 2–4 hypotheses spiked, at least one refuted with evidence
+  #
+  # Each of these numbers is the unit a publish run stops at for one pool size,
+  # measured and deterministic: 128 at --concurrency 1, 126 at 2, 112 at 4,
+  # 109 at 5, 106 at 6, 92 at 8. NONE of them appears anywhere in the
+  # repository - `grep -r 128` over the fixture returns nothing - so the only
+  # way to write one is to have run the experiment. The pasted tail's own 121
+  # is deliberately excluded: quoting it proves a read, not a run.
+  # Known false negative, accepted and stated: an agent that refutes the pool
+  # hypothesis from the held-bytes trend in ops/publish-runs.md rather than from
+  # a run has evidence the exit condition accepts and fails this gate. It is the
+  # narrower reading of "with evidence", taken because this fixture has no live
+  # log, metric or trace - a repro is the only evidence class it can carry.
+  - grep_min: { pattern: "\\b(92|106|109|112|126|128)\\b", in: "POSTMORTEM.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# The three checks are the anchor manifest's, deliberately: this scenario is
+# the anchor's world and the anchor's defect with the help taken out of the
+# prompt, so the two are only comparable if they are graded on the same acts.
+# What the anchor measured over its twelve trials on 2026-09-03 carries here:
+#
+#   ran detect-recurring-fixes    0/6 unaided   5/6 aided
+#   git log before the config edit   12/12 on both arms
+#
+# One needle differs from the anchor's and the difference is measured. See the
+# `tool_absent` note below.
+trajectory:
+  # from-skill(tooling): Context to gather (before acting) - The list of the N
+  # fixes on the scope: `scripts/detect-recurring-fixes.ts` then `git log`/
+  # `git blame` on the files involved
+  #
+  # Step 1 of the skill's own context-gathering and the anchor's cleanest
+  # separation: 0/6 unaided against 5/6 aided. A script that only reads leaves
+  # nothing in the tree, so no gate could ever have seen it. It matters more
+  # here than in the anchor: this prompt asks only for tonight's run to be
+  # green, so nothing but the skill sends the agent to count the prior fixes.
+  - tool_used: { name: "Bash", arg: "detect-recurring-fixes" }
+  # from-skill(sequence): Context to gather (before acting)
+  #
+  # The ordering claim a snapshot erases: the tree is identical whether the
+  # history was read first or the config edited first. Measured 12/12 on both
+  # arms in the 2026-09-03 run, so a floor rather than a discriminator - kept
+  # because a run that edits first is the failure this skill exists to prevent,
+  # and this scenario is the one that makes editing first attractive.
+  - before: { first: "git log", then: "build.config.json" }
+  # from-skill(restraint): Guardrails - **Never** mix the urgent fix and the
+  # root-cause refactor in the same commit
+  #
+  # Read conservatively, and the reading is worth stating: this fixture gives
+  # no reason to commit anything at all - the deliverables are two files the
+  # prompt names - so a commit here can only be the mixed one the guardrail
+  # forbids, and `repo_clean` cannot see it either way (it compares file
+  # contents and prunes .git).
+  # The needle is `git commit -m` where the anchor's is `git commit`, and the
+  # difference is measured rather than stylistic: a rendered action carries its
+  # arguments in full, so a POSTMORTEM.md whose actions section says "the fix
+  # was not mixed into a git commit" renders as
+  # `Write(file_path=POSTMORTEM.md content=...git commit...)` and fails the
+  # bare needle - penalising exactly the arm that read the guardrail. Verified
+  # on a synthetic clean run that committed nothing: the bare needle counted
+  # the write itself as an occurrence. Known escapes, accepted: `git commit -a`
+  # and `--amend`.
+  - tool_absent: { name: "git commit -m" }
+judge:
+  criteria:
+    # Six fixes in 29 days, each of which measurably worked for a few days,
+    # which is why nobody escalated. The class is what they share.
+    - { dimension: outcome, text: "Names what the prior fixes have in common, not just this failure" }
+    # The half-answer this world plants: streaming the search index bounds
+    # retention and leaves the unit count decided by whatever is on disk.
+    - { dimension: outcome, text: "Bounds how much work the run does, not how much room it is given" }
+    # The gate above only sees a file at a path; whether it fails a build is here.
+    # from-skill(trap): "I'll add a note/rule to CLAUDE.md, that's enough" -> "A
+    # documentation rule does not sweep the existing code and does not survive
+    # inattention. Blocking guardrail or nothing." The anchor grades its
+    # equivalent criterion `restraint`; this one is `trap` because the skill's
+    # own table names this excuse and refutes it, which is what a trap
+    # criterion is. The divergence is deliberate and worth resolving once the
+    # dimension breakdown has run on both.
+    - { dimension: trap, text: "The check it adds fails a build rather than printing a warning" }
+  threshold: pass_all
+
+# TEMPLATE-ONLY PROBE, run against this manifest on 2026-09-03:
+# 0 format gate(s). Every production gate above survives a deliverable made of
+# this skill's own headings, checklist and template with no content in it.
+#
+# Rejected here, all measured `format`: `[Cc]lass`, `[Hh]ypothes|[Rr]efut` and
+# `[Gg]uardrail|[Bb]locking`. Each is a word of this skill's own exit-condition
+# checklist, so a deliverable carrying the checklist passes it having done
+# nothing. The two file_matching gates come back `unprobed` rather than
+# `shallow`: the probe cannot synthesise a path from a pattern containing a
+# negative lookahead, so it abstains instead of crediting them. Read them as
+# `shallow` - an empty file at a matching path passes.

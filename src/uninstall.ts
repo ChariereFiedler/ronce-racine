@@ -10,9 +10,9 @@
  * install overwrote, and an artifact carrying local edits is backed up rather
  * than dropped.
  */
-import { existsSync, readFileSync, writeFileSync, rmSync, rmdirSync, readdirSync, renameSync } from "node:fs";
-import { join, resolve, sep } from "node:path";
-import { tokenPaths, compareToken } from "./lock.js";
+import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync, rmdirSync, readdirSync, renameSync } from "node:fs";
+import { dirname, join, resolve, sep } from "node:path";
+import { backupPath, tokenPaths, compareToken } from "./lock.js";
 import { ADOPTED_HEADER } from "./paths.js";
 import { wiredHookName, hookNameOf } from "./settings.js";
 import type { CommandHook, EventEntry } from "./settings.js";
@@ -117,15 +117,20 @@ export function removeArtifacts(repo: string, installed: string[], detached: str
     if (skip.has(token)) { result.preserved.push(token); continue; }
     const { inst } = tokenPaths(token, repo);
     if (!insideDotClaude(repo, inst)) continue;
-    const backup = `${inst}.pre-install.bak`;
+    // Backups live outside the scanned directories since 0.9; an older install
+    // left one in place, and it still has to be given back.
+    const backup = existsSync(backupPath(repo, token, "pre-install.bak"))
+      ? backupPath(repo, token, "pre-install.bak")
+      : `${inst}.pre-install.bak`;
     if (existsSync(inst)) {
       // Local edits are exactly what `check` reports as drift. Uninstall is not
       // the place to discover they are gone, so they leave a copy behind.
       if (compareToken(token, repo) !== null) {
         // An earlier uninstall may already have left one. It holds different
         // user work, so it is numbered rather than overwritten.
-        let bak = `${inst}.pre-uninstall.bak`;
-        for (let n = 2; existsSync(bak); n++) bak = `${inst}.pre-uninstall.${n}.bak`;
+        let bak = backupPath(repo, token, "pre-uninstall.bak");
+        for (let n = 2; existsSync(bak); n++) bak = backupPath(repo, token, `pre-uninstall.${n}.bak`);
+        mkdirSync(dirname(bak), { recursive: true });
         renameSync(inst, bak);
         result.backedUp.push(token);
       } else {

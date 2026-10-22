@@ -1,0 +1,125 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED. No paired run has been made against this scenario; the only
+# skill in the base with a real six-pair verdict is recurring-bug-root-cause.
+# `tier: probed` - admission checks only, never a causal verdict.
+#
+# What the fixture carries (playground/fixtures/service/EXPECTED.md).
+# One concept, three live names: `tickets` (the table, every migration, every
+# store.rows call - oldest), work order (the domain and the repository -
+# src/domain/work-order.js, workOrders(), saveWorkOrder), `job` (the current
+# wire - /v1/jobs, the `jobs` envelope, the job.* events - newest). All three
+# are correct in their own layer and nothing in the repository says which won.
+# One name, two concepts: `job` on the wire is a repair someone is paying for;
+# `job` in src/platform/jobs/queue.js is one attempt at one outbound delivery,
+# with due(), failed(), backoff and abandonment. And two traps that look like
+# synonyms and are not: estimate/quote, and `rate` (money per hour in
+# labour_rates, a percentage of bays in occupancyRate).
+#
+# How a careful agent with NO skill plausibly fails.
+# Every name is current, every name is right where it is, and the repository
+# never states the resolution. An agent that ranks by frequency picks
+# `tickets`, which is the oldest and the one the team has been moving away
+# from; the evidence for work order is the layering rule in
+# docs/architecture.md plus the order the names arrived in, and that order is
+# in `git log`. The homonym is worse: `job` reads as one concept because the
+# wire and the queue never meet in one file, and a glossary that lists `job`
+# once - either folding the delivery attempt into the repair, or silently
+# picking a side - is the single most likely wrong answer. Gate 1 is exactly
+# that question, and it cannot be answered without opening src/platform/.
+#
+# The format-gate probe. This skill ships a fenced glossary template, so its
+# skeleton contains "We do not say", "Not to be confused with", "settled /
+# provisional", "rejected" and "GLOSSARY.md" itself. Every grep for those is a
+# format gate - the manifest this replaces gated on "[Rr]ejected" and
+# "[Pp]rovisional", and both are passed by a copy of the template. Anything
+# the exit condition promises that can only be shown in those words is left to
+# the judge here rather than faked as a gate.
+prompt: >
+  Three months in and nobody here calls the same thing by the same name twice;
+  the next person to add a table is going to invent a fourth. Sort the
+  vocabulary out, from what the code actually commits to rather than from what
+  people say in standups.
+
+preconditions:
+  # The skill's own first exit line puts the file at the repository root, so
+  # the prompt does not name it. An agent that writes docs/glossary.md instead
+  # fails this and the gates below become uninterpretable rather than failed -
+  # which is what a precondition is for.
+  - file_exists: "GLOSSARY.md"
+
+gates:
+  # The homonym. `job` is a repair on the wire and one delivery attempt in the
+  # retry loop, and the only way to qualify the second is to have found it: it
+  # lives in src/platform/jobs/queue.js over the webhook_deliveries table.
+  # Pristine: 0 - there is no glossary. The words appear nowhere in the skill's
+  # template or checklist.
+  # from-exit: Every homonym either qualified or explicitly scoped per context
+  - grep_min: { pattern: "webhook_deliveries|platform/jobs|queue\\.js", in: "GLOSSARY.md", count: "1" }
+  # An anchor is a place the term is real. The wire is where `job` and
+  # `tickets` are both still served, so an entry for either that names no route
+  # is an essay about a word. Pristine: 0.
+  # from-exit: Every entry anchors to at least one type, table, route or module that exists
+  - grep_min: { pattern: "/v1/jobs|/v1/tickets", in: "GLOSSARY.md", count: "1" }
+  # The middle name has to be in the document at all, whichever way the cluster
+  # is resolved - as the chosen term or as a rejected one. Twice, because a
+  # single mention is a passing reference rather than an entry. Pristine: 0.
+  # from-exit: Every synonym cluster resolved to one name, the others listed as rejected
+  - grep_min: { pattern: "work order|work-order|WorkOrder", in: "GLOSSARY.md", count: "2" }
+  # A glossary that defines "aggregate", "adapter" or "middleware" is
+  # describing a stack, not a domain. Pristine: 0, and the skill's template
+  # heading is `## <Term>`, which does not match.
+  #
+  # Known weakness, and eval-lint warns about it: an absence gate over a file
+  # that does not exist yet is green for a run that writes no glossary at all.
+  # The precondition above is what makes it interpretable - when GLOSSARY.md is
+  # missing the runner reports the precondition alone and this gate's pass is
+  # not read as a pass.
+  # from-exit: No entry restates a general programming term the domain does not own
+  - grep_zero: { pattern: "^#+ +(Aggregate|Adapter|Middleware|Interface|Endpoint|Port|Dependency|Module)\\b", in: "GLOSSARY.md" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# This skill's first protocol step is a harvest with an ORDER in it, and its
+# context list names a source that leaves no mark in the deliverable when it is
+# skipped. Both are trajectory claims by construction.
+#
+# NO `tool_absent` and NO `step_budget`: this skill names no script, no
+# forbidden command and no budget. Its Tooling section does not exist.
+trajectory:
+  # from-skill(sequence): 1. Harvest the terms from the code, mechanically -
+  # "read the shapes the code commits to, in this order: schema/migrations,
+  # domain types, public API routes, event and job names"
+  #
+  # The schema is first in that order and it is the layer the glossary has to
+  # reconcile against - `tickets` is a table before it is anything else. The
+  # needle is the directory, so a Glob, a Grep scoped to it or a read of any
+  # single migration all count: the claim is that the schema was harvested
+  # before the vocabulary was written, not that a particular file was opened.
+  - before: { first: "migrations/", then: "GLOSSARY.md" }
+  # from-skill(sequence): What the team already fixed elsewhere: ADRs, an
+  # existing README section, ticket titles. A term already decided must not be
+  # reopened here.
+  #
+  # This world has three decision records and two of them settle a word.
+  # 0002-money-in-minor-units says every field carrying money is named
+  # `*_minor`, which is where `estimate_minor` gets its spelling; 0005-a-
+  # shared-labour-rate-book fixes what `labour_rates` is, one of the two senses
+  # of `rate` in this codebase - the other being `occupancyRate`, a percentage
+  # of bays. A glossary written without them re-opens two settled terms, and
+  # nothing in the file it produces shows that it did.
+  - read_file: { path: "docs/decisions" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "One concept, one chosen name, the other two listed as rejected" }
+    - { dimension: outcome, text: "The retry loop's job is kept apart from the repair" }
+    - { dimension: outcome, text: "Estimate and quote are two entries, not one" }
+    # Protocol step 7, "wire it in" - the step that turns a file into something
+    # the next naming decision passes through, and the one an agent stops short
+    # of once the document looks finished.
+    - { dimension: sequence, text: "The agent instructions point at the glossary" }
+    - { dimension: restraint, text: "No entry names a concept the tree does not carry" }
+  threshold: pass_all

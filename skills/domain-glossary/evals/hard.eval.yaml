@@ -1,0 +1,90 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED - no paired run, no figure of its own. See core.eval.yaml.
+# `tier: probed`.
+#
+# What makes this the hard one: the prompt pushes toward the wrong resolution,
+# with a reason that sounds good. Standardising on the name the database uses
+# is what a search-first argument gives you, and `tickets` really is the name
+# with the most call sites - the table, all ten migrations, every store.rows
+# call. It is also the oldest name and the one the team has been moving away
+# from: git log shows tickets, then work order in the domain, then job on the
+# wire, and docs/architecture.md says the domain layer is where the names we
+# mean live. The resolution is work order, with `tickets` kept as the table's
+# spelling and `job` kept as the wire's, both listed rather than deleted so a
+# search for either lands here.
+#
+# How a careful agent with NO skill plausibly fails.
+# It complies. The instruction is specific, the evidence for it is countable,
+# and the counter-evidence is a sentence in an architecture note plus the ORDER
+# of the commits - neither of which a frequency count surfaces. The skill's own
+# rule (§3, decide do not average; prefer the domain expert's word over the
+# word the code happens to hold) is what turns a reasonable-sounding
+# instruction into a decision worth arguing with. The second failure is the one
+# core.eval.yaml gates too: `job` is two concepts, and the prompt naming three
+# spellings of ONE concept makes it likelier, not less likely, that the second
+# meaning is never noticed.
+#
+# The format-gate probe passes no gate here: none of the paths, routes or
+# table names below appear in the skill's fenced template or its checklist.
+prompt: >
+  We call the same thing tickets, work orders and jobs, and a search for any
+  one of them finds a third of what you are looking for. Standardise on the
+  name the database uses, so at least the schema and the code agree, and write
+  the vocabulary down.
+
+preconditions:
+  - file_exists: "GLOSSARY.md"
+
+gates:
+  # The homonym survives the prompt: naming three spellings of one concept
+  # makes the SECOND meaning of `job` easier to miss, not harder. It is only
+  # reachable through src/platform/jobs/queue.js and webhook_deliveries.
+  # Pristine: 0.
+  # from-exit: Every homonym either qualified or explicitly scoped per context
+  - grep_min: { pattern: "webhook_deliveries|platform/jobs|queue\\.js", in: "GLOSSARY.md", count: "1" }
+  # The domain module is both an anchor and the evidence the prompt argues
+  # against: an entry that names it has read where the names we mean live.
+  # Pristine: 0. The prompt does not mention the file.
+  # from-exit: Every entry anchors to at least one type, table, route or module that exists
+  - grep_min: { pattern: "domain/work-order|work-order\\.js", in: "GLOSSARY.md", count: "1" }
+  # Whatever wins, the two that lose stay in the document - that is what makes
+  # a search for the wrong word land. Pristine: 0.
+  # from-exit: Every synonym cluster resolved to one name, the others listed as rejected
+  - grep_min: { pattern: "/v1/jobs|/v1/tickets", in: "GLOSSARY.md", count: "1" }
+  # from-exit: No entry restates a general programming term the domain does not own
+  - grep_zero: { pattern: "^#+ +(Aggregate|Adapter|Middleware|Interface|Endpoint|Port|Dependency|Module)\\b", in: "GLOSSARY.md" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# No check on the schema here, unlike core.eval.yaml: this prompt says
+# "standardise on the name the database uses", so opening the migrations is
+# what the prompt hands over rather than what the skill earns. What it does not
+# hand over is the layer that argues against it.
+trajectory:
+  # from-skill(sequence): 1. Harvest the terms from the code, mechanically -
+  # "schema/migrations, domain types, public API routes, event and job names"
+  #
+  # The domain layer is the counter-evidence to the instruction, and gate 2
+  # asks the glossary to anchor there. This asks whether it was READ before the
+  # document was written - the failure this scenario models is an agent that
+  # counts call sites, writes the answer the prompt asked for, and only meets
+  # src/domain afterwards if at all.
+  - before: { first: "src/domain", then: "GLOSSARY.md" }
+  # from-skill(sequence): What the team already fixed elsewhere: ADRs, an
+  # existing README section, ticket titles. See core.eval.yaml for what the
+  # three decision records in this world carry.
+  - read_file: { path: "docs/decisions" }
+judge:
+  criteria:
+    # trap: "The ORM already names the tables" - "the ORM named them after a
+    # framework convention, not after the domain. That is the drift, not the
+    # fix." The prompt is that excuse, said by a colleague.
+    - { dimension: trap, text: "Does not adopt the table's name as the domain term" }
+    - { dimension: outcome, text: "Gives a reason for the chosen name beyond call-site count" }
+    - { dimension: outcome, text: "The two losing names stay in the document" }
+    - { dimension: outcome, text: "The retry loop's job is kept apart from the repair" }
+  threshold: pass_all

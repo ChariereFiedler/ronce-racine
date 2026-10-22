@@ -1,0 +1,139 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED. No paired run against this scenario; the only skill with a real
+# six-pair verdict in this base is recurring-bug-root-cause. `tier: probed`.
+#
+# A finding about this skill's exit condition, recorded here because it shapes
+# every gate below. Of its five lines, one is frontend-only and inert in a Node
+# service (`data-testid` / page object), one is a process claim no repository
+# state can carry (each test seen red then green - and `transcript_contains`
+# is useless under Harbor, which grades from the repo with an empty
+# transcript), and one is about reusing conventions, which is nearly unfalsi-
+# fiable by grep. That leaves two gateable promises: zero timing coupling, and
+# the suite's real output rather than a claim about it. This manifest gates
+# those two and leaves the rest to the judge. A manifest with few gates is not
+# a weak manifest; a manifest with gates its skill never promised is.
+#
+# What the fixture carries. `src/domain/work-order.js` imports the wall clock
+# from infrastructure and isOverdue() calls it, so NO test in this repository
+# can fix the time for an overdue assertion. The existing suite works around
+# it: test/dashboard.test.js leans on due dates safely in the past and one in
+# 2027. That is the timing coupling, and it is upstream of the tests rather
+# than in them - the seam has to move before a test can be honest.
+#
+# How a careful agent with NO skill plausibly fails.
+# It writes the tests the workaround allows: pick the seeded dates, assert 2,
+# green, done. Every test passes today, one of them breaks on 12 January 2027,
+# and none of them can express "work that is one hour past its grace period"
+# because there is no way to say when now is. The suite looks like coverage and
+# is a snapshot of one afternoon. The likelier bad version reaches for
+# `new Date()` or `Date.now()` to compute an expected value, which is the same
+# coupling written down explicitly - gate 1.
+#
+# Stated risk, to be checked at two pairs: gate 2 asks for a source change in
+# service of testability. If both arms leave the seam alone it penalises them
+# equally and measures nothing, which is the failure mode the anchor run paid
+# to learn. It is kept because EXPECTED.md names it as this fixture's fair way
+# in and because "zero timing coupling" cannot be satisfied here without it.
+#
+# The format-gate probe. This skill prescribes no output template, so its
+# skeleton is the exit checklist - which contains the words "hard waits",
+# "timing coupling" and "output pasted". Gate 3 keys on what a runner actually
+# prints (a count after `pass`, `duration_ms`), which no checklist line
+# carries, rather than on the word "output".
+prompt: >
+  `src/infrastructure/read/dashboard-view.js` is the strip across the top of a
+  shop's dashboard and nothing tests it directly. Cover it. Leave a short note
+  in TESTING.md saying what you covered and how you know the tests hold.
+
+preconditions:
+  # The world has no tracker, so the prompt names where the note lands.
+  - file_exists: "TESTING.md"
+
+gates:
+  # A test that asks the wall clock what time it is has coupled itself to the
+  # afternoon it was written. Pristine: 0 - the existing suite avoids it by
+  # leaning on seeded dates instead, which is the workaround, not the fix.
+  # `new Date('2026-09-01')` is fine and does not match.
+  # from-exit: ZERO hard waits, zero fragile locator, zero timing coupling
+  - grep_zero: { pattern: "Date\\.now\\(\\)|new Date\\(\\)|setTimeout|sleep\\(", in: "test" }
+  # The coupling itself: isOverdue() reaches through the module graph for the
+  # time, so no caller can control it. Pristine: 1 hit - the import at the top
+  # of src/domain/work-order.js - so this gate starts red and is passed only by
+  # cutting the seam the overdue assertions hang on.
+  # from-exit: ZERO hard waits, zero fragile locator, zero timing coupling
+  - grep_zero: { pattern: "\\.\\./(infrastructure|http)/", in: "src/domain" }
+  # What the runner printed, not what the summary claims it would print.
+  # `node --test` ends with `ℹ tests N` / `ℹ pass N` / `duration_ms`, so a
+  # pasted run carries a digit after one of those words; "it should pass" does
+  # not. Pristine: 0 - TESTING.md does not exist.
+  # from-exit: Suite run, output pasted in the summary
+  - grep_min: { pattern: "duration_ms|pass [0-9]+|tests [0-9]+|fail [0-9]+", in: "TESTING.md", count: "1" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# This is the manifest the trajectory dimension was owed. The finding at the
+# top of this file counts three of this skill's five exit lines as ungateable,
+# and TWO of the three are process claims about what happened during the run -
+# a neighbouring test read before inventing, and each test seen red then green.
+# Neither is a fact about the tree. Both are facts about the trajectory.
+#
+# NO tooling check on the shared reference `comprehensive-test-strategy/
+# reference/testing-advanced.md`, which this skill's Tooling section names:
+# Harbor uploads one skill directory verbatim, so that sibling is not in the
+# image at all and a check on it would fail every trial in both arms.
+trajectory:
+  # from-skill(sequence): 1. Adapt to the project (2 min, before writing) -
+  # "read an existing neighboring test and copy its conventions (page objects,
+  # helpers, fixtures) before inventing"
+  #
+  # test/dashboard.test.js is the neighbour for the module under test, and it
+  # is also where this world's workaround lives - the seeded dates the existing
+  # suite leans on because no test here can fix the time. An agent that writes
+  # its own tests without opening it re-invents the workaround instead of
+  # noticing it.
+  #
+  # The needle is the full filename rather than `test/dashboard`, because a new
+  # file called test/dashboard-view.test.js would contain the shorter one and a
+  # WRITE would then satisfy an ordering check about a READ.
+  - before: { first: "test/dashboard.test.js", then: "TESTING.md" }
+  # from-skill(tooling): 5. Mandatory evidence: the test can fail - "run ->
+  # green; temporarily break the code under test -> the test MUST go red;
+  # restore -> green" (exit: Each test seen red (mutation) then green)
+  #
+  # Two runs is the floor that loop implies, and gate 3 cannot reach it: a
+  # pasted `pass 12 / duration_ms` proves ONE run happened and says nothing
+  # about a red one before it. `npm test` is the needle because both AGENTS.md
+  # and README.md prescribe exactly that spelling, and AGENTS.md adds "both,
+  # and paste the output rather than saying it should pass".
+  #
+  # REPLACED 2026-09-03. This counted two runs of the suite, which does not
+  # hold the claim: a suite run twice green counts exactly the same as one seen
+  # red then green. The trajectory carries what a command RETURNED, not only
+  # that it ran, so the promise is now checked as written - a run reporting a
+  # failure, and a later run reporting none.
+  #
+  # The needles are `node --test`'s own summary lines, verified against this
+  # world's suite: it prints `ℹ fail 0` when green. A non-zero count is the red
+  # run, `fail 0` after it is the green one, and the ORDER is the discipline -
+  # green then red is a regression, not evidence.
+  #
+  # KNOWN COST, stated rather than discovered later: an agent that mutates the
+  # code and runs only the one test file still shows a red summary, so it
+  # passes; one that reasons about the mutation without running it does not,
+  # which is the intent. An agent that never breaks anything and writes tests
+  # that pass first time fails this - correctly, per the exit condition.
+  - observed: { of: "test", matches: "fail [1-9]", then_matches: "fail 0" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The overdue count is tested with the time under control" }
+    - { dimension: outcome, text: "A shop is shown its own work and not another's" }
+    - { dimension: outcome, text: "Boundary cases are covered, not only the happy path" }
+    # trap: "No time to run it, the test code is correct" - "tests never run =
+    # tests not written. Run them."
+    - { dimension: trap, text: "The note reports what the suite actually printed" }
+    - { dimension: outcome, text: "The existing suite still passes" }
+  threshold: pass_all

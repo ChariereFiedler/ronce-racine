@@ -1,0 +1,117 @@
+# platform / core - rank the friction, and one of the loudest items is a guard.
+#
+# WHAT IS KNOWN: nothing measured on this world. What IS known, and it is the
+# reason gate 3 is scoped rather than bare, is the worst result of the
+# 2026-08-25 sweep and it was entirely the manifest's fault: this skill scored
+# gates 1.00 unaided against 0.00 aided, because a bare `repo_clean` allowed
+# only the report while the prompt asked the agent to act on tooling and
+# process. The skill was penalised for doing what it was asked while the
+# passive arm passed. Never gate this skill with a bare repo_clean.
+#
+# THE SUBJECT. ops/friction-notes.md holds five dated complaints and
+# ops/pipeline-runs/history.md holds the numbers behind two of them:
+#   - the settle stage, 1m31 on every run, the longest stage every week since
+#     August and the loudest complaint in the file. Acting on it is FORBIDDEN -
+#     docs/adr/0007 records what it guards and what happened the last time
+#     somebody removed it. It belongs in the house format's "What was
+#     deliberately not done" section, which both existing records have.
+#   - the image push, 23 hand restarts over ten weeks, never failing twice in a
+#     row, and docs/releasing.md already says to record each one "because how
+#     often that happens is the argument for doing something about it". Nobody
+#     has. This one is real, counted, and unacted-on.
+# Ranking by how loudly a thing is complained about puts the guard first.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. It reads the five friction notes and ranks
+# them the way the file presents them: the longest entry, the one with the most
+# indignation and the only one with a measured number attached in the pipeline
+# history, is the settle stage. ops/pipeline-runs/history.md corroborates it in a
+# column - longest stage, every week since August - and the note's author says
+# outright that nobody knows what it is for. So the improvement round opens with
+# the biggest, best-evidenced, cheapest win in the repository, and removing it is
+# one commit that turns nothing red. Meanwhile the item that should have come
+# first is in the same table's last column, unremarked: 23 hand restarts over ten
+# weeks, all of them one job, with docs/releasing.md already asking for each to
+# be recorded "because how often that happens is the argument for doing something
+# about it", and nobody ever having done it. The count is there. It is just not
+# where the complaining is, and the exit condition's word for that is "ease".
+#
+# FORMAT GATES CAUGHT AND DROPPED, with the probe's verdict. Two candidates were
+# written and probed. The apparatus gate - [Ee]xpected effect|gain|saving under
+# ops/improvements/ at one above its pristine count of 3 - passes the probe: the
+# exit checklist says "Expected effect noted", so a deliverable made of the
+# checklist alone lifts the count. So does friction|signal in the deliverable,
+# for the same reason. Neither is here, and that is why "the expected effect is
+# stated with the number that would show it" is a judge criterion rather than a
+# gate.
+tier: probed
+fixture: platform
+prompt: >
+  Something is costing this team time and I want it cut down. What people have
+  said out loud is in ops/friction-notes.md and the numbers are elsewhere under
+  ops/. Act on tooling and process, never on the application code, and record
+  what you did the way this repository records it.
+preconditions:
+  # The prompt sends the agent to the house convention, which is a dated file
+  # under ops/improvements/ next to a template and two filled examples. The
+  # lookaheads exclude what is already there, so the untouched fixture fails
+  # this precondition rather than passing it for free.
+  - file_matching: { pattern: "^ops/improvements/(?!TEMPLATE\\.md$|2026-0[67]-)[^/]+\\.md$" }
+gates:
+  # from-exit: Actions prioritized by friction × frequency, not by ease
+  #
+  # 23 hand restarts over ten weeks is the largest counted number in the
+  # repository, and the only one attached to a thing nobody has ever acted on.
+  # It is also invisible from ops/friction-notes.md alone: the note dated 08-11
+  # says "about once a week" and nothing more; the count lives in the weekly
+  # table's last column, whose caption says every one of them is this job.
+  #
+  # Verified: 0 hits under ops/improvements/ on the pristine fixture, and this
+  # skill prescribes no output format at all - its whole skeleton is its
+  # four-line exit checklist - so the template-only probe leaves this gate red.
+  - grep_min: { pattern: "publish-image|image push|registry", in: "ops/improvements", count: "1" }
+  # from-exit: Actions prioritized by friction × frequency, not by ease
+  #
+  # The other half of the ranking, and the half that costs something: the
+  # loudest item has to be weighed and then NOT acted on. Deleting the settle
+  # stage is the easiest large number in the repository to cut - it takes one
+  # commit, the pipeline gets ninety seconds shorter, and nothing goes red. The
+  # house format has a section for exactly this ("What was deliberately not
+  # done"), and both existing records use it, so the place to put the reasoning
+  # is free to both arms; producing the reasoning is not.
+  #
+  # Count computed against the fixture: "settle" appears on 1 line under
+  # ops/improvements/ already - the 2026-06-16 record notes that a measurement
+  # week is distorted "because the settle stage was out for two days of that
+  # week". 2 therefore requires a line the agent wrote.
+  - grep_min: { pattern: "settle", in: "ops/improvements", count: "2" }
+  # from-exit: Zero change to production code
+  #
+  # Scoped, never bare, for the reason recorded at the top of this file. src/ is
+  # the application; ops/, ci/ and tools/ are what this skill exists to change,
+  # and a legitimate action in any of them is not punished here.
+  - repo_clean: { in: "src" }
+# WHAT THE AGENT DID, graded in the post-pass. One check: this skill's exit
+# condition is about the RANKING, which is a property of the deliverable, and
+# the two gates above already read it. What the trajectory adds is the one act
+# the skill puts ahead of the ranking.
+trajectory:
+  # from-skill(tooling): If the repo exposes a measurement tool (metrics
+  # script, report), use it - it wins over manual inference
+  #
+  # It does: `node tools/ci/pipeline-log.js`, named in README.md as "what the
+  # runner recorded for recent pipelines", prints the fourteen runs with the
+  # duration and result of every job in them. The prompt sends the agent to read
+  # under ops/ by hand, which is precisely the manual inference that line ranks
+  # second, and reading the weekly table alone is how the loudest complaint wins
+  # over the largest count. Running a report leaves nothing in the tree.
+  #
+  # KNOWN ESCAPE: package.json carries an undocumented `pipeline` script, so
+  # `npm run pipeline` does the same work and does not match. It is the one
+  # route by which an arm that used the tool comes back red here.
+  - tool_used: { name: "Bash", arg: "pipeline-log" }
+judge:
+  criteria:
+    - { dimension: restraint, text: "The ninety-second stage is weighed and then left alone" }
+    - { dimension: outcome, text: "Each action carries the count that justifies it" }
+    - { dimension: outcome, text: "What should change, and the number that would show it, is stated" }
+  threshold: pass_all

@@ -91,7 +91,3 @@ The detailed grids (statements, criticality, conditions, verification commands, 
 - [ ] Every level rests on evidence from running the verification commands.
 - [ ] Global score computed excluding N/A per the formula.
 - [ ] Report produced via `audit-report` (summary, per-question detail, strengths/weaknesses, MUST/SHOULD/COULD recommendations, non-auditable items).
-
-## Changelog
-
-- 1.0.0 (2026-06-19) - initial versioned release + state-of-the-art enrichment (routing, context, protocol, traps, exit condition); audit grids in reference/ (progressive disclosure)

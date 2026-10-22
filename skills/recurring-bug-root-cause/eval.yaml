@@ -1,19 +1,202 @@
-fixture: buggy-app
+# The anchor scenario of the `incident` world, and the measurement that decides
+# whether the rebuilt base was worth building.
+#
+# On the old fifteen-line `buggy-app` fixture this skill measured gates 0.58
+# unaided against 1.00 aided, judge 0.39 against 1.00, over 6 pairs. That was
+# the best signal in the base, and it came from the only fixture that had any
+# history at all. Everything here is re-derived against a repository of 64 files
+# and 34 commits where the answer cannot be reached by reading every file.
+#
+# MEASURED TWICE on 2026-09-03, 6 pairs each, claude-sonnet-5.
+#
+#   run 1, ceiling gate broken   without  gates 0.00  judge 0.67
+#                                with     gates 0.08  judge 0.94
+#   run 2, both gates fixed      without  gates 0.33  judge 0.72
+#                                with     gates 0.33  judge 0.94
+#                                lift     gates 0.00  judge +0.22
+#
+# For comparison, the same skill on the old fifteen-line `buggy-app` fixture:
+# gates 0.58 -> 1.00, judge 0.39 -> 1.00.
+#
+# Read the two runs together, because run 1 is only half interpretable. Its
+# `grep_zero` was written `"key":\s*(?!288\b)` and matched the UNTOUCHED line -
+# `\s*` can consume nothing and the lookahead then succeeds against the
+# whitespace - so it failed on all 12 trials whatever the agent did. A gate
+# nobody can pass penalises both arms equally, which is the failure this repo
+# had already recorded for the audit domain score.
+#
+# Run 2 is sound and its result is uncomfortable, which is why it is written
+# out in full rather than summarised. The gate dimension is IDENTICAL across
+# the arms, 4 of 6 trials passing one gate of two in each. The realistic world
+# did what it was built to do - the unaided baseline fell from 0.58 to 0.33 -
+# and the aided arm fell with it, from 1.00 to 0.33. The judge still separates,
+# +0.22, but the gap narrowed from +0.61.
+#
+# WHAT THAT MEANS, stated as a question this manifest cannot answer: on a
+# fifteen-line repository the skill's advantage was large and mechanical; on a
+# realistic one it is smaller and lives in the reasoning, where only the judge
+# can see it. Whether that is the skill's limit or the gates' is not settled by
+# these two runs.
+#
+# What every trial did, in BOTH runs and BOTH arms: stream the search index
+# instead of retaining it. That is wrong answer #4 in the fixture's ground
+# truth - a real improvement that bounds retention while leaving the unit count
+# decided by whatever is on disk. The world tempts exactly as designed.
+tier: anchor
+fixture: incident
 prompt: >
-  Fix the cart total item count bug, but this is already the 3rd fix(cart)
-  commit recently so do not just ship another one-liner - root-cause the
-  recurring pattern first. No tracker is configured here, write the
-  postmortem to POSTMORTEM.md and any deferred-action tickets as separate
-  ticket-*.md files.
-gates:
+  The nightly publish job has been failing every night since 08-31 and the
+  team needs it fixed for tonight. Deal with it properly rather than shipping
+  another quick change. No tracker is configured here: write any postmortem to
+  POSTMORTEM.md and any deferred action to ops/backlog.md.
+preconditions:
+  # The prompt names this path, so an agent following no skill produces it too.
+  # It tells you the deliverable landed, which is what makes the gates readable.
   - file_exists: "POSTMORTEM.md"
-  # The guardrail this skill mandates can be a git hook, a CI job or an npm
-  # script, so enumerating them in a repo_clean except list is a losing game.
-  # Gate the outcome that matters instead: the planted bug is actually fixed.
-  - grep_zero: { pattern: "items.length - 1", in: "src/" }
+gates:
+  # from-exit: Blocking, deterministic guardrail added, sweeping the existing code
+  #
+  # THE BLOCKING-GUARDRAIL PROMISE IS NOT GATEABLE HERE, and this is the third
+  # revision of the attempt rather than a fourth try at a pattern.
+  #
+  # v1 keyed on a second `tools/check/` reference in ci/pipeline.yml: 1 trial of
+  # 12 wired one there. v2 widened to any new file under `tools/check/`: 0 of 12
+  # in the re-run. What the trials actually did was add or extend a test - 9 of
+  # 12 touched `test/pipeline.test.js`, which already exists - and `npm test` IS
+  # a blocking place in this world, since the `checks` job runs it on
+  # merge-request and trunk.
+  #
+  # So a guardrail can legitimately arrive as an edit to a file that is already
+  # there, and `file_matching` keys on paths: it cannot see that at all. Nor can
+  # a word grep tell a check that SWEEPS the existing content from a test that
+  # pins one case, which is the half of the promise that carries the meaning.
+  #
+  # The honest move is the one docs/evaluating-skills.md permits and the routing
+  # lint set the precedent for: admit the check cannot answer the question, and
+  # give it to the judge - see the third criterion below. Widening the pattern a
+  # third time would be tuning a gate until the number moved, which is the thing
+  # this repo forbids.
+  #
+  # This leaves one mechanical gate. That is a fact about what a fixture can
+  # see, not a defect to paper over.
+  # from-exit: Class named (property common to the N fixes), not just the Nth symptom
+  #
+  # The forbidden move, and the most probable unaided outcome: the failure names
+  # a byte count, the ceiling sits on one line of build.config.json, a colleague
+  # has already written down "put the ceiling up to 512 for the week", and
+  # `--budget-kb 512` makes the build green today. Verified against the fixture.
+  # Raising it is arithmetic on the wrong side of an unbounded workload.
+  #
+  # Written as an absence rather than as "the value is still 288", so that an
+  # answer which removes the key entirely while bounding the plan elsewhere is
+  # not punished for taking a different correct route.
+  # `\\s*(?!288\\b)` alone matched the untouched line: the star can consume
+  # nothing and the lookahead then succeeds against the whitespace. Requiring a
+  # digit after it forces the lookahead onto the value. Verified on 288, on 288
+  # with no trailing comma, on 512, on 2880 and on the key being removed.
+  - grep_zero: { pattern: "\"retentionBudgetKb\":\\s*(?!288\\b)\\d", in: "build.config.json" }
+  # from-exit: "Existing tooling should have caught it - why didn't it?" answered
+  #
+  # This world has a precise answer and it is not a matter of opinion: there WAS
+  # an instrument, `tools/sheetmill/sampler.js`, and the fifth prior fix deleted
+  # it eight days before the failure. The held/peak column of ops/publish-runs.md
+  # is empty from 08-28 onwards for that reason. A response that names the
+  # sampler has answered the question; one that says "we had no monitoring" has
+  # not looked.
+  #
+  # Not a format gate: neither the SKILL.md nor its postmortem template contains
+  # the word, so the template-only probe cannot reach it. Verified.
+  - grep_min: { pattern: "sampler", in: "POSTMORTEM.md", count: "1" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# Replayed over the twelve trials of the 2026-09-03 run, arm by arm. The
+# trajectory dimension carries the signal the outcome dimension lost on this
+# world, and none of it was visible before:
+#
+#   ran detect-recurring-fixes    0/6 unaided   5/6 aided
+#   read ops/pool-size-trial.md   5/6           5/6
+#   read ops/publish-runs.md      6/6           6/6
+#   opened plan.js                6/6           6/6
+#   ran --concurrency to refute   5/6           3/6
+#
+# Against gates 0.33 on both arms, the first line is the cleanest separation
+# this skill has produced on the `incident` world.
+#
+# GRADED END TO END on 2026-09-03, same twelve trials, three dimensions:
+#
+#   without skill   gates 0.33   judge 0.72   trajectory 0.67
+#   with skill      gates 0.33   judge 0.94   trajectory 0.94
+#   lift            gates 0.00   judge +0.22  trajectory +0.28
+#   verdict         no-lift      helps        helps
+#
+# And the judge, broken down by the dimension each criterion declares:
+#
+#   judge · outcome   0.75 -> 0.92   +0.17
+#   judge · tooling   0.67 -> 1.00   +0.33
+#
+# Two independent instruments agree. The judge attributes most of its gap to
+# TOOLING, and the trajectory measures the same thing mechanically: the script
+# this skill names as step one went 0/6 unaided against 5/6 aided. That
+# corroboration is the strongest evidence in this manifest, and neither half of
+# it was obtainable before - the trajectory was collected and discarded, and the
+# judge had no dimension to attribute a gap to.
+trajectory:
+  # from-skill(tooling): The list of the N fixes on the scope:
+  # `scripts/detect-recurring-fixes.ts` then `git log`/`git blame`
+  #
+  # Step 1 of the skill's own context-gathering, and the discriminator: 0/6
+  # unaided, 5/6 aided. A script that only reads leaves nothing in the tree, so
+  # no gate could ever have seen this.
+  - tool_used: { name: "Bash", arg: "detect-recurring-fixes" }
+  # from-skill(sequence): Context to gather (before acting)
+  #
+  # The ordering claim a snapshot erases: the tree is identical whether the
+  # history was read first or the config edited first. Measured 12/12 on both
+  # arms in the 2026-09-03 run, so it is a floor rather than a discriminator -
+  # kept because a run that edits first is the failure this skill exists to
+  # prevent, and the day one appears this is what catches it.
+  - before: { first: "git log", then: "build.config.json" }
+  # from-skill(restraint): No application file modified outside the fix
+  - tool_absent: { name: "git commit" }
+  # from-exit: One test per fixed occurrence + a test/check covering the class
+  #
+  # `file_matching` provably cannot reach this one, and the reason is measured:
+  # 9 of 12 trials of the 2026-09-03 run put their regression coverage in
+  # `test/pipeline.test.js`, a file that already exists. A path-keyed gate sees
+  # a new file and nothing else, so it scored zero while nine agents had done
+  # the work. Writing INTO the suite is the act, whether the file is new or not.
+  - wrote_file: { path: "test/" }
+  # NOT gated, and the reason is worth keeping: reading the two documents that
+  # carry the refutation measured 6/6 and 5/6 on BOTH arms. Saturated, so a
+  # check on them would penalise nobody and dilute the rest. And one measurement
+  # runs the other way - `--concurrency`, the command that actually refutes the
+  # pool decoy, was run by 5 of 6 unaided runs against 3 of 6 aided. Whatever
+  # the skill adds here, it is not more experimentation.
 judge:
   criteria:
-    - "A blocking guardrail is added, not just documentation"
-    - "The postmortem names a common class, not just the symptom"
-    - "At least one hypothesis is explicitly refuted with evidence"
+    # The class, not the occurrence. Six prior fixes each moved a limit that
+    # sits downstream of a workload nobody bounded, and each one measurably
+    # worked for a few days, which is why nobody escalated.
+    - { dimension: outcome, text: "Names what the prior fixes have in common, not just this failure" }
+    # The fixture makes this earnable rather than assertable: `--concurrency 1`
+    # still fails, and the held-bytes column shows the growth. A refutation
+    # that cites neither is an assertion.
+    - { dimension: tooling, text: "Refutes a hypothesis with evidence it produced, not with a claim" }
+    # Corrected 2026-09-03. This read "bounds how much WORK the run does", which
+    # scored only the author's preferred cause. The fixture has two, and the one
+    # the answer key called a half-answer is the better evidenced and is fully
+    # sufficient: fixing it alone completes all 157 units, verified. Twelve
+    # trials out of twelve reached it and none reached the other, which is the
+    # correct move on the evidence available.
+    #
+    # What actually separates a real answer from the four wrong ones is not
+    # WHICH quantity gets bounded but THAT one does - the wrong answers all move
+    # a limit (raise the ceiling, lower the pool, ask for a bigger runner) or
+    # move nothing.
+    - { dimension: outcome, text: "Bounds a quantity that grows with the catalogue, rather than raising a limit" }
+    # The promise no gate can reach, moved here after two runs: is the check
+    # blocking, deterministic, and does it sweep the content as it stands - or
+    # is it a test pinning the one case that failed?
+    - { dimension: restraint, text: "Adds a check that blocks the build and sweeps the content, not one case" }
   threshold: pass_all

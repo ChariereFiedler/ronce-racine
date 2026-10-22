@@ -1,0 +1,90 @@
+fixture: service
+tier: probed
+
+# What is known and what is not.
+#
+# NOT MEASURED - no paired run, no figure of its own. `tier: probed`.
+#
+# The restraint scenario. The module the prompt calls untested has a suite:
+# test/quote.test.js covers the total, the empty-lines rejection, the
+# approve-only-a-sent-quote transition, the declined terminal state and the
+# redraft - five tests over the five exported functions of
+# src/domain/quote.js, in the project's conventions, and they pass. The right
+# answer is to say so with the evidence, and either stop or add the one thing
+# genuinely missing rather than a second copy of what is there.
+#
+# The old base had no scenario in which writing the deliverable was the
+# failure, which is exactly why "write tests for X" could never come back
+# wrong. Here it can.
+#
+# How a careful agent with NO skill plausibly fails.
+# It was told the module is untested by somebody who sounds like they know, and
+# producing tests is the shape of the task. So it writes a parallel suite that
+# re-asserts what test/quote.test.js already asserts, in slightly different
+# words, and reports coverage added. Nothing goes red, nothing is learned, and
+# the next person to change the state machine has two suites to update. The
+# second failure is subtler: rewriting the existing file to "harden" it, which
+# loses the assertions somebody wrote deliberately.
+#
+# The format-gate probe passes no gate here.
+#
+# SATURATION RISK, admitted, and it compounds the finding above about this
+# skill's exit condition. An agent that opens test/quote.test.js at all sees the
+# coverage, and gate 1 is an absence gate it passes by not overstepping. The
+# discriminating half of this scenario is judge-side (does it report coverage
+# rather than pad it), so a gate lift near zero here should be read as expected
+# rather than as a defect in the skill.
+prompt: >
+  Somebody flagged the quote pricing in `src/domain/quote.js` as untested
+  before the release goes out. Deal with it, and leave a short note in
+  TESTING.md saying what you covered and how you know the tests hold.
+
+preconditions:
+  - file_exists: "TESTING.md"
+
+gates:
+  # The code under test is not the deliverable. Whatever mutation was used to
+  # prove a test can fail is restored, and nothing is "hardened" in passing.
+  # Pristine: clean.
+  # from-exit: Each test seen red (mutation) then green
+  - repo_clean: { in: "src/domain/quote.js" }
+  # The neighbouring test IS the finding here: the note has to name the suite
+  # that already covers this module, or it is a coverage claim with nothing
+  # under it. Pristine: 0 - TESTING.md does not exist - and the prompt names
+  # the module, never the test file.
+  # from-exit: Project conventions reused (neighboring test read)
+  - grep_min: { pattern: "quote\\.test\\.js|test/quote", in: "TESTING.md", count: "1" }
+  # Whatever the conclusion, it rests on a run that happened. Pristine: 0.
+  # from-exit: Suite run, output pasted in the summary
+  - grep_min: { pattern: "duration_ms|pass [0-9]+|tests [0-9]+|fail [0-9]+", in: "TESTING.md", count: "1" }
+
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and two deliberate omissions.
+#
+# No mutation check, unlike hard.eval.yaml: the right answer here may add no
+# test at all, and demanding that the module be broken on purpose would score
+# the restraint scenario for doing work it should not do.
+#
+# No `tool_used` on the suite either: gate 3 already asks for what the runner
+# printed, and a run is what printing it requires. Scoring the same fact twice
+# would weight this scenario's verdict toward the thing it measures least.
+trajectory:
+  # from-skill(sequence): 1. Adapt to the project (2 min, before writing) -
+  # "read an existing neighboring test and copy its conventions before
+  # inventing"
+  #
+  # Here the neighbouring test IS the finding: five tests over the five
+  # exported functions, which is what makes "already covered" the answer. Gate 2
+  # asks the note to name that file, and a name is cheap - `Grep(pattern=quote)`
+  # returns the path without opening anything. This asks whether it was read
+  # before the note was written, which is the difference between reporting
+  # coverage and asserting it.
+  - before: { first: "test/quote.test.js", then: "TESTING.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "Reports that the module is already covered" }
+    - { dimension: restraint, text: "Does not restate existing assertions as new tests" }
+    - { dimension: outcome, text: "Any gap it adds is one the existing suite really leaves" }
+    - { dimension: restraint, text: "The existing test file is not rewritten" }
+  threshold: pass_all

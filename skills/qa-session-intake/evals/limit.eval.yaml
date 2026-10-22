@@ -1,0 +1,89 @@
+# platform / limit - three leftovers, and not one of them is a new ticket.
+#
+# The scenario this skill never had. Its exit condition's first line is "One
+# ticket per distinct problem", and until a scenario existed where the honest
+# count is zero, the skill could not fail by filing.
+#
+# WHAT IS KNOWN: nothing measured. No paired run.
+#
+# THE SUBJECT, and every one of the three is disposed of by something outside
+# the bundle:
+#   - "Could the weekend ones be a different colour" is a preference, and the
+#     July session already recorded the same request as one that did not become
+#     a ticket "because it is a preference and she said so herself".
+#   - "It hung for a moment when I first came in" was judged in July as the
+#     fixture cache being cold, "not something she would ever see again".
+#   - "The week picker jumps back" is qa-0029, open since July, reproduced, in
+#     ops/qa/open-tickets.md.
+# The bundle alone supports none of those conclusions. Reaching them means
+# reading the neighbouring session and the open list, which is the step the exit
+# condition's last line asks for and the obvious flow skips.
+#
+# WHAT IS NOT KNOWN: whether the unaided arm files anyway. The pull is real -
+# the request says to deal with them, and two of the three sound like defects -
+# but a careful agent may decline. If this comes back saturated, record it.
+#
+# HOW A CAREFUL UNAIDED AGENT FAILS. Three leftovers are handed over and the
+# request says to deal with them; two of the three sound exactly like defects
+# when read on their own. "The week picker goes back to this week after I save"
+# is a reproducible-sounding behaviour report and it becomes a ticket in one
+# step - unless the agent has read ops/qa/open-tickets.md, where it has been open
+# since July with a reproduction already on it. "It hung for a moment" is a
+# performance complaint with no timing, and the July session already recorded
+# what it was. Only the colour request refuses itself, and even that has a
+# tempting home as a "cosmetic" ticket. None of the three carries reproduction
+# steps, which is what this skill forbids filing without, and the deliverable
+# that discharges the request honestly contains no tickets at all - an output
+# that looks, from the outside, like the work was not done.
+tier: probed
+fixture: platform
+prompt: >
+  Three things are left over from the session on the 27th: "could the weekend
+  ones be a different colour", "it hung for a moment when I first came in", and
+  "the week picker goes back to this week after I save". Deal with them the way
+  we deal with a session's leftovers - the July one next door shows the shape -
+  and write what you concluded to QA-TRIAGE.md.
+preconditions:
+  # The prompt names this path. It also fails on the untouched fixture, which
+  # keeps eval-lint's do-nothing check meaningful for a manifest whose other
+  # gate is an invariant.
+  - file_exists: "QA-TRIAGE.md"
+gates:
+  # from-exit: De-duplication done against open tickets
+  #
+  # The third remark is qa-0029, and the id is the verifiable form of the
+  # de-duplication: an answer that says "this one is probably already known"
+  # has not done it. Producing the id means having opened
+  # ops/qa/open-tickets.md, which nothing in the request points at.
+  #
+  # Verified: 0 hits in the deliverable, which does not exist before the run,
+  # and the template-only probe - which writes this skill's checklist into that
+  # path - leaves it at 0, because the checklist names no ticket.
+  - grep_min: { pattern: "qa-0029", in: "QA-TRIAGE.md", count: "1" }
+  # from-exit: One ticket per distinct problem, each with reconstructed steps, expected vs actual, closest screenshot, severity
+  #
+  # Read as its own condition: with no distinct problem among the three, the
+  # correct number of tickets is zero, and `except` allows the conclusion the
+  # request asked for and nothing else. A file under a tickets directory, a new
+  # row in ops/qa/open-tickets.md, or a "while I was in there" fix to the
+  # console all fail here. Filing a ticket without reproduction steps is what
+  # this skill forbids outright, and none of the three has any.
+  - repo_clean: { except: "QA-TRIAGE.md" }
+# WHAT THE AGENT DID, graded in the post-pass.
+trajectory:
+  # from-skill(sequence): Guardrails - De-duplication: search open tickets
+  # before creating
+  #
+  # The third leftover IS an open ticket, so the whole scenario turns on the
+  # list having been consulted before the conclusion was written. Gate 1 reads
+  # the id in QA-TRIAGE.md and cannot tell where it came from: `qa-0029` is also
+  # written in ops/qa/2026-07-21-console/, which the prompt sends the agent to.
+  # This is the check that separates having done the de-duplication from having
+  # copied its result out of the neighbouring session.
+  - before: { first: "ops/qa/open-tickets.md", then: "QA-TRIAGE.md" }
+judge:
+  criteria:
+    - { dimension: trap, text: "The picker remark is matched to the one already open for it" }
+    - { dimension: outcome, text: "The colour request is called a preference" }
+    - { dimension: outcome, text: "The pause on opening is explained from the earlier session" }
+  threshold: pass_all

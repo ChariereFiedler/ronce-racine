@@ -1,0 +1,20 @@
+{
+  "//": "Self-contained on purpose: .claude-plugin/types/ is laid by the engine at load and ignored by git, so extending a file in it breaks Vitest on a fresh clone. These are the options of the engine's own tsconfig.",
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["es2023"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment",
+    "typeRoots": ["./.claude-plugin/types"],
+    "types": ["claude-code", "claude-code-tools", "claude-code-mcp"]
+  },
+  "include": ["hooks", "types", "src", "test"]
+}

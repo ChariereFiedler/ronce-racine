@@ -1,0 +1,125 @@
+# audit-compliance / core - personal data, a real register, and no assessment.
+#
+# WHAT IS KNOWN AND WHAT IS NOT
+# Not measured. This manifest replaces one that carried no figure of its own: it
+# inherited audit-security's 2026-08-24 calibration on a fifteen-line fixture
+# that no longer exists, through gates that greped for the words "confidence"
+# and "non-auditable". Nothing here inherits from it. `tier: probed`: the
+# admission checks have been run, the six-pair run has not.
+#
+# WHY THE GATES LOOK LIKE THIS
+# The fixture ships the house format and three filled reports, so the audit
+# vocabulary is free to both arms by construction and no gate greps for it. What
+# is gated is the shape of the verdict: this domain is weak but it is not
+# uniformly zero, and the difference is checkable.
+#
+# UNAIDED WALKTHROUGH (why a careful agent with no skill plausibly fails)
+# The absences are real and they are easy: no DPIA, no anonymisation anywhere,
+# no erasure endpoint, no deletion log, no consent record. A compliance audit
+# that reports them and stops produces a page of zeroes, and it will be wrong in
+# two specific places. data/classification.json is a genuine
+# information-asset register - it names each column, marks what is personal, and
+# docs/logging.md requires it to agree with the redaction list in src/log.js -
+# and ADR 0002 is a properly weighed data-protection decision that split the
+# reporter's contact details into their own table with their own period,
+# specifically so a phone number does not inherit a five-year statutory
+# retention. Neither is where a GDPR checklist looks. The third miss is the
+# other direction: the free-text description field is stated in docs/logging.md
+# to contain names, addresses and registrations regularly, which makes it
+# personal data that no classification entry can tidy away.
+#
+# WHAT A CODE-KEYED GATE ALSO MEASURES
+# A gate naming a question code and a level cell cannot be passed by an agent
+# that never adopted the grid, so part of what it separates is grid adoption
+# rather than audit quality. That is a real property of this family, and it is
+# written here rather than left to be discovered from a report: read a lift on
+# those gates as "the grid was walked AND this question was decided correctly",
+# never as the second alone. The gates that name no code - a file, a flag, an
+# owner, a count - are the ones that carry evidence on their own, and every
+# scenario here has at least one.
+#
+# PARTLY SATURATED, ADMITTED
+# Two of the four gates are floors rather than discriminators. CO-04 at 0-1 is
+# what any agent concludes from an empty grep, and data/classification.json is
+# the only governance file in a four-file directory, so an unaided arm may well
+# name it. The gate expected to carry this scenario is the retention drift,
+# which needs a comparison nobody is prompted to make. If a paired run comes
+# back saturated, the honest response is to record it here, not to add gates
+# until a number moves.
+#
+# ADMISSION CHECKS RUN, 2026-09-03 - and what they are worth
+# eval-lint clean, `eval.ts run --dry-run` parses, and the template-only probe
+# passes none of the gates below: a deliverable carrying this skill's own
+# headings and no content scores zero on every one of them. Each pattern was
+# then run through the real applyGate against this fixture twice - once with a
+# written correct answer and once with a written plausible wrong answer - so
+# no gate here is unpassable and none is free. Where a gate is also passed by
+# the wrong answer, the comment above it says so. What remains unproven is the
+# only thing that matters in the end: whether an agent without the skill scores
+# lower than one with it. That needs six pairs and has not been run.
+tier: probed
+fixture: maturity
+prompt: >
+  Run a compliance, data-governance and FinOps audit of this project.
+  Write the report to AUDIT-COMPLIANCE.md.
+preconditions:
+  # The fixture has no tracker, so the prompt names the file: an agent following
+  # no skill produces it too, so it earns nothing among the gates.
+  - file_exists: "AUDIT-COMPLIANCE.md"
+gates:
+  # from-exit: Report produced in the format above, including strengths/weaknesses, recommendations and non-auditable items
+  - repo_clean: { except: "AUDIT-COMPLIANCE.md" }
+  # from-exit: Level + confidence + justification provided per question
+  # CO-04 (DPIA, MUST) is 0 or 1: none exists, and nothing in the repository
+  # records that the processing was ever assessed. This is the domain's central
+  # defect and the level has to say so. It is a floor rather than a
+  # discriminator - the written wrong answer, a page of zeroes, passes it too -
+  # and the two gates below it are what separate the arms.
+  - grep_min: { pattern: "CO-04[^\n]*\|\s*[01]\s*\|", in: "AUDIT-COMPLIANCE.md", count: "1" }
+  # from-exit: Verification commands run for each question
+  # The register that keeps this domain off zero. A report that never names it
+  # has audited the absences only.
+  - grep_min: { pattern: "classification\.json", in: "AUDIT-COMPLIANCE.md", count: "1" }
+  # from-exit: Verification commands run for each question
+  # The retention drift, by name: data/retention.json covers six of the eight
+  # tables in db/schema.sql, and the two that are missing both hold data the
+  # classification file already marks. It comes out of running the repository's
+  # own rules or of comparing the two files.
+  - grep_min: { pattern: "intake_attachments", in: "AUDIT-COMPLIANCE.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass.
+#
+# One check, and it is an ordering. These nine audit skills state no `Tooling`
+# section, no `Guardrails` and no step budget - their apparatus is a set of
+# grids to read - so `tool_absent` and `step_budget` have nothing here to
+# derive from and are left out rather than invented. What the protocol does
+# state is an order, and an order is exactly what a repository snapshot cannot
+# hold: the report is byte-for-byte the same file whether the evidence was
+# opened before the verdict was written or after it. The one act all nine DO
+# prescribe - "each reference/<section>.md read" - is deliberately not gated:
+# the arm with no skill installed has no such file to open, so a check on it
+# would move this dimension by construction rather than by behaviour, and
+# tools/eval-report.ts already reports it per arm as `reference read n/m`.
+#
+# The needle is `file_path=`, not the report's name. Every prompt in this world
+# names the file the report lands in, an agent's opening TodoWrite quotes that
+# name straight back, and a `then` of "AUDIT-COMPLIANCE.md" would match that
+# todo at step 1 and fail an ordering the agent in fact kept. A check nobody
+# can pass penalises both arms equally, which this repository has paid for once
+# already. Keying on the rendered argument matches the Write and the Edit and
+# nothing the agent merely says. Its honest limit: a report written through a
+# shell heredoc renders no `file_path=` at all, and the check then holds
+# vacuously instead of firing.
+trajectory:
+  # from-skill(sequence): 5. **Run the verification commands** listed for each
+  # question - step 9 of the same protocol is **Produce the report**.
+  #
+  # data/classification.json is what keeps this domain off a page of zeroes: it
+  # is a real information-asset register and it is not where a GDPR checklist
+  # looks. Read after the verdict, it changes nothing that was already written.
+  - before: { first: "data/classification.json", then: "file_path=AUDIT-COMPLIANCE.md" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "ADR 0002 is credited as a weighed data-protection decision" }
+    - { dimension: outcome, text: "The free-text description is treated as personal data" }
+    - { dimension: tooling, text: "The register and the redaction list are checked against each other" }
+  threshold: pass_all

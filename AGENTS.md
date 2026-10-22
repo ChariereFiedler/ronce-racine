@@ -22,6 +22,8 @@ Canonical source of **generic Claude Code config** (project-agnostic), installab
 ```bash
 npx ronce-racine plan    <repo>          # detects the stack, PROPOSES (read-only)
 npx ronce-racine install <repo> [--all]  # copies relevant rules/skills/hooks/agents + lockfile
+npx ronce-racine install <repo> --yes    # no selector: the pre-checked set (CI, non-TTY)
+npx ronce-racine install <repo> --pick <kind:name...>  # exactly these tokens, nothing else
 npx ronce-racine check   <repo> [--strict]  # drift vs canonical (soft, or blocking)
 npx ronce-racine detach  <repo> <kind:name> # excludes a customized artifact from control
 npx ronce-racine uninstall <repo> [--dry-run] # removes what the lockfile records, and only that
@@ -48,6 +50,7 @@ The `tools/skills.ts hooks` harness checks these two fields on every `npm test`.
 | `session-inject.ts` | `SessionStart` | `compact` |
 | `session-precompact.ts` | `PreCompact` | none |
 | `worktree-env-setup.ts` | `SessionStart` | none |
+| `readme-freshness.ts` | `PreToolUse` | `Bash` |
 
 The `install.ts` installer merges the hook wirings for the selected hooks into `<repo>/.claude/settings.json` (deep-merge by event + matcher, idempotent, writes a `settings.json.bak` backup, preserves unrelated settings).
 
@@ -57,22 +60,22 @@ The `install.ts` installer merges the hook wirings for the selected hooks into `
 2. The skill must be generic, follow the standard sections, and have a `name` + `description` frontmatter ("Use when …", third person, **describes WHEN not HOW**) + `version` (semver) + `metadata.last-reviewed` + `category`.
 3. Body < 500 lines; beyond that → progressive disclosure (`reference/*.md`). Runnable detection → `scripts/*.ts` (never `.sh`). Output template → `templates/`.
 4. Bump `version` + `last-reviewed`, add a line to the `## Changelog`.
-5. `npm test` green, then update the table in `README.md`.
+5. `npm test` green, then update `docs/catalog.md` (the README has no per-skill table).
 
 ## Modifying / adding a rule
 
 1. Read `docs/writing-a-rule.md` + `docs/templates/rule.template.md`.
 2. Frontmatter: `paths` (globs; omit = always-on) + `version` + `metadata.last-reviewed`. Body: imperative, short bullets, no magic numbers.
-3. `npm test` green + `README.md` table.
+3. `npm test` green + the rules table in `README.md`.
 
 ## Harness (`npm test`)
 
-Five axes, all must pass:
-- `tools/skills.ts validate` - frontmatter, version, sections, `reference/`/`scripts/`/`templates/` links, depth ≤ 1.
-- `tools/skills.ts triggers` - routing discriminability (each quoted trigger classifies its skill in the top-3).
-- `tools/skills.ts rules` - versioning of the rules.
-- `tools/skills.ts scripts` - existence and non-emptiness of each `.ts` in `scripts/`.
-- `tools/skills.ts hooks` - presence and validity of `@version` (semver) and `@last-reviewed` (ISO date) in each `hooks/*.ts`.
+The exact chain is `package.json`'s `test` script - read it there rather than from a list that goes stale. It runs the `tools/skills.ts` subcommands (`validate`, `triggers`, `routing`, `rules`, `scripts`, `hooks`, `agents`, `templates`, `docs`), then `tools/eval-lint.ts`, `tools/portability.ts`, and finally `vitest run`. All must pass. Highlights:
+- `validate` - frontmatter, version, sections, `reference/`/`scripts/`/`templates/` links, depth ≤ 1.
+- `triggers` / `routing` - routing discriminability (each quoted trigger classifies its skill in the top-3; each routing case beats the neighbours it declares).
+- `hooks` - presence and validity of `@version` (semver) and `@last-reviewed` (ISO date) in each `hooks/*.ts`.
+- `docs` - documented claims checked against what the installer actually does.
+- `eval-lint` - a gate whose literal its own prompt hands over.
 
 Useful commands: `npm run skills:list`, `npm run skills:triggers`, `npm run rules:validate`, `npm run typecheck`.
 
@@ -83,7 +86,9 @@ rules/        skills/<name>/SKILL.md (+ reference/ scripts/ templates/)
 hooks/        agents/         scripts/
 install.ts     (user-facing CLI, at the root: commands + argument parsing)
 src/           (the CLI split up: paths, lock, catalog, detect, settings, selector, uninstall)
-tools/         (internal harnesses: skills.ts, tests.ts, mutations.ts, eval.ts, all via tsx)
+tools/         (internal harnesses, all via tsx: skills.ts, mutations.ts, portability.ts,
+               build.ts, and the eval family: eval.ts, eval-tasks.ts, eval-grade.ts,
+               eval-judge.ts, eval-report.ts, eval-lint.ts)
 docs/         templates/      README.md  AGENTS.md
 ```
 

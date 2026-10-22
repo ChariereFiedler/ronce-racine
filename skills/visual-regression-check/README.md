@@ -44,6 +44,23 @@ Full step-by-step protocol → [`SKILL.md`](SKILL.md).
 4. Empty state (filter with no results) rendered a bare `undefined` where the count should be - fixed.
 5. Verdict traced: 2 surfaces × 2 viewports × 2 states, anomalies fixed, loading state flagged "not reached".
 
+## Not evaluated, and why
+
+This skill carries no `eval.yaml`. It drives a real browser across two viewports
+and inspects what it sees, and the eval container has no browser. A manifest
+here could only grade a *plan* for looking - which surfaces, which viewports,
+which states - and a plan is exactly what the skill exists to stop people
+substituting for looking.
+
+The runner discovers the manifests that exist, so an absent one means the skill
+is skipped rather than reported. That is the point: deleting the manifest beats
+keeping one that cannot fail, because coverage reads as evidence and a green
+check that means nothing is worse than an acknowledged gap.
+
+What would change this: a container with a browser, or a harness that grades a
+captured image. Neither exists today.
+See [evaluating-skills.md](../../docs/evaluating-skills.md).
+
 ## Related artifacts
 
 - [`validating-features-end-to-end`](../validating-features-end-to-end/) - for the functional side (does it *work*).

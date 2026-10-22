@@ -1,0 +1,133 @@
+# WHAT IS KNOWN, AND WHAT IS NOT
+#
+# Never run. This skill's three previous measurements - all 1.00 against 1.00,
+# all on the old design-system fixture - are recorded in full in
+# evals/core.eval.yaml next door, together with the commitment not to make a
+# fifth adjustment if the null result repeats. Read that block before reading
+# any figure from this one. `probed` until a six-pair run is recorded here.
+#
+# THE SCENARIO
+#
+# DataTable's `empty` prop is the sentence an empty ledger shows. Renaming it
+# is harder than renaming StatusPill's, for three reasons that have nothing to
+# do with the number of call sites:
+#
+#   1. `empty` is not a distinctive token in this repository. `grep -rn empty
+#      src/` returns EmptyState.js, the `.empty` and `.empty__hint` CSS rules,
+#      the derived `<testId>-empty` testids in DataTable, the panels' own
+#      testids, and the six prop passes - so the sweep has to separate a PROP
+#      from a class name, a component name and a testid suffix.
+#   2. Two of the eight DataTable call sites are src/panels/berth-occupancy.js
+#      and src/panels/outstanding-charges.js, reached through the kit barrel.
+#   3. src/panels/vessel-history.js calls EmptyState DIRECTLY, not DataTable.
+#      It is a hit in the sweep and it is NOT AFFECTED - "a movement list is
+#      not a ledger", which docs/changes/2026-06-30-data-table-empty-state.md
+#      already recorded once. A rename applied there breaks nothing and proves
+#      the sweep was run on a word rather than on a contract.
+#
+# Nothing fails if a call site is missed. DataTable takes an object literal, so
+# an unrenamed `empty:` is simply dropped and the ledger falls back to
+# "Nothing to show". test/pages.test.js renders every route and every panel and
+# asserts only that something rendered; test/components.test.js checks the
+# derived `t-empty` testid, which the rename does not touch. The suite stays
+# green while two panels lose their sentence.
+#
+# HOW A CAREFUL UNAIDED AGENT PLAUSIBLY FAILS
+#
+# The obvious sweep is `grep -rn "empty" src/`, and it returns roughly twenty
+# lines across nine files, most of which must not change. Faced with that, the
+# cheap move is to narrow to the component's own consumers - the six screens
+# that import DataTable from `../components/DataTable.js`. That set is exactly
+# right and exactly incomplete: the two panels import `DataTable` from
+# `../components/kit.js`, so an import-path sweep misses them the same way a
+# name grep missed StateChip. The opposite failure is as easy: an agent that
+# renames every `empty` it sees also renames vessel-history's direct EmptyState
+# call and the derived testids, which the exit condition's "or justified (not
+# affected)" is there to prevent.
+#
+# The pattern library's record is the third half-answer: data-table.md states
+# the contract in a table whose row for this prop is still `| empty |`, and a
+# rename that leaves it is a rename the next person cannot see.
+#
+# SATURATION RISK, STATED IN ADVANCE
+#
+# docs/pattern-library/data-table.md lists all eight call sites, panels
+# included, marked "through the kit". An agent that reads the record before
+# sweeping is handed the two hard files. That is the world's fair path and
+# removing it would make the world unfair rather than harder; the measurement
+# expected here is whether the agent consults the record at all.
+fixture: surface
+tier: probed
+prompt: >
+  DataTable's `empty` prop reads like a boolean and it is a sentence. Rename it
+  to `emptyLabel` everywhere the console passes it. Write the change record to
+  docs/changes/2026-09-03-data-table-empty-label.md, following the template in
+  that directory.
+preconditions:
+  - file_exists: "docs/changes/2026-09-03-data-table-empty-label.md"
+  # The six screens. Every arm reaches these; scoring them would inflate the
+  # verdict. Pristine: 6 lines, one per ledger screen.
+  - grep_zero: { pattern: "\\bempty:", in: "src/pages/" }
+gates:
+  # THE MEASUREMENT. Pristine: 2 lines - src/panels/berth-occupancy.js:24 and
+  # src/panels/outstanding-charges.js:23 - both reached through the kit barrel.
+  # Regex checked in node on both forms:
+  #   /\bempty:/.test("empty: 'Every berth is free',")      -> true
+  #   /\bempty:/.test("emptyLabel: 'Every berth is free',")  -> false
+  # and on the lines that must NOT be dragged in:
+  #   /\bempty:/.test("testId + '-empty'")                   -> false
+  #   /\bempty:/.test("EmptyState({ label: 'No movements'")  -> false
+  # from-exit: Each call site migrated or justified (not affected); grep of the old name = **0 occurrences** among consumers
+  - grep_zero: { pattern: "\\bempty:", in: "src/panels/" }
+  # Renaming by deletion also empties the grep. The sentence has to survive.
+  # Pristine 0 under src/panels/; floor of 2 for the two call sites there.
+  # from-exit: Each call site migrated or justified (not affected); grep of the old name = **0 occurrences** among consumers
+  - grep_min: { pattern: "emptyLabel", in: "src/panels/", count: "2" }
+  # The contract as it is published. Pristine: 1 line,
+  # docs/pattern-library/data-table.md:17, the `| empty |` row of the props
+  # table. Checked in node: /\| empty \|/ matches that row and does not match
+  # `| emptyLabel |`, `| src/panels/vessel-history.js |` or the Exemptions
+  # table. This is the silent-contract half - a prop the component no longer
+  # declares, still documented as if it did.
+  # from-exit: Silent-contract check done (every prop passed is declared in the component's interface)
+  - grep_zero: { pattern: "\\| empty \\|", in: "docs/pattern-library/data-table.md" }
+  # The "not affected" row. src/panels/vessel-history.js is a hit in any sweep
+  # of this word and must come out unrenamed WITH ITS REASON on the same row -
+  # the change template says so in as many words. Pristine 0 in docs/changes/
+  # for `vessel-history` combined with a status word... the record of
+  # 2026-06-30 already names that file, so the gate is scoped to THIS record
+  # only, where the pristine count is 0 because the file does not exist.
+  # from-exit: Deliverable: list of call sites + status (migrated / removed / not affected, justified)
+  - grep_min: { pattern: "vessel-history", in: "docs/changes/2026-09-03-data-table-empty-label.md", count: "1" }
+# WHAT THE AGENT DID, graded from the trajectory in the post-pass. Never
+# replayed.
+#
+# ONE CHECK, and the absence of the second one is deliberate. The barrel check
+# that evals/core.eval.yaml carries does not transfer to this scenario: kit.js
+# re-exports DataTable under its OWN name, so `grep -rn DataTable src/` already
+# returns the two panels, and opening the barrel is not what separates the
+# arms here. What separates them is whether the sweep was run on the NAME or
+# on the import path - and no substring over an action line can tell those two
+# greps apart. That half stays with the gates and the judge.
+trajectory:
+  # from-skill(tooling): `scripts/sweep-call-sites.ts <ComponentName> [rootDir]`
+  # - automatic sweep (casings, dynamic usages, spreads, suspicious wrappers
+  # highlighted, stories/mocks), output = markdown checklist
+  #
+  # Checklist step 1 names the script as the sweep itself, and the script is
+  # staged into the with-arm only. On this scenario it also answers the
+  # scenario's own difficulty: `empty` is not a distinctive token here, and the
+  # script sweeps a COMPONENT rather than a word - which is exactly the
+  # distinction the derived testids and the `.empty` CSS rules exist to blur.
+  # Counts the invocation, not the reading of the output.
+  - tool_used: { name: "Bash", arg: "sweep-call-sites" }
+judge:
+  criteria:
+    - { dimension: outcome, text: "The two panels are reached through the kit barrel, and that is said" }
+    # "or justified (not affected)" - an absence produced on purpose, with its
+    # reason, on a file that IS a hit in any sweep of this word.
+    - { dimension: restraint, text: "The direct EmptyState caller is left alone with a reason" }
+    # Trap table: "A global sed on `variant` will be faster" - a generic name
+    # touches unrelated components. The derived testids are that, exactly.
+    - { dimension: trap, text: "The derived testids are excluded from the rename" }
+  threshold: pass_all
