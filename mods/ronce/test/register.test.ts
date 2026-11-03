@@ -11,7 +11,13 @@ const FAILING_SESSION_ID: SessionIdAnswer = () => {
 }
 
 /** The engine beneath the plugin: session, environment, clock, the given files, and a policy file wherever else it is looked for. */
-function world(on: On, policy: object, sessionId: SessionIdAnswer = SESSION_ID, files: Record<string, string> = {}): void {
+function world(
+  on: On,
+  policy: object,
+  sessionId: SessionIdAnswer = SESSION_ID,
+  files: Record<string, string> = {},
+  reads: string[] = [],
+): void {
   mock.clock(on)
   mock.env(on, { HOME: '/home/test' })
   on('session.cwd', () => ({ value: CWD }))
@@ -20,6 +26,7 @@ function world(on: On, policy: object, sessionId: SessionIdAnswer = SESSION_ID, 
   on('fs.exists', () => ({ value: true }))
   on('fs.read', (_$, e) => {
     const path = (e as { path: string }).path
+    reads.push(path)
     return { value: files[path] ?? JSON.stringify({ version: 1, telemetry: null, ...policy }) }
   })
 }
@@ -225,8 +232,12 @@ const BODY_FILE = '/tmp/s/issue.md'
 const CREATE = `gh issue create --title "Timeout" --body-file ${BODY_FILE}`
 
 /** A project that configures tickets, with the body file the next creation points to. */
-function ticketWorld(on: On, body: string, policy: object = { ticket: TICKET }): string[] {
-  world(on, policy, SESSION_ID, { [BODY_FILE]: body })
+function ticketWorld(on: On, body: string, policy: object = { ticket: TICKET }, reads: string[] = []): string[] {
+  world(on, policy, SESSION_ID, { [BODY_FILE]: body }, reads)
+  on('fs.stat', (_$, e) => {
+    const path = (e as { path: string }).path
+    return { value: { kind: path === BODY_FILE ? 'file' : 'other', size: body.length, mtimeMs: 0, isLink: false } }
+  })
   const ran: string[] = []
   on('tool.call', { tool: 'Bash' }, (_$, e) => {
     ran.push(e.command)
@@ -253,6 +264,18 @@ test('an issue with every heading goes through once a search preceded it', async
   const out = await $.tool.call({ tool: 'Bash', command: CREATE })
   expect(out.deny).toBeUndefined()
   expect(ran).toContain(CREATE)
+})
+
+test('a body path that is not a regular file is never read, and the creation only warns', async ($, on) => {
+  const read: string[] = []
+  const ran = ticketWorld(on, '## Problem', { ticket: TICKET }, read)
+  await $.tool.call({ tool: 'Bash', command: 'gh issue list -S timeout' })
+  const command = 'gh issue create --title x --body-file /tmp/s/fifo'
+  const out = await $.tool.call({ tool: 'Bash', command })
+  expect(out.deny).toBeUndefined()
+  expect(ran).toContain(command)
+  expect(read).not.toContain('/tmp/s/fifo')
+  expect((out.context ?? []).join(' ')).toContain('Skill write-github-issue')
 })
 
 test('without a ticket configuration, an issue goes through with a reminder of the skill', async ($, on) => {

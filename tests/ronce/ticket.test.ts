@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import type { RuleContext, TicketConfig } from '../../mods/ronce/types'
 import { runBuiltin } from '../../mods/ronce/src/policy/builtins.ts'
 import { DEFAULT_RULES } from '../../mods/ronce/src/policy/defaults.ts'
-import { decide, evaluate } from '../../mods/ronce/src/policy/evaluate.ts'
-import { missingHeadings, readPayload } from '../../mods/ronce/src/policy/ticket.ts'
+import { decide, evaluate, MAX_MATCH_CHARS } from '../../mods/ronce/src/policy/evaluate.ts'
+import { missingHeadings, readField, readPayload } from '../../mods/ronce/src/policy/ticket.ts'
 
 const FACTS = { cwd: '/repo', env: {}, isInteractive: true }
 const TICKET: TicketConfig = {
@@ -35,9 +35,13 @@ describe('readPayload', () => {
     expect(readPayload('{"title":"x","description":"## Problem","labels":"bug,api"}')).toEqual({ body: '## Problem', labels: ['bug', 'api'] })
   })
 
-  it('reads form fields, URL-encoded or not', () => {
+  it('reads URL-encoded form fields', () => {
     expect(readPayload('title=x&description=%23%23+Problem%0Ax&labels=bug')).toEqual({ body: '## Problem\nx', labels: ['bug'] })
-    expect(readPayload('description=## Problem 100%')).toEqual({ body: '## Problem 100%', labels: [] })
+  })
+
+  it('reads a raw field (curl --data-urlencode) without decoding it', () => {
+    expect(readField('description=## Problem + 100%25')).toEqual({ body: '## Problem + 100%25', labels: [] })
+    expect(readField('labels=bug,api')).toEqual({ body: '', labels: ['bug', 'api'] })
   })
 })
 
@@ -55,12 +59,44 @@ describe('ticket-needs-skill', () => {
     expect(check({ command: `gh issue create --title x --body "${FULL_BODY}"` }).matched).toBe(false)
   })
 
-  it('reads the body from the file the host attached, and refuses a file it could not read', () => {
+  it('reads the body from the file the host attached', () => {
     const command = 'gh issue create --title x --body-file /tmp/s/issue.md'
     expect(check({ command, files: { '/tmp/s/issue.md': FULL_BODY } }).matched).toBe(false)
-    expect(check({ command, files: { '/tmp/s/issue.md': '## Problem' } }).matched).toBe(true)
-    const unread = check({ command })
-    expect(unread.matched && unread.detail).toContain('/tmp/s/issue.md')
+    expect(check({ command, files: { '/tmp/s/issue.md': '## Problem' } })).toMatchObject({ matched: true, action: undefined })
+  })
+
+  it('only warns when the body cannot be known before the command runs', () => {
+    for (const command of [
+      'gh issue create --title x --body-file /tmp/s/missing.md',
+      'gh issue create --title x --body "$BODY"',
+      'gh issue create --title x --web',
+      "cat > /tmp/b.md <<'EOF'\n## Problem\nEOF\ngh issue create -t x -F /tmp/b.md",
+    ]) {
+      const found = check({ command })
+      expect(found, command).toMatchObject({ matched: true, action: 'warn' })
+      expect(found.matched && found.detail, command).toContain('Skill write-github-issue')
+    }
+  })
+
+  it('only warns on a command too long to have been read whole', () => {
+    const command = `gh issue create --title x --body "$(cat <<'EOF'\n${FULL_BODY}\n${'y'.repeat(30_000)}\nEOF\n)"`
+    const cut = { tool: 'Bash', command: command.slice(0, MAX_MATCH_CHARS) }
+    expect(runBuiltin('ticket-needs-skill', cut, FACTS, SEARCHED)).toMatchObject({ matched: true, action: 'warn' })
+  })
+
+  it('still refuses a missing search or label when the body is unknown', () => {
+    const found = check({ command: 'gh issue create --title x --body "$BODY"' }, { ticket: TICKET, issuesSearched: false })
+    expect(found).toMatchObject({ matched: true, action: undefined })
+  })
+
+  it('counts a search made earlier in the same command', () => {
+    const command = `gh issue list --search timeout && gh issue create --title x --body "${FULL_BODY}"`
+    expect(check({ command }, { ticket: TICKET, issuesSearched: false }).matched).toBe(false)
+  })
+
+  it('checks every creation of the command', () => {
+    const command = `gh issue create -t a --body "${FULL_BODY}" && gh issue create -t b --body "## Problem"`
+    expect(check({ command })).toMatchObject({ matched: true, action: undefined })
   })
 
   it('refuses a creation without a body', () => {
@@ -87,6 +123,7 @@ describe('ticket-needs-skill', () => {
     const unlabelled = check({ command }, { ticket, issuesSearched: true })
     expect(unlabelled.matched && unlabelled.detail).toContain('bug | enhancement')
     expect(check({ command: `${command} --label enhancement` }, { ticket, issuesSearched: true }).matched).toBe(false)
+    expect(check({ command: `${command} --label Bug` }, { ticket, issuesSearched: true }).matched).toBe(false)
   })
 
   it('without a ticket configuration, only reminds: a warning, never a refusal', () => {
