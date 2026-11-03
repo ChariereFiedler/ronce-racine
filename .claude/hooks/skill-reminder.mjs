@@ -6,18 +6,26 @@
  * quoted triggers + the words of the name against the prompt.
  * NEVER blocks (exit 0 no matter what); emits nothing if there is no match.
  *
+ * A prompt about a ticket names first the project's ticket skill, when its
+ * `.claude/ronce.json` declares one (`ticket.skill`), then bug-ticket-root-cause:
+ * the project's form wins over the generic one.
+ *
  * settings.json wiring (see hooks/README.md) - exec form, no shell involved:
  *   "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "node",
  *     "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/skill-reminder.mjs"] }] }]
  *
- * @version 1.1.0
- * @last-reviewed 2026-08-24
+ * @version 1.2.0
+ * @last-reviewed 2026-11-03
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { rankSkills } from "./skill-scoring.mjs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 const MAX_SUGGESTIONS = 3;
+/** A prompt about writing a ticket, in French or English. */
+const TICKET_PROMPT = /\b(tickets?|issues?|bug reports?|rapport de bug)\b/i;
+const GENERIC_TICKET_SKILL = "bug-ticket-root-cause";
+const POLICY_FILE = ".claude/ronce.json";
 function readStdin() {
     try {
         return readFileSync(0, "utf8");
@@ -54,6 +62,28 @@ function loadSkills(dir) {
     }
     return out;
 }
+/** The project's ticket skill (`ticket.skill` of its policy file); undefined when it declares none. */
+function ticketSkill() {
+    const roots = [process.env.CLAUDE_PROJECT_DIR, process.cwd()].filter((p) => Boolean(p));
+    const policy = roots.map((root) => join(root, POLICY_FILE)).find((p) => existsSync(p));
+    if (!policy)
+        return undefined;
+    try {
+        const skill = JSON.parse(readFileSync(policy, "utf8"))?.ticket?.skill;
+        return typeof skill === "string" && skill.trim() ? skill : undefined;
+    }
+    catch {
+        return undefined;
+    }
+}
+/** On a ticket prompt: the project's ticket skill first, bug-ticket-root-cause second, then the rest. */
+function withTicketSkills(names, prompt, available) {
+    const skill = TICKET_PROMPT.test(prompt) ? ticketSkill() : undefined;
+    if (!skill)
+        return names;
+    const generic = available.includes(GENERIC_TICKET_SKILL) ? [GENERIC_TICKET_SKILL] : [];
+    return [...new Set([skill, ...generic, ...names])].slice(0, MAX_SUGGESTIONS);
+}
 function main() {
     const dir = skillsDir();
     if (!dir)
@@ -67,12 +97,14 @@ function main() {
     }
     if (!prompt)
         return;
-    const scored = rankSkills(prompt, loadSkills(dir), MAX_SUGGESTIONS);
+    const skills = loadSkills(dir);
+    const scored = rankSkills(prompt, skills, MAX_SUGGESTIONS).map((s) => s.dir);
+    const names = withTicketSkills(scored, prompt, skills.map((s) => s.dir));
     // Naming nothing is a legitimate answer: a hook that always names three skills
     // spends its credibility on the prompts that call for none.
-    if (!scored.length)
+    if (!names.length)
         return;
-    const list = scored.map((s) => s.dir).join(", ");
+    const list = names.join(", ");
     console.log(`Skills potentially relevant to this request: ${list}. Invoke them via the Skill tool if they apply.`);
 }
 try {

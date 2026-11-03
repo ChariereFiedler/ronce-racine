@@ -2,7 +2,7 @@
   "source": {
     "package": "ronce-racine",
     "version": "0.9.0",
-    "contentHash": "sha256-2e7027f4e8940d3aeb44181116a7d7201c532adf18e68c52eeb4b616603fa822"
+    "contentHash": "sha256-d0aadb6e4e1601038bbcae82151000461b37c61a16f2406d7d47dcda05987344"
   },
   "installed": [
     "agent:code-reviewer.md",
