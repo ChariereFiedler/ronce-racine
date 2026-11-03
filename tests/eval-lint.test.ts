@@ -490,7 +490,10 @@ test("only the prompt is searched for commit ids, never the comments", () => {
   // prompt names the commit by subject. Reading comments would make the fix
   // impossible to write.
   const repo = pristine("commit-ref-comments");
-  execSync("git init -q && git commit -q --allow-empty -m 'feat: x'", { cwd: repo, stdio: "ignore" });
+  execSync("git init -q && git -c user.name=ronce-test -c user.email=ronce-test@example.invalid commit -q --allow-empty -m 'feat: x'", {
+    cwd: repo,
+    stdio: "ignore",
+  });
   const manifest = `# The subject is 8f22028 refactor(payroll): pull it out\nprompt: >\n  The commit "refactor(payroll): pull it out" is the change under review.\n`;
   assert(deadCommitRefs(manifest, repo).length === 0, "a commit id in a comment is documentation, not an instruction");
 });
