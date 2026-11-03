@@ -1,9 +1,9 @@
 import type { Action, RawCall, Rule, RuleContext, SessionFacts, Verdict } from '../../types'
 import { EMPTY_CONTEXT, runBuiltin } from './builtins.ts'
+import { MAX_MATCH_CHARS } from './limits.ts'
 import { normalizeCommand } from './normalize.ts'
 
-/** Commands are matched on their first characters only, so a 1 MB heredoc costs no more than a long command. */
-export const MAX_MATCH_CHARS = 20_000
+export { MAX_MATCH_CHARS }
 
 const compiled = new Map<string, RegExp>()
 

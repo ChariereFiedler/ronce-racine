@@ -16,6 +16,8 @@ const FULL_BODY = [
 ].join('\n')
 const check = (call: { command: string; files?: Record<string, string> }, context: RuleContext = SEARCHED) =>
   runBuiltin('ticket-needs-skill', { tool: 'Bash', ...call }, FACTS, context)
+/** A match that keeps the rule's own action (deny), not one softened to a warning. */
+const isRefusal = (found: ReturnType<typeof check>): boolean => found.matched && found.action === undefined
 
 describe('missingHeadings', () => {
   it('wants each heading as a whole line, ignoring case and trailing spaces', () => {
@@ -62,7 +64,7 @@ describe('ticket-needs-skill', () => {
   it('reads the body from the file the host attached', () => {
     const command = 'gh issue create --title x --body-file /tmp/s/issue.md'
     expect(check({ command, files: { '/tmp/s/issue.md': FULL_BODY } }).matched).toBe(false)
-    expect(check({ command, files: { '/tmp/s/issue.md': '## Problem' } })).toMatchObject({ matched: true, action: undefined })
+    expect(isRefusal(check({ command, files: { '/tmp/s/issue.md': '## Problem' } }))).toBe(true)
   })
 
   it('only warns when the body cannot be known before the command runs', () => {
@@ -86,7 +88,7 @@ describe('ticket-needs-skill', () => {
 
   it('still refuses a missing search or label when the body is unknown', () => {
     const found = check({ command: 'gh issue create --title x --body "$BODY"' }, { ticket: TICKET, issuesSearched: false })
-    expect(found).toMatchObject({ matched: true, action: undefined })
+    expect(isRefusal(found)).toBe(true)
   })
 
   it('counts a search made earlier in the same command', () => {
@@ -96,7 +98,7 @@ describe('ticket-needs-skill', () => {
 
   it('checks every creation of the command', () => {
     const command = `gh issue create -t a --body "${FULL_BODY}" && gh issue create -t b --body "## Problem"`
-    expect(check({ command })).toMatchObject({ matched: true, action: undefined })
+    expect(isRefusal(check({ command }))).toBe(true)
   })
 
   it('refuses a creation without a body', () => {

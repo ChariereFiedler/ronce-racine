@@ -33,6 +33,7 @@ import { formatHits, mergeHits, recordHits, sampleOf } from '../src/policy/hits.
 import { loadPolicy } from '../src/policy/load.ts'
 import { policyCandidates } from '../src/policy/locate.ts'
 import { bodyFiles, isIssueSearch } from '../src/policy/issue-command.ts'
+import { isReadableBody } from '../src/policy/ticket.ts'
 import { allowedRuleIds, normalizeCommand } from '../src/policy/normalize.ts'
 import { baseName, expandHome, parentDir, resolvePath } from '../src/policy/paths.ts'
 import { toRawCall } from '../src/policy/raw-call.ts'
@@ -429,19 +430,28 @@ async function agentBudgetDenial($: EngineInterface, policy: LoadedPolicy, facts
   return denial ? `ronce/${AGENT_BUDGET_RULE} : ${denial}` : null
 }
 
-/** The policy's own hint first, then its ticket skill; otherwise the catalog skills whose triggers the prompt holds. */
+/** The policy's own hint alone; otherwise its ticket skill, then the catalog skills whose triggers the prompt holds. */
 async function skillReminder($: EngineInterface, { policy, facts }: Session, prompt: string): Promise<string | null> {
   const hint = hintFor(policy.features.skillHints, prompt)
   if (hint) return hintText(hint)
   const ticket = ticketHint(policy.features.ticket, prompt)
-  if (ticket) return ticket
   const catalog = policy.features.skillCatalog
-  if (!catalog) return null
-  const names = catalogMatches(await ensureCatalog($, catalog.sources, facts), prompt, catalog.max)
-  return names.length > 0 ? catalogText(names) : null
+  const skills = catalog
+    ? await ensureCatalog($, catalog.sources, facts).catch((error: unknown) => {
+        // The catalog is a suggestion: when it cannot be read, the ticket reminder still goes.
+        $.ui.log(`ronce : catalogue de skills illisible (${String(error)})`, { to: 'debug' })
+        return []
+      })
+    : []
+  const names = catalog ? catalogMatches(skills, prompt, catalog.max) : []
+  const texts = [ticket, names.length > 0 ? catalogText(names) : null].filter((text): text is string => text !== null)
+  return texts.length > 0 ? texts.join('\n') : null
 }
 
-/** The call with the text of the files an issue body is read from; one that cannot be read is left out, and so refused. */
+/**
+ * The call with the text of the files an issue body is read from. Only a regular file of ticket size is
+ * read (`isReadableBody`); one left out is a doubt for the rule, never a refusal.
+ */
 async function withBodyFiles($: EngineInterface, call: RawCall, facts: SessionFacts): Promise<RawCall> {
   const paths = call.command === undefined ? [] : bodyFiles(call.command)
   if (call.command === undefined || paths.length === 0) return call
@@ -450,10 +460,11 @@ async function withBodyFiles($: EngineInterface, call: RawCall, facts: SessionFa
   const base = cdTarget ? resolvePath(cdTarget, facts.cwd, home) : facts.cwd
   const files: Record<string, string> = {}
   for (const path of paths) {
+    const absolute = resolvePath(path, base, home)
     try {
-      files[path] = await $.fs.read(resolvePath(path, base, home))
+      if (isReadableBody(absolute, await $.fs.stat(absolute))) files[path] = await $.fs.read(absolute)
     } catch (error) {
-      $.ui.log(`ronce : corps d'issue ${path} illisible (${String(error)})`, { to: 'debug' })
+      $.ui.log(`ronce : corps d'issue ${path} non lu (${String(error)})`, { to: 'debug' })
     }
   }
   return { ...call, files }
