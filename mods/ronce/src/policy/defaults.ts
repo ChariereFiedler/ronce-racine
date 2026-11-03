@@ -65,6 +65,8 @@ export const DEFAULT_FEATURES: Features = {
     busyPattern: 'cargo (build|test|nextest|clippy|check)',
     maxWakes: 2,
   },
+  // A ticket form is the project's own: its skill and its headings.
+  ticket: null,
 }
 
 /** Rules every project gets. A project policy may disable, replace or switch the mode of each. */
@@ -150,6 +152,22 @@ export const DEFAULT_RULES: readonly Rule[] = [
     mode: 'shadow',
     message: 'Prompt de sous-agent de plus de 8 000 caractères : écrire le contexte lourd dans des fichiers et passer leurs chemins.',
     examples: { match: [{ prompt: 'x'.repeat(AGENT_PROMPT_LIMIT + 1) }], pass: [{ prompt: 'Explore le module X.' }] },
+  },
+  {
+    // Refuses only where the project configures its form (`ticket`); elsewhere it reminds, after the call.
+    id: 'ticket-needs-skill',
+    tool: 'Bash',
+    builtin: 'ticket-needs-skill',
+    action: 'deny',
+    mode: 'enforce',
+    message: "Création d'issue : écrire le corps avec le skill de rédaction de tickets du projet",
+    examples: {
+      match: [{ command: 'gh issue create --title "Timeout" --body "## Problem\nslow"' }],
+      pass: [
+        { command: 'gh issue create --title "Timeout" --body "## Problem\nslow\n## Acceptance criteria\n- [ ] fast"' },
+        { command: 'gh issue list --search "timeout"' },
+      ],
+    },
   },
   {
     id: 'commit-mentions-ai',

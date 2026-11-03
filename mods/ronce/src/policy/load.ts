@@ -1,4 +1,6 @@
-import type { CheckSpec, Example, Features, LoadedPolicy, Mode, PolicyFile, Rule, SessionFacts, ShapingConfig, ToolName } from '../../types'
+import type {
+  CheckSpec, Example, Features, LoadedPolicy, Mode, PolicyFile, Rule, RuleContext, SessionFacts, ShapingConfig, TicketConfig, ToolName,
+} from '../../types'
 import { BUILTIN_NAMES } from './builtins.ts'
 import { DEFAULT_FEATURES, DEFAULT_SHAPING, DEFAULT_TELEMETRY } from './defaults.ts'
 import { evaluate } from './evaluate.ts'
@@ -12,6 +14,11 @@ const EXAMPLE_PREVIEW_CHARS = 80
 
 /** The session the examples are replayed in: interactive, in /repo, with no variable set. */
 export const EXAMPLE_FACTS: SessionFacts = { cwd: '/repo', env: {}, isInteractive: true }
+/** A project that configures a two-heading ticket form, in a session that already searched its issues. */
+export const EXAMPLE_CONTEXT: RuleContext = {
+  ticket: { skill: 'write-issue', headings: ['## Problem', '## Acceptance criteria'] },
+  issuesSearched: true,
+}
 
 const toolsOf = (rule: Rule): unknown[] => (Array.isArray(rule.tool) ? rule.tool : [rule.tool])
 
@@ -53,7 +60,7 @@ function exampleErrors(rule: Rule): string[] {
   const unconditional: Rule = { ...rule, when: undefined }
   const firstTool = toolsOf(rule)[0] as ToolName
   const matches = (example: Example): boolean =>
-    evaluate([unconditional], { ...example, tool: example.tool ?? firstTool }, EXAMPLE_FACTS).length > 0
+    evaluate([unconditional], { ...example, tool: example.tool ?? firstTool }, EXAMPLE_FACTS, EXAMPLE_CONTEXT).length > 0
   const preview = (example: Example): string => JSON.stringify(example).slice(0, EXAMPLE_PREVIEW_CHARS)
   return [
     ...rule.examples.match.filter(e => !matches(e)).map(e => `règle ${rule.id} : l'exemple ${preview(e)} devrait matcher`),
@@ -106,6 +113,26 @@ const compiles = (pattern: string): boolean => {
   }
 }
 
+const isText = (value: unknown): value is string => typeof value === 'string' && value.trim() !== ''
+const isTextList = (value: unknown): value is string[] => Array.isArray(value) && value.length > 0 && value.every(isText)
+
+function isTicketConfig(value: unknown): value is TicketConfig {
+  const ticket = value as Partial<TicketConfig> | null
+  return (
+    typeof ticket === 'object' && ticket !== null && isText(ticket.skill) &&
+    Array.isArray(ticket.headings) && ticket.headings.length > 0 && ticket.headings.every(entry => isText(entry) || isTextList(entry)) &&
+    (ticket.labels === undefined || isTextList(ticket.labels)) &&
+    (ticket.requireSearch === undefined || typeof ticket.requireSearch === 'boolean')
+  )
+}
+
+/** The project's ticket form; a malformed one is dropped, since a wrong form would refuse good tickets. */
+function ticketOf(file: PolicyFile): { ticket: TicketConfig | null; errors: string[] } {
+  if (file.ticket === undefined || file.ticket === null) return { ticket: null, errors: [] }
+  if (isTicketConfig(file.ticket)) return { ticket: file.ticket, errors: [] }
+  return { ticket: null, errors: ['politique : ticket ignoré, il faut skill (texte) et headings (liste non vide de textes ou de choix)'] }
+}
+
 /** A key left out keeps the default; `null` turns a feature off. */
 function featuresOf(file: PolicyFile): { features: Features; errors: string[] } {
   const errors: string[] = []
@@ -128,8 +155,11 @@ function featuresOf(file: PolicyFile): { features: Features; errors: string[] } 
       errors.push(`politique : checks.${kind} « ${check.id} » a une regex invalide, vérification ignorée`)
       return false
     })
+  const ticket = ticketOf(file)
+  errors.push(...ticket.errors)
   return {
     features: {
+      ticket: ticket.ticket,
       worktree: file.worktree === undefined ? DEFAULT_FEATURES.worktree : file.worktree,
       freshness: file.freshness ?? DEFAULT_FEATURES.freshness,
       agentBudget: file.agentBudget ?? DEFAULT_FEATURES.agentBudget,

@@ -467,7 +467,12 @@ test("a prompt naming a commit the fixture cannot resolve is an error, not a war
   // That is the expensive failure mode: an unrunnable scenario costs a full
   // paired run to discover and looks like a finding when it arrives.
   const repo = pristine("commit-ref");
-  execSync("git init -q && git commit -q --allow-empty -m 'feat: the change'", { cwd: repo, stdio: "ignore" });
+  // The identity is given on the command line: a CI runner has none configured, and `git commit` then refuses
+  // (this test was red on `main` since 2026-10-22 for that reason alone).
+  execSync("git init -q && git -c user.name=ronce-test -c user.email=ronce-test@example.invalid commit -q --allow-empty -m 'feat: the change'", {
+    cwd: repo,
+    stdio: "ignore",
+  });
   const real = execSync("git rev-parse --short HEAD", { cwd: repo, encoding: "utf8" }).trim();
 
   const dead = deadCommitRefs(`prompt: >\n  Commit 8f22028 is the change under review.\n`, repo);
@@ -485,7 +490,10 @@ test("only the prompt is searched for commit ids, never the comments", () => {
   // prompt names the commit by subject. Reading comments would make the fix
   // impossible to write.
   const repo = pristine("commit-ref-comments");
-  execSync("git init -q && git commit -q --allow-empty -m 'feat: x'", { cwd: repo, stdio: "ignore" });
+  execSync("git init -q && git -c user.name=ronce-test -c user.email=ronce-test@example.invalid commit -q --allow-empty -m 'feat: x'", {
+    cwd: repo,
+    stdio: "ignore",
+  });
   const manifest = `# The subject is 8f22028 refactor(payroll): pull it out\nprompt: >\n  The commit "refactor(payroll): pull it out" is the change under review.\n`;
   assert(deadCommitRefs(manifest, repo).length === 0, "a commit id in a comment is documentation, not an instruction");
 });

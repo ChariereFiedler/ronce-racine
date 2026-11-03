@@ -1,7 +1,7 @@
 export type ToolName = 'Bash' | 'Edit' | 'Write' | 'Read' | 'Agent'
 export type Action = 'deny' | 'ask' | 'rewrite' | 'warn'
 export type Mode = 'shadow' | 'enforce'
-export type BuiltinName = 'shell-read' | 'heredoc-create' | 'cd-cwd-noop'
+export type BuiltinName = 'shell-read' | 'heredoc-create' | 'cd-cwd-noop' | 'ticket-needs-skill'
 
 /** A tool call reduced to the fields the rules read. */
 export type RawCall = {
@@ -14,7 +14,25 @@ export type RawCall = {
   prompt?: string
   subagent_type?: string
   model?: string
+  /** Text of the files the command reads its input from, read by the host beforehand, keyed by the path as written. */
+  files?: Record<string, string>
 }
+
+/**
+ * How a project writes its tickets. Each `headings` entry is a heading the body must hold as a
+ * whole line; a list is a choice, one of which is enough.
+ */
+export type TicketConfig = {
+  skill: string
+  headings: (string | string[])[]
+  /** The issue must carry at least one of these labels. */
+  labels?: string[]
+  /** Refuse a creation no issue search preceded in the session; on unless false. */
+  requireSearch?: boolean
+}
+
+/** What a builtin may read beyond the call and the session facts: project settings and session history. */
+export type RuleContext = { ticket: TicketConfig | null; issuesSearched: boolean }
 
 /** A call a rule's examples replay; `tool` defaults to the rule's first tool. */
 export type Example = Omit<RawCall, 'tool'> & { tool?: ToolName }
@@ -149,6 +167,7 @@ export type Features = {
   skillCatalog: SkillCatalogConfig | null
   band: boolean
   checks: ChecksConfig
+  ticket: TicketConfig | null
 }
 
 export type PolicyFile = {
@@ -167,6 +186,7 @@ export type PolicyFile = {
   band?: boolean
   /** A list given here replaces the engine's list of the same kind. */
   checks?: Partial<ChecksConfig>
+  ticket?: TicketConfig | null
 }
 
 export type LoadedPolicy = {
@@ -261,6 +281,8 @@ declare module 'claude-code' {
       wakes: number
       /** The skills of `skillCatalog`; null until read, at the session start or the first prompt. */
       catalog: CatalogSkill[] | null
+      /** An issue search ran in the session: a ticket created after it was checked for duplicates. */
+      issuesSearched: boolean
     }
   }
 }

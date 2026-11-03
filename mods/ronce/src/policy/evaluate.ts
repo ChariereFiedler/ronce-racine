@@ -1,9 +1,9 @@
-import type { RawCall, Rule, SessionFacts, Verdict } from '../../types'
-import { runBuiltin } from './builtins.ts'
+import type { Action, RawCall, Rule, RuleContext, SessionFacts, Verdict } from '../../types'
+import { EMPTY_CONTEXT, runBuiltin } from './builtins.ts'
+import { MAX_MATCH_CHARS } from './limits.ts'
 import { normalizeCommand } from './normalize.ts'
 
-/** Commands are matched on their first characters only, so a 1 MB heredoc costs no more than a long command. */
-export const MAX_MATCH_CHARS = 20_000
+export { MAX_MATCH_CHARS }
 
 const compiled = new Map<string, RegExp>()
 
@@ -28,9 +28,9 @@ function whenHolds(rule: Rule, facts: SessionFacts): boolean {
   )
 }
 
-type Match = { detail?: string; rewrite?: RawCall }
+type Match = { detail?: string; rewrite?: RawCall; action?: Action }
 
-function matchRule(rule: Rule, call: RawCall, normalized: string | undefined, facts: SessionFacts): Match | null {
+function matchRule(rule: Rule, call: RawCall, normalized: string | undefined, facts: SessionFacts, context: RuleContext): Match | null {
   if (!toolsOf(rule).includes(call.tool) || !whenHolds(rule, facts)) return null
   if (rule.command !== undefined) {
     const subject = rule.raw ? call.command : normalized
@@ -44,22 +44,22 @@ function matchRule(rule: Rule, call: RawCall, normalized: string | undefined, fa
   if (rule.model !== undefined && call.model !== rule.model) return null
   if (rule.promptLongerThan !== undefined && (call.prompt?.length ?? 0) <= rule.promptLongerThan) return null
   if (rule.builtin === undefined) return {}
-  const found = runBuiltin(rule.builtin, call, facts)
-  return found.matched ? { detail: found.detail, rewrite: found.rewrite } : null
+  const found = runBuiltin(rule.builtin, call, facts, context)
+  return found.matched ? { detail: found.detail, rewrite: found.rewrite, action: found.action } : null
 }
 
-export function evaluate(rules: readonly Rule[], call: RawCall, facts: SessionFacts): Verdict[] {
+export function evaluate(rules: readonly Rule[], call: RawCall, facts: SessionFacts, context: RuleContext = EMPTY_CONTEXT): Verdict[] {
   const isTooLong = (call.command?.length ?? 0) > MAX_MATCH_CHARS
   const matched: RawCall = isTooLong ? { ...call, command: call.command!.slice(0, MAX_MATCH_CHARS) } : call
   const command = matched.command === undefined ? undefined : normalizeCommand(matched.command)
   const verdicts: Verdict[] = []
   for (const rule of rules) {
-    const found = matchRule(rule, matched, command?.normalized, facts)
+    const found = matchRule(rule, matched, command?.normalized, facts, context)
     if (!found) continue
     const canRewrite = found.rewrite !== undefined && !isTooLong
     verdicts.push({
       ruleId: rule.id,
-      action: rule.action,
+      action: found.action ?? rule.action,
       mode: rule.mode,
       message: found.detail ? `${rule.message} (${found.detail})` : rule.message,
       bypassed: command?.allowed.includes(rule.id) ?? false,

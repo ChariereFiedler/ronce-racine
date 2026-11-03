@@ -15,3 +15,9 @@ export function baseName(path: string): string {
 export function expandHome(path: string, home: string | undefined): string {
   return path.startsWith('~/') && home ? `${home}${path.slice(1)}` : path
 }
+
+/** `path` as seen from the directory `base`: `~` expanded, an absolute path kept. */
+export function resolvePath(path: string, base: string, home: string | undefined): string {
+  const expanded = expandHome(path, home)
+  return expanded.startsWith('/') ? expanded : `${withoutTrailingSlash(base)}/${expanded.replace(/^\.\//, '')}`
+}
