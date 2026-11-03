@@ -11,6 +11,8 @@ import type {
   LoadedPolicy,
   MemoConfig,
   MergeRequestBudget,
+  RawCall,
+  RuleContext,
   SessionFacts,
   SkillCatalogSource,
   ToolEvent,
@@ -23,15 +25,16 @@ import { envValue } from '../src/features/env-file.ts'
 import { freshnessNote } from '../src/features/freshness.ts'
 import { memoText, ticketFrom } from '../src/features/memo.ts'
 import { catalogDir, catalogMatches, catalogText, mergeCatalogs, parseSkill } from '../src/features/skill-catalog.ts'
-import { hintFor, hintText } from '../src/features/skill-hints.ts'
+import { hintFor, hintText, ticketHint } from '../src/features/skill-hints.ts'
 import { linksToCreate } from '../src/features/worktree-env.ts'
 import { DEFAULT_RULES } from '../src/policy/defaults.ts'
 import { decide, evaluate } from '../src/policy/evaluate.ts'
 import { formatHits, mergeHits, recordHits, sampleOf } from '../src/policy/hits.ts'
 import { loadPolicy } from '../src/policy/load.ts'
 import { policyCandidates } from '../src/policy/locate.ts'
-import { allowedRuleIds } from '../src/policy/normalize.ts'
-import { baseName, expandHome, parentDir } from '../src/policy/paths.ts'
+import { bodyFiles, isIssueSearch } from '../src/policy/issue-command.ts'
+import { allowedRuleIds, normalizeCommand } from '../src/policy/normalize.ts'
+import { baseName, expandHome, parentDir, resolvePath } from '../src/policy/paths.ts'
 import { toRawCall } from '../src/policy/raw-call.ts'
 import { fullOutputPath, planShaping } from '../src/shaping/truncate.ts'
 import { appendCapped, batchPath, toJsonl, toolEvent, turnEvent } from '../src/telemetry/event.ts'
@@ -50,6 +53,7 @@ const bandState = atom({ plugin: 'ronce', key: 'band' } as const, null)
 const checkScopeState = atom({ plugin: 'ronce', key: 'checkScope' } as const, null)
 const wakesState = atom({ plugin: 'ronce', key: 'wakes' } as const, 0)
 const catalogState = atom({ plugin: 'ronce', key: 'catalog' } as const, null)
+const issuesSearchedState = atom({ plugin: 'ronce', key: 'issuesSearched' } as const, false)
 
 const HITS_STORE_KEY = 'hits'
 const BAND_REFRESH_MS = 60_000
@@ -425,14 +429,38 @@ async function agentBudgetDenial($: EngineInterface, policy: LoadedPolicy, facts
   return denial ? `ronce/${AGENT_BUDGET_RULE} : ${denial}` : null
 }
 
-/** The policy's own hint first; otherwise the catalog skills whose triggers the prompt holds. */
+/** The policy's own hint first, then its ticket skill; otherwise the catalog skills whose triggers the prompt holds. */
 async function skillReminder($: EngineInterface, { policy, facts }: Session, prompt: string): Promise<string | null> {
   const hint = hintFor(policy.features.skillHints, prompt)
   if (hint) return hintText(hint)
+  const ticket = ticketHint(policy.features.ticket, prompt)
+  if (ticket) return ticket
   const catalog = policy.features.skillCatalog
   if (!catalog) return null
   const names = catalogMatches(await ensureCatalog($, catalog.sources, facts), prompt, catalog.max)
   return names.length > 0 ? catalogText(names) : null
+}
+
+/** The call with the text of the files an issue body is read from; one that cannot be read is left out, and so refused. */
+async function withBodyFiles($: EngineInterface, call: RawCall, facts: SessionFacts): Promise<RawCall> {
+  const paths = call.command === undefined ? [] : bodyFiles(call.command)
+  if (call.command === undefined || paths.length === 0) return call
+  const home = facts.env.HOME
+  const cdTarget = normalizeCommand(call.command).cwdTarget
+  const base = cdTarget ? resolvePath(cdTarget, facts.cwd, home) : facts.cwd
+  const files: Record<string, string> = {}
+  for (const path of paths) {
+    try {
+      files[path] = await $.fs.read(resolvePath(path, base, home))
+    } catch (error) {
+      $.ui.log(`ronce : corps d'issue ${path} illisible (${String(error)})`, { to: 'debug' })
+    }
+  }
+  return { ...call, files }
+}
+
+async function ruleContext($: EngineInterface, policy: LoadedPolicy): Promise<RuleContext> {
+  return { ticket: policy.features.ticket, issuesSearched: await read($, issuesSearchedState) }
 }
 
 /** The session's policy and facts, loaded on first need (a reload of the module keeps them). */
@@ -522,8 +550,8 @@ export const register: Register = on => {
 
   on('tool.call', async ($, e, next) => {
     const { policy, facts } = await ensureSession($)
-    const call = toRawCall(e as unknown as Record<string, unknown>)
-    const verdicts = evaluate(policy.rules, call, facts)
+    const call = await withBodyFiles($, toRawCall(e as unknown as Record<string, unknown>), facts)
+    const verdicts = evaluate(policy.rules, call, facts, await ruleContext($, policy))
     const decision = decide(verdicts)
     if (verdicts.length > 0) await update($, hitsState, stats => recordHits(stats, verdicts, sampleOf(call)))
     const sessionId = await $.session.id()
@@ -560,6 +588,7 @@ export const register: Register = on => {
       ? await shapeBash($, ran, policy, facts.env.HOME, sessionId, toolUseId)
       : { ran }
     await track({ success, denied: ran.deny !== undefined, durationMs, shaping: shaped.shaping })
+    if (success && e.tool === 'Bash' && isIssueSearch(e.command)) await update($, issuesSearchedState, () => true)
     const isFileEdit = success && (e.tool === 'Edit' || e.tool === 'Write') && call.file_path !== undefined
     const checkFindings = isFileEdit ? await runEditChecks($, policy, facts, call.file_path!) : []
     return withWarnings(shaped.ran, [...decision.warns.map(v => `ronce/${v.ruleId} : ${v.message}`), ...checkFindings])
