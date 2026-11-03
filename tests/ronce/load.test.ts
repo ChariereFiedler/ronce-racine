@@ -11,7 +11,7 @@ describe('loadPolicy', () => {
     expect(loaded.rules.map(r => r.id)).toEqual(DEFAULT_RULES.map(r => r.id))
     expect(loaded.rules.filter(r => r.mode === 'enforce').map(r => r.id).sort()).toEqual([
       'cd-cwd-noop', 'commit-mentions-ai', 'destructive-after-semicolon', 'devnull-hides-errors',
-      'heredoc-create', 'shell-read', 'zsh-wordsplit',
+      'heredoc-create', 'shell-read', 'ticket-needs-skill', 'zsh-wordsplit',
     ])
     expect(loaded.rules.find(r => r.id === 'agent-prompt-too-large')?.mode).toBe('shadow')
   })
@@ -115,6 +115,22 @@ describe('loadPolicy', () => {
     expect(features.worktree).toBeNull()
     expect(features.memo).toBeNull()
     expect(features.band).toBe(false)
+  })
+
+  it('has no ticket configuration by default, and takes a project one', () => {
+    expect(loadPolicy(DEFAULT_RULES, null).features.ticket).toBeNull()
+    const ticket = { skill: 'write-github-issue', headings: ['## Problem', ['## Reproduction', '## Current behaviour']], labels: ['bug'] }
+    const loaded = loadPolicy(DEFAULT_RULES, policy({ ticket }))
+    expect(loaded.errors).toEqual([])
+    expect(loaded.features.ticket).toEqual(ticket)
+  })
+
+  it('drops a ticket configuration without a skill or headings, saying why', () => {
+    for (const ticket of [{ headings: ['## Problem'] }, { skill: 'w', headings: [] }, { skill: 'w', headings: [1] }]) {
+      const loaded = loadPolicy(DEFAULT_RULES, policy({ ticket }))
+      expect(loaded.features.ticket, JSON.stringify(ticket)).toBeNull()
+      expect(loaded.errors[0]).toContain('ticket')
+    }
   })
 
   it('lets a project turn telemetry off, and rejects an unknown shaping mode', () => {

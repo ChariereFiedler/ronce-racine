@@ -10,15 +10,18 @@ const FAILING_SESSION_ID: SessionIdAnswer = () => {
   throw new Error('session id unavailable')
 }
 
-/** The engine beneath the plugin: session, environment, clock, and a policy file wherever it is looked for. */
-function world(on: On, policy: object, sessionId: SessionIdAnswer = SESSION_ID): void {
+/** The engine beneath the plugin: session, environment, clock, the given files, and a policy file wherever else it is looked for. */
+function world(on: On, policy: object, sessionId: SessionIdAnswer = SESSION_ID, files: Record<string, string> = {}): void {
   mock.clock(on)
   mock.env(on, { HOME: '/home/test' })
   on('session.cwd', () => ({ value: CWD }))
   on('session.id', sessionId)
   on('session.surfaces', () => ({ value: ['terminal'] }))
   on('fs.exists', () => ({ value: true }))
-  on('fs.read', () => ({ value: JSON.stringify({ version: 1, telemetry: null, ...policy }) }))
+  on('fs.read', (_$, e) => {
+    const path = (e as { path: string }).path
+    return { value: files[path] ?? JSON.stringify({ version: 1, telemetry: null, ...policy }) }
+  })
 }
 
 test('a shadow rule lets the call through untouched', async ($, on) => {
@@ -215,6 +218,62 @@ test('an edit that fails a check reaches the model with the finding', async ($, 
   const context = (out.context ?? []).join('\n')
   expect(context).toContain('ronce/check:rustfmt')
   expect(context).toContain('Diff in /repo/src/a.rs at line 3')
+})
+
+const TICKET = { skill: 'write-github-issue', headings: ['## Problem', '## Acceptance criteria'] }
+const BODY_FILE = '/tmp/s/issue.md'
+const CREATE = `gh issue create --title "Timeout" --body-file ${BODY_FILE}`
+
+/** A project that configures tickets, with the body file the next creation points to. */
+function ticketWorld(on: On, body: string, policy: object = { ticket: TICKET }): string[] {
+  world(on, policy, SESSION_ID, { [BODY_FILE]: body })
+  const ran: string[] = []
+  on('tool.call', { tool: 'Bash' }, (_$, e) => {
+    ran.push(e.command)
+    return BASH_OK
+  })
+  return ran
+}
+
+test('an issue whose body file misses a heading is refused, naming the skill and the heading', async ($, on) => {
+  const ran = ticketWorld(on, '## Problem\nslow')
+  await $.tool.call({ tool: 'Bash', command: 'gh issue list --search "timeout"' })
+  const out = await $.tool.call({ tool: 'Bash', command: CREATE })
+  expect(out.deny).toContain('ronce/ticket-needs-skill')
+  expect(out.deny).toContain('Skill write-github-issue')
+  expect(out.deny).toContain('## Acceptance criteria')
+  expect(ran).toEqual(['gh issue list --search "timeout"'])
+})
+
+test('an issue with every heading goes through once a search preceded it', async ($, on) => {
+  const ran = ticketWorld(on, '## Problem\nslow\n## Acceptance criteria\n- [ ] fast')
+  const refused = await $.tool.call({ tool: 'Bash', command: CREATE })
+  expect(refused.deny).toContain('gh issue list --search')
+  await $.tool.call({ tool: 'Bash', command: 'gh issue list -S timeout' })
+  const out = await $.tool.call({ tool: 'Bash', command: CREATE })
+  expect(out.deny).toBeUndefined()
+  expect(ran).toContain(CREATE)
+})
+
+test('without a ticket configuration, an issue goes through with a reminder of the skill', async ($, on) => {
+  const ran = ticketWorld(on, 'anything', {})
+  const out = await $.tool.call({ tool: 'Bash', command: CREATE })
+  expect(out.deny).toBeUndefined()
+  expect(ran).toEqual([CREATE])
+  expect((out.context ?? []).join(' ')).toContain('ronce/ticket-needs-skill')
+})
+
+test('a prompt about an issue names the project ticket skill first', async ($, on) => {
+  world(on, { ticket: TICKET })
+  let context: readonly string[] = []
+  on('prompt.submit', (_$, e) => {
+    context = e.context ?? []
+    return { text: e.text, context: e.context }
+  })
+  await $.prompt.submit({ text: 'Ouvre une issue pour ce timeout', wait: false, origin: { kind: 'composer' } })
+  const text = context.join('\n')
+  expect(text).toContain('`write-github-issue`')
+  expect(text.indexOf('write-github-issue')).toBeLessThan(text.indexOf('bug-ticket-root-cause'))
 })
 
 test('an enforced warn reaches the model as context', async ($, on) => {

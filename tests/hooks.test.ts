@@ -234,6 +234,30 @@ test("skill-reminder reads a CRLF SKILL.md, not just the LF ones", () => {
   contains(r.stdout, "crlf-only-skill", "a CRLF skill must be as visible as an LF one");
 });
 
+test("skill-reminder names the project's ticket skill first, before bug-ticket-root-cause", () => {
+  // A ticket written by hand, without the project's form, lost its evidence and
+  // its acceptance criteria: the prompt that asks for one must name that form.
+  const project = join(WORK, "ticket-skill");
+  for (const [name, description] of [
+    ["write-issue", "Write an issue for this project."],
+    ["bug-ticket-root-cause", 'Use when reporting a bug as a ticket - "report a bug", "crée un ticket de bug".'],
+  ]) {
+    mkdirSync(join(project, ".claude", "skills", name), { recursive: true });
+    writeFileSync(join(project, ".claude", "skills", name, "SKILL.md"), `---\nname: ${name}\ndescription: ${description}\n---\n`);
+  }
+  writeFileSync(
+    join(project, ".claude", "ronce.json"),
+    JSON.stringify({ version: 1, ticket: { skill: "write-issue", headings: ["## Problem"] } }),
+  );
+  const env = { CLAUDE_PROJECT_DIR: project };
+
+  const hit = hook("skill-reminder.ts", { prompt: "ouvre une issue pour ce timeout" }, env).stdout;
+  contains(hit, "write-issue, bug-ticket-root-cause", "the project form comes first, the generic one second");
+
+  const miss = hook("skill-reminder.ts", { prompt: "zzz qqq nothing relevant here" }, env).stdout;
+  assert(miss.trim() === "", `a prompt about no ticket stays silent, got ${JSON.stringify(miss)}`);
+});
+
 test("quoteForShell survives every character a real hooks path can hold", () => {
   // The wrapped command is a shell string, so the helper path is the one place
   // an adopter's directory name meets a parser. A space was the reported break;

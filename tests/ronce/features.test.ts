@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { activeWorktrees, blockingMergeRequests, budgetDenial, isExempt } from '../../mods/ronce/src/features/budget.ts'
 import { freshnessNote } from '../../mods/ronce/src/features/freshness.ts'
 import { memoText, ticketFrom } from '../../mods/ronce/src/features/memo.ts'
-import { hintFor, hintText } from '../../mods/ronce/src/features/skill-hints.ts'
+import { hintFor, hintText, ticketHint } from '../../mods/ronce/src/features/skill-hints.ts'
 import { linksToCreate } from '../../mods/ronce/src/features/worktree-env.ts'
 import { envValue } from '../../mods/ronce/src/features/env-file.ts'
 import { baseName, parentDir } from '../../mods/ronce/src/policy/paths.ts'
@@ -44,6 +44,24 @@ describe('skill hints', () => {
     expect(hintText(hints[1]!)).toBe(
       '<skill-reminder>\nLe skill `session-resume` correspond à cette demande (reprise de session).\nLire la session.\n</skill-reminder>',
     )
+  })
+})
+
+describe('ticket hint', () => {
+  const ticket = { skill: 'write-github-issue', headings: ['## Problem'] }
+
+  it('names the project ticket skill before the generic bug ticket one', () => {
+    for (const prompt of ['ouvre une issue pour ce timeout', 'Crée un ticket', 'ajoute un ticket pour la PR', 'write a bug report', 'file an issue']) {
+      const text = ticketHint(ticket, prompt) ?? ''
+      expect(text, prompt).toContain('`write-github-issue`')
+      expect(text.indexOf('write-github-issue'), prompt).toBeLessThan(text.indexOf('bug-ticket-root-cause'))
+    }
+  })
+
+  it('stays silent without a ticket configuration or a ticket in the prompt', () => {
+    expect(ticketHint(null, 'ouvre une issue')).toBeNull()
+    expect(ticketHint(ticket, 'ajoute un bouton')).toBeNull()
+    expect(ticketHint(ticket, 'les tissues du modèle')).toBeNull()
   })
 })
 
