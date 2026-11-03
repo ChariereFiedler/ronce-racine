@@ -20,8 +20,12 @@ their frontmatter; this file tracks the toolkit as a whole.
   when a heading is missing, naming the skill to load (`Skill <name>`) and the
   missing headings. It also refuses a creation no issue search
   (`gh issue list --search`, `gh search issues`, `glab issue list --search`)
-  preceded in the session, unless `requireSearch` is `false`. Without a `ticket`
-  key nothing is refused: the model gets a reminder after the call. Observed
+  preceded in the session or the command, unless `requireSearch` is `false`.
+  A body the mod cannot read for sure before the run (built by the shell,
+  piped, interactive, a file not yet written, a command over 20 000
+  characters) only warns. Without a `ticket` key nothing is refused: every
+  issue creation gets a reminder after the call (`"disable":
+  ["ticket-needs-skill"]` turns it off). Observed
   cause: tickets written by hand, the project's ticket skill never loaded, lost
   their evidence and acceptance criteria; a reminder kept in memory did not
   prevent it. Detail and limits: `docs/ticket-form.md`.
