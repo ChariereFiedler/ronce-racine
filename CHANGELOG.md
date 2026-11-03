@@ -9,6 +9,26 @@ their frontmatter; this file tracks the toolkit as a whole.
 
 ## [Unreleased]
 
+### Added
+- **`ronce` mod 0.6.0 - the project's ticket form, enforced by the harness.** A
+  new `ticket` key in `.claude/ronce.json` names the skill that writes the
+  project's tickets, the headings their body must hold (a list is a choice) and
+  optionally the labels, one of which is required. The new default rule
+  `ticket-needs-skill` reads the body of an issue creation (`gh issue create`,
+  `glab issue create`, `gh api`/`glab api` POST on `…/issues`, `curl` POST on an
+  issues endpoint; inline, heredoc or body file) and refuses it before it runs
+  when a heading is missing, naming the skill to load (`Skill <name>`) and the
+  missing headings. It also refuses a creation no issue search
+  (`gh issue list --search`, `gh search issues`, `glab issue list --search`)
+  preceded in the session, unless `requireSearch` is `false`. Without a `ticket`
+  key nothing is refused: the model gets a reminder after the call. Observed
+  cause: tickets written by hand, the project's ticket skill never loaded, lost
+  their evidence and acceptance criteria; a reminder kept in memory did not
+  prevent it. Detail and limits: `docs/ticket-form.md`.
+- **`skill-reminder` 1.2.0 and the mod's prompt reminder**: a prompt about a
+  ticket, an issue or a bug report names the project's ticket skill
+  (`ticket.skill`) before `bug-ticket-root-cause`.
+
 ## [0.9.0] - 2026-10-22
 
 Minor, not patch: the `ronce` mod (an in-process plugin of function hooks, enforced rules, quality

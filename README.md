@@ -318,6 +318,7 @@ Version 0.3 also does what the session hooks did, each one a key of the policy:
 | `skillCatalog` | Otherwise, names the skills whose quoted triggers or name words the prompt holds, from the project's `.claude/skills` and the `ronce-racine` plugin's catalog; this is the `skill-reminder` hook | on, 3 at most |
 | `checks.onEdit` | After an edit, runs the checks whose `match` fits the file and hands any finding to the model | rustfmt, ESLint, Biome on `scripts/`, ast-grep |
 | `checks.background` | After a turn, runs the checks of the changed files in the background, once per state of those files; a finding wakes the session (at most `maxWakes` times in a row) | `vitest related` |
+| `ticket` | The project's ticket form (skill, headings, labels): an issue created without it is refused, and a prompt about a ticket names the skill. See [`docs/ticket-form.md`](docs/ticket-form.md) | none: a reminder only |
 
 A check is a command with placeholders (`{file}`, `{rel}`, `{files}`, `{group}`), a directory, a timeout and
 the rule that turns its output into a finding; it is skipped where its tool or its configuration is missing.
