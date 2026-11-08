@@ -59,7 +59,7 @@ preconditions:
 gates:
   # from-exit: Report produced in the output format
   - repo_clean: { except: "AUDIT-DELIVERY.md" }
-  # from-exit: All 10 questions evaluated (or justified N/A)
+  # from-exit: All 11 questions evaluated (or justified N/A)
   # ci-05 (change failure rate) carries a level rather than a shrug. It is
   # computable here and the reflex answer is that it is not.
   - grep_min: { pattern: "ci-05[^\n]*\|\s*[0-4]\s*\|", in: "AUDIT-DELIVERY.md", count: "1" }
@@ -68,7 +68,7 @@ gates:
   # pulled. A report that scores ci-05 without finding the reverted row has
   # scored it from nothing.
   - grep_min: { pattern: "[Rr]evert", in: "AUDIT-DELIVERY.md", count: "1" }
-  # from-exit: All 10 questions evaluated (or justified N/A)
+  # from-exit: All 11 questions evaluated (or justified N/A)
   # The counterweight: scoring everything is not the winning strategy either.
   # At least one question keeps its row with N/A - the runner and its image are
   # the platform group's, and no amount of reading this repository reaches them.
@@ -100,7 +100,7 @@ gates:
 # vacuously instead of firing.
 trajectory:
   # from-skill(sequence): 3. **Run the verification commands** for each
-  # question ci-01 to ci-10 - step 11 of the same protocol is **Produce the
+  # question ci-01 to ci-11 - step 11 of the same protocol is **Produce the
   # report**.
   #
   # The inverted trap, as an ordering. ci-03 to ci-05 are computable here and

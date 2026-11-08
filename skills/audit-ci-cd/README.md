@@ -13,7 +13,7 @@
 
 `audit-ci-cd` is one domain audit in a family of maturity audits. It takes a repository and produces a structured assessment of how the team ships software: how the CI pipeline is built, how code reaches production, how fast and how safely that happens, and how the delivery chain is secured.
 
-The domain is broken into **10 questions** (`ci-01` … `ci-10`) across 6 sections. Each question carries a criticality (`must` / `should` / `could`), a set of bash commands that gather objective evidence, an explicit checklist, and a 0-4 level rubric. The skill runs the commands, reads the pipeline files, scores each question with a confidence level, and emits a report with an overall (optionally weighted) score.
+The domain is broken into **11 questions** (`ci-01` … `ci-11`) across 6 sections. Each question carries a criticality (`must` / `should` / `could`), a set of bash commands that gather objective evidence, an explicit checklist, and a 0-4 level rubric. The skill runs the commands, reads the pipeline files, scores each question with a confidence level, and emits a report with an overall (optionally weighted) score.
 
 ## Why it exists
 
@@ -31,7 +31,7 @@ For a **full multi-domain** project audit, use [`audit-industrialisation`](../au
 
 ## How it works
 
-The audit starts objective: it detects and reads the CI pipeline files, then for each of the 10 questions (`ci-01` … `ci-10`) runs the verification commands from the matching `reference/` grid and inspects deployment configs and `package.json` scripts. Each question gets a level 0-4 with a confidence tag (high / medium / low) or N/A when the profile makes it irrelevant. DORA metrics (`ci-03`/`ci-04`/`ci-05`) are typically low-confidence and flagged non-auditable rather than guessed. Scores are averaged (and optionally criticality-weighted, `must`=3 / `should`=2 / `could`=1) and emitted through the standard report format with prioritized recommendations.
+The audit starts objective: it detects and reads the CI pipeline files, then for each of the 11 questions (`ci-01` … `ci-11`) runs the verification commands from the matching `reference/` grid and inspects deployment configs and `package.json` scripts. Each question gets a level 0-4 with a confidence tag (high / medium / low) or N/A when the profile makes it irrelevant. DORA metrics (`ci-03`/`ci-04`/`ci-05`) are typically low-confidence and flagged non-auditable rather than guessed. Scores are averaged (and optionally criticality-weighted, `must`=3 / `should`=2 / `could`=1) and emitted through the standard report format with prioritized recommendations.
 
 Full step-by-step protocol, section grids, and output format → [`SKILL.md`](SKILL.md).
 

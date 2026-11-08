@@ -63,7 +63,7 @@ gates:
   # from-exit: Non-auditable items listed
   # The owner named, so the withheld item says who to ask.
   - grep_min: { pattern: "[Pp]latform group", in: "AUDIT-SUPPLY-CHAIN.md", count: "1" }
-  # from-exit: All 10 questions evaluated (or justified N/A)
+  # from-exit: All 11 questions evaluated (or justified N/A)
   # The over-eager failure: prescribing image hygiene for an image this
   # repository does not build. A row explaining that no container image is built
   # here does not match; a recommendation to scan, pin or harden one does.
@@ -93,7 +93,7 @@ gates:
 # vacuously instead of firing.
 trajectory:
   # from-skill(sequence): 3. **Run the verification commands** for each
-  # question ci-01 to ci-10 - step 11 of the same protocol is **Produce the
+  # question ci-01 to ci-11 - step 11 of the same protocol is **Produce the
   # report**.
   #
   # ci/promote.sh is where the boundary is visible: it hands off to a script

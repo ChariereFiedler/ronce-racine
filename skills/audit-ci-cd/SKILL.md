@@ -1,9 +1,9 @@
 ---
 name: audit-ci-cd
 description: Audit CI/CD & Release Management. Use when auditing pipelines, deployment strategies, DORA metrics, IaC, artifact management, or supply chain security. Triggers on "audit ci", "audit pipeline", "audit déploiement", "audit deployment", "audit release".
-version: 1.0.1
+version: 1.1.0
 metadata:
-  last-reviewed: 2026-07-20
+  last-reviewed: 2026-11-08
   category: audit
 ---
 
@@ -20,7 +20,7 @@ metadata:
 
 Audit a project's CI/CD maturity by analyzing pipelines, deployment strategies, DORA metrics, environment management, Infrastructure as Code, artifact management, rollback procedures, and software supply chain security. Produces a maturity score (0-4) per question and prioritized recommendations.
 
-**10 questions** spread across 6 sections. The detailed grids (statement, analysis, checks, commands, levels 0-4) live in `reference/` - see [Grids by section](#grids-by-section).
+**11 questions** spread across 6 sections. The detailed grids (statement, analysis, checks, commands, levels 0-4) live in `reference/` - see [Grids by section](#grids-by-section).
 
 Criticality levels:
 - **must**: fundamental practice, absence = critical risk
@@ -31,9 +31,9 @@ Criticality levels:
 
 - Domain score = average of scored questions (exclude N/A)
 - State "X questions scored out of Y total"
-- A question is N/A if the project profile makes it non-applicable (e.g. a library with no deployment → ci-02/ci-06/ci-09 N/A)
+- A question is N/A if the project profile makes it non-applicable (e.g. a library with no deployment → ci-02/ci-06/ci-09/ci-11 N/A; no reachable non-production environment → ci-11 N/A)
 - Criticality (used to prioritize remediation, NOT in the score - see `audit-report/reference/scoring-model.md`):
-  - **must**: ci-01, ci-02, ci-06, ci-09
+  - **must**: ci-01, ci-02, ci-06, ci-09, ci-11
   - **should**: ci-07, ci-08, ci-10
   - **could**: ci-03, ci-04, ci-05
 
@@ -41,7 +41,7 @@ Criticality levels:
 
 1. **Detect the CI system**: run the ci-01 commands to find the pipeline files
 2. **Read every pipeline file** found
-3. **Run the verification commands** for each question ci-01 to ci-10
+3. **Run the verification commands** for each question ci-01 to ci-11
 4. **Analyze each question** based on the command output and the file reading
 5. **Look for deployment configs**: Dockerfile, docker-compose, Helm, Terraform, etc.
 6. **Check the npm scripts in `package.json`** for deploy, release, etc. commands
@@ -63,7 +63,7 @@ Each file contains the statement, the items to analyze/check, the bash commands,
 | Section | Reference | Questions | Count |
 |---------|-----------|-----------|-------|
 | CI Pipeline | [reference/pipeline-ci.md](reference/pipeline-ci.md) | ci-01 | 1 |
-| Deployment & Environments | [reference/deploiement.md](reference/deploiement.md) | ci-02, ci-06, ci-09 | 3 |
+| Deployment & Environments | [reference/deploiement.md](reference/deploiement.md) | ci-02, ci-06, ci-09, ci-11 | 4 |
 | DORA Metrics | [reference/dora.md](reference/dora.md) | ci-03, ci-04, ci-05 | 3 |
 | Infrastructure as Code | [reference/iac.md](reference/iac.md) | ci-07 | 1 |
 | Artifact Management | [reference/artefacts.md](reference/artefacts.md) | ci-08 | 1 |
@@ -91,6 +91,7 @@ Each file contains the statement, the items to analyze/check, the bash commands,
 | ci-08 | Artifact management and registries | should | X | high | ... |
 | ci-09 | Deployment rollback and recovery | must | X | low | ... |
 | ci-10 | Pipeline security (Supply Chain Security) | should | X | high | ... |
+| ci-11 | Access to non-production environments | must | X | medium | ... |
 
 ### Strengths
 - ...
@@ -110,7 +111,7 @@ Each file contains the statement, the items to analyze/check, the bash commands,
 ## Exit condition
 
 - [ ] CI system detected, pipeline files read
-- [ ] All 10 questions evaluated (or justified N/A)
+- [ ] All 11 questions evaluated (or justified N/A)
 - [ ] Verification commands run for each scored question
 - [ ] Level (0-4) + confidence + justification per question
 - [ ] Domain score computed (average excluding N/A + weighted score, "X scored out of Y")

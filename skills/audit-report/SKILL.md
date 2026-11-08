@@ -1,9 +1,9 @@
 ---
 name: audit-report
 description: Use when consolidating audit results into a report or reformatting existing audit findings - template and scoring rules for the consolidated audit report. Standalone or as reference for the orchestrator. Triggers on "audit report", "rapport audit", "consolider audit", "consolidate audit", "reformat audit findings".
-version: 1.0.2
+version: 1.0.3
 metadata:
-  last-reviewed: 2026-09-04
+  last-reviewed: 2026-11-08
   category: audit
 ---
 
@@ -28,7 +28,7 @@ The orchestration procedure (order in which domain audits run, collection, conso
 ## Prerequisites
 
 This skill expects the results of one or more domain audits (counts aligned with the audit skills - source: the "Coverage per skill" table in `audit-industrialisation`):
-- `audit-ci-cd`: CI/CD & Release Management (section-ci, 10 questions)
+- `audit-ci-cd`: CI/CD & Release Management (section-ci, 11 questions)
 - `audit-testing`: Testing & Validation (section-te, 13 questions)
 - `audit-security`: Security (section-se, 16 questions)
 - `audit-observability`: Observability & Alerting (section-ob + section-al, 15 questions)
@@ -37,7 +37,7 @@ This skill expects the results of one or more domain audits (counts aligned with
 - `audit-compliance`: Compliance, Governance & FinOps (sections co/dg/fi, 29 questions)
 - `audit-performance-frontend`: Frontend Performance (section-pf, 29 questions)
 
-**Total: 214 questions across 18 sections, 8 domains.**
+**Total: 215 questions across 18 sections, 8 domains.**
 
 ## Score computation
 
