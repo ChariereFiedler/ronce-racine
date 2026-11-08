@@ -97,7 +97,7 @@ gates:
 # instead of firing.
 trajectory:
   # from-skill(sequence): 3. **Run the verification commands** for each
-  # question ci-01 to ci-10 - step 11 of the same protocol is **Produce the
+  # question ci-01 to ci-11 - step 11 of the same protocol is **Produce the
   # report**.
   #
   # Three of the ten questions are answered in ops/deploys.md and nowhere else.

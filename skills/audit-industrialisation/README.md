@@ -13,7 +13,7 @@
 
 `audit-industrialisation` is the **entry point** for a complete maturity audit. It does not carry the questions itself - those live in the eight domain skills (`audit-ci-cd`, `audit-testing`, `audit-security`, `audit-observability`, `audit-architecture`, `audit-quality`, `audit-compliance`, `audit-performance-frontend`). Its job is to **profile** the project once, **fan out** the eight audits as parallel subagents, then **consolidate** their results into one weighted, classified report.
 
-The reference model is **214 questions across 18 sections and 8 domains**, each question scored on a 0-4 maturity scale (CMMI-adapted) or marked N/A.
+The reference model is **215 questions across 18 sections and 8 domains**, each question scored on a 0-4 maturity scale (CMMI-adapted) or marked N/A.
 
 ## Why it exists
 

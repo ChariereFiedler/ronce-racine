@@ -10,6 +10,16 @@ their frontmatter; this file tracks the toolkit as a whole.
 ## [Unreleased]
 
 ### Added
+- **`audit-ci-cd` 1.1.0 - ci-11, access to non-production environments.** ci-06
+  rewards having staging and a preview per PR but never asked what they expose
+  and to whom; ci-11 (`must`) scores the leaks a reachable preview or staging
+  opens - secrets (client bundle, source maps, verbose errors), hidden
+  features (debug routes, shortcuts), upcoming features not yet public, and
+  production or personal data, infrastructure shared with production or the
+  internal network - and whether
+  authentication covers every preview automatically. noindex counts only as a
+  backstop. The full audit grows from
+  214 to 215 questions.
 - **`ronce` mod 0.6.0 - the project's ticket form, enforced by the harness.** A
   new `ticket` key in `.claude/ronce.json` names the skill that writes the
   project's tickets, the headings their body must hold (a list is a choice) and

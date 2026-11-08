@@ -5,6 +5,8 @@ SKILL.md is the procedure an agent has to follow. No pointer is left in
 the skill, because in a repository where it is installed this file is
 not there and the pointer would dangle.
 
+- 1.0.3 (2026-11-08) - question count 214 → 215: audit-ci-cd gains ci-11 (access to non-production environments)
+
 - 1.0.2 (2026-09-04) - the exit condition no longer asks for a notation the skill
   never defines. It demanded an "impact projection `(XX-01: current→projected)`"
   whose notation appears nowhere else in the skill directory: no column in the

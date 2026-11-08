@@ -1,9 +1,9 @@
 ---
 name: audit-industrialisation
 description: Full software-industrialisation audit. Orchestrates the 8 domain audits and produces a consolidated report. Use when running a full audit of a project's software engineering maturity. Triggers on "audit industrialisation", "industrialisation audit", "audit complet", "full audit", "audit projet", "project audit", "audit maturité", "maturity audit", "audit global", "global audit".
-version: 1.0.1
+version: 1.0.2
 metadata:
-  last-reviewed: 2026-07-20
+  last-reviewed: 2026-11-08
   category: audit
 ---
 
@@ -11,7 +11,7 @@ metadata:
 
 Full audit of a software project's industrialisation maturity. Orchestrates the 8 domain audits through parallel subagents and produces a consolidated report.
 
-**214 questions, 18 sections, 8 domains, 0-4 maturity model.**
+**215 questions, 18 sections, 8 domains, 0-4 maturity model.**
 
 ## This skill vs. a domain audit
 
@@ -21,13 +21,13 @@ Full audit of a software project's industrialisation maturity. Orchestrates the 
 
 ## Where the questions come from
 
-The 214 questions are **defined in the audit skills themselves**: each `audit-<domain>` and its `reference/<section>.md` files carry the wording, the criticality and the 0-4 levels, with stable IDs (`ci-01`, `te-09a`, `PF-21`… - casing varies by domain grid; compare IDs case-insensitively). This orchestrator **defines no questions** - it profiles the project, launches the audits and consolidates. The IDs are identical across the orchestrator, the skills and the report.
+The 215 questions are **defined in the audit skills themselves**: each `audit-<domain>` and its `reference/<section>.md` files carry the wording, the criticality and the 0-4 levels, with stable IDs (`ci-01`, `te-09a`, `PF-21`… - casing varies by domain grid; compare IDs case-insensitively). This orchestrator **defines no questions** - it profiles the project, launches the audits and consolidates. The IDs are identical across the orchestrator, the skills and the report.
 
 ### Coverage per skill
 
 | Skill | Sections | Question count |
 |-------|--------|-------------|
-| `audit-ci-cd` | ci | 10 |
+| `audit-ci-cd` | ci | 11 |
 | `audit-testing` | te | 13 |
 | `audit-security` | se | 16 |
 | `audit-observability` | ob, al | 15 |
@@ -36,7 +36,7 @@ The 214 questions are **defined in the audit skills themselves**: each `audit-<d
 | `audit-compliance` | co, dg, fi | 29 |
 | `audit-performance-frontend` | pf | 29 |
 
-**Total: 214 questions across 18 sections, 8 domains.**
+**Total: 215 questions across 18 sections, 8 domains.**
 
 > A project that manages its audits in a dedicated tool (external knowledge base, audit app) adds the export to that tool in its **own project skill** - it is not the job of the generic orchestrator, which produces a Markdown report.
 
