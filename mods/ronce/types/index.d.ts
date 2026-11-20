@@ -93,6 +93,12 @@ export type AgentBudgetConfig = {
 }
 /** The note appended after a compaction: branch, ticket, last intent, stale decisions file. */
 export type MemoConfig = { ticketPattern: string; decisionsFile?: string; staleDays: number }
+
+/** Flags a fix commit when `limit` fixes (this one included) name the same ticket or scope within `windowHours`. */
+export type FixRepeatConfig = { limit: number; windowHours: number; mode: Mode }
+
+/** Percent-of-window thresholds at which the model is told, once each, that the context is growing. */
+export type ContextSignalConfig = { thresholds: number[] }
 /** A skill suggested when a prompt matches `pattern` (case-insensitive). */
 export type SkillHint = { pattern: string; skill: string; reason: string; note?: string }
 /**
@@ -163,6 +169,8 @@ export type Features = {
   freshness: FreshnessConfig | null
   agentBudget: AgentBudgetConfig | null
   memo: MemoConfig | null
+  contextSignal: ContextSignalConfig | null
+  fixRepeat: FixRepeatConfig | null
   skillHints: SkillHint[]
   skillCatalog: SkillCatalogConfig | null
   band: boolean
@@ -181,6 +189,8 @@ export type PolicyFile = {
   freshness?: FreshnessConfig | null
   agentBudget?: AgentBudgetConfig | null
   memo?: Partial<MemoConfig> | null
+  contextSignal?: Partial<ContextSignalConfig> | null
+  fixRepeat?: Partial<FixRepeatConfig> | null
   skillHints?: SkillHint[]
   skillCatalog?: Partial<SkillCatalogConfig> | null
   band?: boolean

@@ -1,7 +1,10 @@
 import type { Mode, TelemetryEvent, ToolEvent, TurnEvent } from '../../types'
+import { commitSubject, parseFixSubject } from '../features/fix-repeat.ts'
 
 /** A command repeated this many times in one session counts as a loop, as in the Chardon reports. */
 const TOIL_THRESHOLD = 3
+/** The cost concentration is measured on the sessions that matter most. */
+const TOP_SESSIONS = 10
 
 export type Summary = {
   sessions: number
@@ -19,6 +22,13 @@ export type Summary = {
   repetitions: number
   costUsd: number
   costPer1000Calls: number | null
+  /** Share of the turns with a context reading that sat above 40 % and above 60 % of the window. */
+  turnsAbove40Share: number
+  turnsAbove60Share: number
+  /** Share of the total cost held by the ten most expensive sessions. */
+  top10CostShare: number
+  /** Fix commits made with a `-m` message that names no ticket. */
+  unreferencedFixCommits: number
   shapingSavedChars: number
   rules: Record<string, Record<Mode | 'bypassed', number>>
 }
@@ -38,12 +48,32 @@ function countRepetitions(bash: readonly ToolEvent[]): number {
 }
 
 /** The cost a turn event carries is the session's running total: keep the highest per session. */
-function totalCost(turns: readonly TurnEvent[]): number {
+function costBySession(turns: readonly TurnEvent[]): number[] {
   const latest = new Map<string, number>()
   for (const turn of turns) {
     if (turn.costUsd !== undefined) latest.set(turn.sessionId, Math.max(latest.get(turn.sessionId) ?? 0, turn.costUsd))
   }
-  return [...latest.values()].reduce((sum, cost) => sum + cost, 0)
+  return [...latest.values()]
+}
+
+const sum = (values: readonly number[]): number => values.reduce((total, value) => total + value, 0)
+
+function topCostShare(costs: readonly number[], count: number): number {
+  const top = [...costs].sort((a, b) => b - a).slice(0, count)
+  return share(sum(top), sum(costs))
+}
+
+function contextShareAbove(turns: readonly TurnEvent[], percentLimit: number): number {
+  const known = turns.filter(turn => turn.contextPercent !== undefined)
+  return share(known.filter(turn => (turn.contextPercent ?? 0) > percentLimit).length, known.length)
+}
+
+function countUnreferencedFixes(bash: readonly ToolEvent[]): number {
+  return bash.filter(event => {
+    const subject = event.command === undefined ? null : commitSubject(event.command)
+    const fix = subject === null ? null : parseFixSubject(subject)
+    return fix !== null && fix.ticket === null
+  }).length
 }
 
 function ruleCounts(tools: readonly ToolEvent[]): Summary['rules'] {
@@ -64,7 +94,8 @@ export function summarize(events: readonly TelemetryEvent[]): Summary {
   const turns = events.filter((e): e is TurnEvent => e.type === 'turn')
   const bash = tools.filter(e => e.tool === 'Bash')
   const sessions = new Set(tools.map(e => e.sessionId)).size
-  const costUsd = totalCost(turns)
+  const sessionCosts = costBySession(turns)
+  const costUsd = sum(sessionCosts)
   return {
     sessions,
     toolCalls: tools.length,
@@ -77,7 +108,11 @@ export function summarize(events: readonly TelemetryEvent[]): Summary {
     repetitions: countRepetitions(bash),
     costUsd,
     costPer1000Calls: tools.length === 0 ? null : (costUsd / tools.length) * 1000,
-    shapingSavedChars: tools.reduce((sum, e) => sum + (e.shaping ? e.shaping.originalChars - e.shaping.keptChars : 0), 0),
+    turnsAbove40Share: contextShareAbove(turns, 40),
+    turnsAbove60Share: contextShareAbove(turns, 60),
+    top10CostShare: topCostShare(sessionCosts, TOP_SESSIONS),
+    unreferencedFixCommits: countUnreferencedFixes(bash),
+    shapingSavedChars: sum(tools.map(e => (e.shaping ? e.shaping.originalChars - e.shaping.keptChars : 0))),
     rules: ruleCounts(tools),
   }
 }
@@ -97,6 +132,10 @@ export function formatSummary(s: Summary): string {
     ['Répétitions (≥ 3 par session)', String(s.repetitions)],
     ['Coût cumulé', `${s.costUsd.toFixed(2)} $`],
     ['$ pour 1 000 appels', s.costPer1000Calls === null ? 'n/a' : `${s.costPer1000Calls.toFixed(2)} $`],
+    ['Tours au-delà de 40 % du contexte', percent(s.turnsAbove40Share)],
+    ['Tours au-delà de 60 % du contexte', percent(s.turnsAbove60Share)],
+    ['Part du coût des 10 sessions les plus chères', percent(s.top10CostShare)],
+    ['Commits fix sans référence de ticket', String(s.unreferencedFixCommits)],
     ['Caractères que le façonnage retire ou retirerait', String(s.shapingSavedChars)],
   ]
   const rules = Object.entries(s.rules)

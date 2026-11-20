@@ -82,6 +82,7 @@ export const CATALOG: Item[] = [
   { kind: "skill", name: "audit-observability", when: ["infra", "backend"], reason: "observability & alerting audit", optional: true },
   { kind: "skill", name: "audit-performance-frontend", when: ["frontend"], reason: "low-level frontend perf audit", optional: true },
   { kind: "skill", name: "audit-compliance", when: ["code"], reason: "compliance/GDPR/FinOps audit", optional: true },
+  { kind: "skill", name: "audit-store-review", when: ["code"], reason: "app store review rules (Google Play) vs the build and its declarations", optional: true },
   // scripts (standalone, read-only)
   { kind: "script", name: "subscription-leak-scan.ts", when: ["frontend"], reason: "detects subscriptions/listeners/timers without teardown" },
   // hooks

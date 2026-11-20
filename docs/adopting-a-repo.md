@@ -1,5 +1,16 @@
 # Adopting Ronce Racine in a repo
 
+## Requirements
+
+Node 18 or later in the target repo. Hooks ship pre-built, rules and skills are
+plain Markdown; only the optional detection scripts need `npx tsx`. The hook
+wirings use the exec form (`"command": "node"` plus `args`) and
+`${CLAUDE_PROJECT_DIR}`, which need **Claude Code 2.1.139 or later**
+([changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md):
+`args: string[]` (exec form) landed there); the optional `readme-freshness`
+hook also needs the `claude` CLI on PATH. Rules and skills alone have no such
+floor.
+
 ## The installer
 
 `ronce-racine` detects the project's stack (frontend/backend/tests/SQL/migrations/CI/infra/git) and proposes the relevant artifacts, with a reason for each.

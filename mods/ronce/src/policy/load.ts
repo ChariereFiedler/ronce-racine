@@ -1,6 +1,8 @@
 import type {
-  CheckSpec, Example, Features, LoadedPolicy, Mode, PolicyFile, Rule, RuleContext, SessionFacts, ShapingConfig, TicketConfig, ToolName,
+  CheckSpec, ContextSignalConfig, Example, Features, FixRepeatConfig, LoadedPolicy, Mode, PolicyFile, Rule, RuleContext, SessionFacts,
+  ShapingConfig, TicketConfig, ToolName,
 } from '../../types'
+import { isValidThresholds, sortedThresholds } from '../features/context-signal.ts'
 import { BUILTIN_NAMES } from './builtins.ts'
 import { DEFAULT_FEATURES, DEFAULT_SHAPING, DEFAULT_TELEMETRY } from './defaults.ts'
 import { evaluate } from './evaluate.ts'
@@ -113,6 +115,39 @@ const compiles = (pattern: string): boolean => {
   }
 }
 
+/** `null` turns the signal off; thresholds that are empty or outside 1 to 100 keep the defaults. */
+function contextSignalOf(file: PolicyFile, errors: string[]): ContextSignalConfig | null {
+  if (file.contextSignal === null) return null
+  const given = file.contextSignal?.thresholds
+  if (given === undefined) return DEFAULT_FEATURES.contextSignal
+  if (!isValidThresholds(given)) {
+    errors.push('politique : contextSignal.thresholds invalide (liste non vide de nombres entre 1 et 100), seuils par défaut retenus')
+    return DEFAULT_FEATURES.contextSignal
+  }
+  return { thresholds: sortedThresholds({ thresholds: given }) }
+}
+
+const MIN_FIX_LIMIT = 2
+
+/** `null` turns the check off; each invalid field keeps its default and is reported. */
+function fixRepeatOf(file: PolicyFile, errors: string[]): FixRepeatConfig | null {
+  if (file.fixRepeat === null) return null
+  const defaults = DEFAULT_FEATURES.fixRepeat!
+  const given = file.fixRepeat ?? {}
+  const keep = <K extends keyof FixRepeatConfig>(key: K, isValid: (value: FixRepeatConfig[K]) => boolean): FixRepeatConfig[K] => {
+    const value = given[key]
+    if (value === undefined) return defaults[key]
+    if (isValid(value as FixRepeatConfig[K])) return value as FixRepeatConfig[K]
+    errors.push(`politique : fixRepeat.${key} invalide, valeur par défaut retenue`)
+    return defaults[key]
+  }
+  return {
+    limit: keep('limit', v => Number.isInteger(v) && v >= MIN_FIX_LIMIT),
+    windowHours: keep('windowHours', v => Number.isFinite(v) && v > 0),
+    mode: keep('mode', v => MODES.includes(v)),
+  }
+}
+
 const isText = (value: unknown): value is string => typeof value === 'string' && value.trim() !== ''
 const isTextList = (value: unknown): value is string[] => Array.isArray(value) && value.length > 0 && value.every(isText)
 
@@ -146,6 +181,8 @@ function featuresOf(file: PolicyFile): { features: Features; errors: string[] } 
     errors.push('politique : memo.ticketPattern invalide, motif par défaut retenu')
     memo.ticketPattern = DEFAULT_FEATURES.memo!.ticketPattern
   }
+  const contextSignal = contextSignalOf(file, errors)
+  const fixRepeat = fixRepeatOf(file, errors)
   const validChecks = (kind: 'onEdit' | 'background'): CheckSpec[] =>
     (file.checks?.[kind] ?? DEFAULT_FEATURES.checks[kind]).filter(check => {
       const patterns = [
@@ -164,6 +201,8 @@ function featuresOf(file: PolicyFile): { features: Features; errors: string[] } 
       freshness: file.freshness ?? DEFAULT_FEATURES.freshness,
       agentBudget: file.agentBudget ?? DEFAULT_FEATURES.agentBudget,
       memo,
+      contextSignal,
+      fixRepeat,
       skillHints: hints,
       skillCatalog: file.skillCatalog === null ? null : { ...DEFAULT_FEATURES.skillCatalog!, ...file.skillCatalog },
       band: file.band ?? DEFAULT_FEATURES.band,

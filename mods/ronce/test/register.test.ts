@@ -203,6 +203,61 @@ test('a prompt holding a catalog trigger reaches the model with the plugin skill
   expect(context.join('\n')).toContain('Skills dont les déclencheurs figurent dans cette demande : ronce-racine:detection-sweep.')
 })
 
+/** A session whose context sits at `percent`, answered by a function so a test can move it between prompts. */
+function contextWorld(on: On, policy: object, percent: () => number | undefined): { lastContext: () => string } {
+  world(on, policy)
+  on('fs.list', () => ({ value: [] }))
+  on('session.usage', () => {
+    const current = percent()
+    return { value: current === undefined ? { context: {} } : { context: { percent: current } } }
+  })
+  let context: readonly string[] = []
+  on('prompt.submit', (_$, e) => {
+    context = e.context ?? []
+    return { text: e.text, context: e.context }
+  })
+  return { lastContext: () => context.join('\n') }
+}
+
+const submitPrompt = ($: Parameters<Parameters<typeof test>[1]>[0]) =>
+  $.prompt.submit({ text: 'Continue', wait: false, origin: { kind: 'composer' } })
+
+test('a prompt at 41 % context carries the context signal', async ($, on) => {
+  const seen = contextWorld(on, {}, () => 41)
+  await submitPrompt($)
+  expect(seen.lastContext()).toContain('Contexte à 41 %')
+})
+
+test('the context signal is not repeated on the next prompt', async ($, on) => {
+  const seen = contextWorld(on, {}, () => 41)
+  await submitPrompt($)
+  await submitPrompt($)
+  expect(seen.lastContext()).not.toContain('Contexte à')
+})
+
+test('the context signal fires again once the context has dropped and grown back', async ($, on) => {
+  let percent = 41
+  const seen = contextWorld(on, {}, () => percent)
+  await submitPrompt($)
+  percent = 10
+  await submitPrompt($)
+  percent = 42
+  await submitPrompt($)
+  expect(seen.lastContext()).toContain('Contexte à 42 %')
+})
+
+test('no context signal when the policy turns it off', async ($, on) => {
+  const seen = contextWorld(on, { contextSignal: null }, () => 90)
+  await submitPrompt($)
+  expect(seen.lastContext()).not.toContain('Contexte à')
+})
+
+test('no context signal when the usage is unavailable', async ($, on) => {
+  const seen = contextWorld(on, {}, () => undefined)
+  await submitPrompt($)
+  expect(seen.lastContext()).not.toContain('Contexte à')
+})
+
 const runResult = (exitCode: number, stdout: string) =>
   ({ value: { exitCode, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
 
@@ -304,4 +359,43 @@ test('an enforced warn reaches the model as context', async ($, on) => {
   on('tool.call', { tool: 'Bash' }, () => BASH_OK)
   const out = await $.tool.call({ tool: 'Bash', command: 'cargo build 2>/dev/null' })
   expect((out.context ?? []).join(' ')).toContain('ronce/devnull-hides-errors')
+})
+
+const PRIOR_FIXES = 'fix(e2e): b (Refs #1987)\nfix(e2e): a (Refs #1987)\nfeat(ui): x\n'
+
+/** A world where `git log` answers with `log`, or fails when `log` is null. */
+function fixHistoryWorld(on: On, policy: object, log: string | null): void {
+  world(on, policy)
+  on('process.run', (_$, e) => {
+    if (!e.argv.includes('log')) return runResult(1, '')
+    return log === null ? runResult(128, '') : runResult(0, log)
+  })
+  on('tool.call', { tool: 'Bash' }, () => BASH_OK)
+}
+
+const FIX_COMMIT = 'git commit -m "fix(e2e): c (Refs #1987)"'
+
+test('an enforced fix-repeat warns on the third fix of a ticket', async ($, on) => {
+  fixHistoryWorld(on, { fixRepeat: { mode: 'enforce' } }, PRIOR_FIXES)
+  const out = await $.tool.call({ tool: 'Bash', command: FIX_COMMIT })
+  expect((out.context ?? []).join(' ')).toContain('recurring-bug-root-cause')
+})
+
+test('fix-repeat in shadow tells the model nothing', async ($, on) => {
+  fixHistoryWorld(on, {}, PRIOR_FIXES)
+  const out = await $.tool.call({ tool: 'Bash', command: FIX_COMMIT })
+  expect((out.context ?? []).join(' ')).not.toContain('recurring-bug-root-cause')
+})
+
+test('fix-repeat stays quiet when the history cannot be read', async ($, on) => {
+  fixHistoryWorld(on, { fixRepeat: { mode: 'enforce' } }, null)
+  const out = await $.tool.call({ tool: 'Bash', command: FIX_COMMIT })
+  expect(out.deny).toBeUndefined()
+  expect((out.context ?? []).join(' ')).not.toContain('recurring-bug-root-cause')
+})
+
+test('fix-repeat ignores a commit that is not a fix', async ($, on) => {
+  fixHistoryWorld(on, { fixRepeat: { mode: 'enforce' } }, PRIOR_FIXES)
+  const out = await $.tool.call({ tool: 'Bash', command: 'git commit -m "feat(e2e): c (Refs #1987)"' })
+  expect((out.context ?? []).join(' ')).not.toContain('recurring-bug-root-cause')
 })

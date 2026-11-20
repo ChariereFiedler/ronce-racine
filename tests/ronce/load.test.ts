@@ -11,7 +11,8 @@ describe('loadPolicy', () => {
     expect(loaded.rules.map(r => r.id)).toEqual(DEFAULT_RULES.map(r => r.id))
     expect(loaded.rules.filter(r => r.mode === 'enforce').map(r => r.id).sort()).toEqual([
       'cd-cwd-noop', 'commit-mentions-ai', 'destructive-after-semicolon', 'devnull-hides-errors',
-      'heredoc-create', 'shell-read', 'ticket-needs-skill', 'zsh-wordsplit',
+      'fix-needs-ticket', 'heredoc-create', 'shell-read', 'sleep-poll', 'ticket-needs-skill',
+      'zsh-wordsplit',
     ])
     expect(loaded.rules.find(r => r.id === 'agent-prompt-too-large')?.mode).toBe('shadow')
   })
@@ -138,5 +139,58 @@ describe('loadPolicy', () => {
     const loaded = loadPolicy([], policy({ shaping: { mode: 'loud' } }))
     expect(loaded.shaping.mode).toBe('enforce')
     expect(loaded.errors[0]).toContain('shaping.mode')
+  })
+
+  describe('fixRepeat', () => {
+    it('is on in shadow with 3 fixes in 48 hours by default', () => {
+      expect(loadPolicy([], null).features.fixRepeat).toEqual({ limit: 3, windowHours: 48, mode: 'shadow' })
+    })
+
+    it('can be turned off with null', () => {
+      expect(loadPolicy([], policy({ fixRepeat: null })).features.fixRepeat).toBeNull()
+    })
+
+    it('lets a project enforce it and change the limit', () => {
+      const loaded = loadPolicy([], policy({ fixRepeat: { mode: 'enforce', limit: 4 } }))
+      expect(loaded.features.fixRepeat).toEqual({ limit: 4, windowHours: 48, mode: 'enforce' })
+    })
+
+    it('keeps the defaults and reports an error for a limit under 2 or an unknown mode', () => {
+      const lowLimit = loadPolicy([], policy({ fixRepeat: { limit: 1 } }))
+      expect(lowLimit.features.fixRepeat?.limit).toBe(3)
+      expect(lowLimit.errors[0]).toContain('fixRepeat')
+      const badMode = loadPolicy([], policy({ fixRepeat: { mode: 'loud' } }))
+      expect(badMode.features.fixRepeat?.mode).toBe('shadow')
+      expect(badMode.errors[0]).toContain('fixRepeat')
+    })
+  })
+
+  describe('contextSignal', () => {
+    const thresholdsOf = (body: object): number[] | undefined =>
+      loadPolicy([], policy(body)).features.contextSignal?.thresholds
+
+    it('is on by default with the measured thresholds', () => {
+      expect(loadPolicy([], null).features.contextSignal).toEqual({ thresholds: [40, 60, 75] })
+    })
+
+    it('can be turned off with null', () => {
+      expect(loadPolicy([], policy({ contextSignal: null })).features.contextSignal).toBeNull()
+    })
+
+    it('sorts the thresholds a project gives', () => {
+      expect(thresholdsOf({ contextSignal: { thresholds: [75, 40] } })).toEqual([40, 75])
+    })
+
+    it('keeps the defaults and reports an error for an empty list', () => {
+      const loaded = loadPolicy([], policy({ contextSignal: { thresholds: [] } }))
+      expect(loaded.features.contextSignal?.thresholds).toEqual([40, 60, 75])
+      expect(loaded.errors[0]).toContain('contextSignal.thresholds')
+    })
+
+    it('keeps the defaults and reports an error for a threshold outside 1 to 100', () => {
+      const loaded = loadPolicy([], policy({ contextSignal: { thresholds: [150] } }))
+      expect(loaded.features.contextSignal?.thresholds).toEqual([40, 60, 75])
+      expect(loaded.errors[0]).toContain('contextSignal.thresholds')
+    })
   })
 })

@@ -16,12 +16,15 @@ import type {
   SessionFacts,
   SkillCatalogSource,
   ToolEvent,
+  Verdict,
   WorktreeBudget,
 } from '../types'
 import { backgroundRuns, changedPaths, checksForPath, expandRun, findingOf, parseEnv, reachTarget, reportText, scopeKey } from '../src/checks/plan.ts'
 import { activeWorktrees, blockingMergeRequests, budgetDenial, isExempt } from '../src/features/budget.ts'
 import type { OpenMergeRequest, WorktreeState } from '../src/features/budget.ts'
+import { contextSignalText, crossedThreshold, rearmed } from '../src/features/context-signal.ts'
 import { envValue } from '../src/features/env-file.ts'
+import { commitSubject, countRepeats, fixRepeatText, parseFixSubject } from '../src/features/fix-repeat.ts'
 import { freshnessNote } from '../src/features/freshness.ts'
 import { memoText, ticketFrom } from '../src/features/memo.ts'
 import { catalogDir, catalogMatches, catalogText, mergeCatalogs, parseSkill } from '../src/features/skill-catalog.ts'
@@ -54,6 +57,7 @@ const bandState = atom({ plugin: 'ronce', key: 'band' } as const, null)
 const checkScopeState = atom({ plugin: 'ronce', key: 'checkScope' } as const, null)
 const wakesState = atom({ plugin: 'ronce', key: 'wakes' } as const, 0)
 const catalogState = atom({ plugin: 'ronce', key: 'catalog' } as const, null)
+const contextFiredState = atom({ plugin: 'ronce', key: 'contextFired' } as const, [])
 const issuesSearchedState = atom({ plugin: 'ronce', key: 'issuesSearched' } as const, false)
 
 const HITS_STORE_KEY = 'hits'
@@ -474,6 +478,42 @@ async function ruleContext($: EngineInterface, policy: LoadedPolicy): Promise<Ru
   return { ticket: policy.features.ticket, issuesSearched: await read($, issuesSearchedState) }
 }
 
+const FIX_HISTORY_LIMIT = 200
+
+/**
+ * The warning for a fix commit that repeats a ticket or a scope, or null. In shadow mode the hit is only counted;
+ * an unreadable history, a commit without a readable message or a message that is not a fix all mean no warning.
+ */
+async function fixRepeatWarning($: EngineInterface, policy: LoadedPolicy, facts: SessionFacts, call: RawCall): Promise<string | null> {
+  const config = policy.features.fixRepeat
+  const subject = config && call.command ? commitSubject(call.command) : null
+  const candidate = subject === null ? null : parseFixSubject(subject)
+  if (!config || !candidate) return null
+  const log = await gitOut($, facts.cwd, ['log', `--since=${config.windowHours} hours ago`, '--format=%s', '-n', String(FIX_HISTORY_LIMIT)])
+  if (log === null) return null
+  // The window is applied by git, so every line read is inside it.
+  const history = log.split('\n').filter(line => line !== '').map(line => ({ subject: line, ageHours: 0 }))
+  const text = fixRepeatText(countRepeats(history, candidate, config.windowHours), config.limit)
+  if (text === null) return null
+  const verdict: Verdict = { ruleId: 'fix-repeat', action: 'warn', mode: config.mode, message: text, bypassed: false }
+  await update($, hitsState, stats => recordHits(stats, [verdict], sampleOf(call)))
+  return config.mode === 'enforce' ? `ronce/fix-repeat : ${text}` : null
+}
+
+/** The line telling the model the context grew past a threshold, once per threshold; null when nothing is due or the usage is unknown. */
+async function contextSignalLine($: EngineInterface, policy: LoadedPolicy): Promise<string | null> {
+  const config = policy.features.contextSignal
+  if (!config) return null
+  const usage = await $.session.usage().catch(() => undefined)
+  const percent = usage?.context.percent
+  const fired = rearmed(percent, await read($, contextFiredState))
+  const threshold = crossedThreshold(percent, fired, config.thresholds)
+  // Crossing 60 at once also settles 40: it must not fire on the next prompt.
+  const settled = threshold === null ? fired : [...fired, ...config.thresholds.filter(t => t <= threshold && !fired.includes(t))]
+  await update($, contextFiredState, () => settled)
+  return threshold === null || percent === undefined ? null : contextSignalText(percent, threshold)
+}
+
 /** The session's policy and facts, loaded on first need (a reload of the module keeps them). */
 async function ensureSession($: EngineInterface): Promise<Session> {
   const policy = await read($, policyState)
@@ -589,6 +629,8 @@ export const register: Register = on => {
       }
     }
 
+    // Read before the commit runs, so the history does not yet hold the fix being made.
+    const repeatWarning = e.tool === 'Bash' ? await fixRepeatWarning($, policy, facts, call).catch(() => null) : null
     const startedAt = await $.clock.now()
     const rewritten = decision.rewrite?.rewrite?.command
     const ran = e.tool === 'Bash' && rewritten !== undefined ? await next({ ...e, command: rewritten }) : await next(e)
@@ -602,7 +644,8 @@ export const register: Register = on => {
     if (success && e.tool === 'Bash' && isIssueSearch(e.command)) await update($, issuesSearchedState, () => true)
     const isFileEdit = success && (e.tool === 'Edit' || e.tool === 'Write') && call.file_path !== undefined
     const checkFindings = isFileEdit ? await runEditChecks($, policy, facts, call.file_path!) : []
-    return withWarnings(shaped.ran, [...decision.warns.map(v => `ronce/${v.ruleId} : ${v.message}`), ...checkFindings])
+    const repeat = repeatWarning === null ? [] : [repeatWarning]
+    return withWarnings(shaped.ran, [...decision.warns.map(v => `ronce/${v.ruleId} : ${v.message}`), ...repeat, ...checkFindings])
   }).catch((_$, e, next) => {
     // A failure after the tool ran replays its result. Before it ran, a shell command is refused,
     // since the footguns live there; any other tool goes through, having no marker to lift a refusal.
@@ -624,8 +667,12 @@ export const register: Register = on => {
     await update($, lastIntentState, () => e.text)
     // A person spoke: the background checks may wake the session again.
     if (e.origin.kind !== 'plugin') await update($, wakesState, () => 0)
-    const reminder = await skillReminder($, await ensureSession($), e.text)
-    return reminder ? next({ ...e, context: [...(e.context ?? []), reminder] }) : next(e)
+    const session = await ensureSession($)
+    const reminder = await skillReminder($, session, e.text)
+    // A signal that cannot be computed must not cost the prompt its skill reminder.
+    const signal = await contextSignalLine($, session.policy).catch(() => null)
+    const added = [reminder, signal].filter((line): line is string => line !== null)
+    return added.length > 0 ? next({ ...e, context: [...(e.context ?? []), ...added] }) : next(e)
   }).catch((_$, e, next) => next(e))
 
   on('session.compact', async ($, e, next) => {

@@ -89,6 +89,40 @@ describe('decide', () => {
   })
 })
 
+describe('default rules fix-needs-ticket and sleep-poll', () => {
+  const hits = (command: string): string[] =>
+    evaluate(DEFAULT_RULES, { tool: 'Bash', command }, FACTS).map(v => v.ruleId)
+
+  it('warns on a fix commit without a ticket reference', () => {
+    expect(hits('git commit -m "fix(api): handle null"')).toContain('fix-needs-ticket')
+  })
+
+  it('stays quiet when the fix names a ticket', () => {
+    expect(hits('git commit -m "fix(api): handle null (Refs #12)"')).not.toContain('fix-needs-ticket')
+    expect(hits('git commit -m "fix(web): margin (T-AB12CD)"')).not.toContain('fix-needs-ticket')
+  })
+
+  it('stays quiet on other commit types', () => {
+    expect(hits('git commit -m "feat(api): add filter"')).not.toContain('fix-needs-ticket')
+  })
+
+  it('stays quiet when the message is not in the command', () => {
+    expect(hits('git commit --amend --no-edit')).not.toContain('fix-needs-ticket')
+    expect(hits('git commit -F msg.txt')).not.toContain('fix-needs-ticket')
+  })
+
+  it('warns on a sleep used as a wait and stays quiet on a short one', () => {
+    expect(hits('sleep 30 && gitlab pipeline status')).toContain('sleep-poll')
+    expect(hits('for i in 1 2 3; do curl -s x && break; sleep 1; done')).not.toContain('sleep-poll')
+    expect(hits('sleep 0.5')).not.toContain('sleep-poll')
+  })
+
+  it('never denies', () => {
+    const rules = DEFAULT_RULES.filter(r => r.id === 'fix-needs-ticket' || r.id === 'sleep-poll')
+    expect(rules.map(r => r.action)).toEqual(['warn', 'warn'])
+  })
+})
+
 describe('evaluate on a huge command', () => {
   it('stays under 200 ms with the default catalog on a 1 MB heredoc', () => {
     const huge = `cat > /tmp/big.txt <<'EOF'\n${'abc def; ghi && '.repeat(65_000)}\nEOF`

@@ -9,8 +9,31 @@ their frontmatter; this file tracks the toolkit as a whole.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-19
+
+Minor, not patch: the `ronce` mod goes from 0.5 to 0.7 (session guards, then the
+project's ticket form) and the catalog gains an audit skill. Nothing a 0.9.x
+install relies on is removed.
+
 ### Added
-- **`ronce` mod 0.6.0 - the project's ticket form, enforced by the harness.** A
+- **`ronce` mod 0.6 - four guards on what a session costs.** A session that
+  grows past a context threshold (40, 60 and 75 % by default) is told once per
+  threshold to write its state down and continue from a fresh session; it is
+  never blocked, and `"contextSignal": null` turns it off. A `fix(...)` commit
+  with no ticket reference gets a warning (`fix-needs-ticket`). A third fix on
+  the same ticket or scope within 48 hours is counted (`fixRepeat`, in
+  `shadow` mode by default) and, once a project sets it to `enforce`, points to
+  `recurring-bug-root-cause` before a fourth patch is written. A
+  `sleep` used to wait gets a warning that names Monitor (`sleep-poll`). Cause:
+  across 166 sessions with tool calls, the longest ran 500 to 1135 turns and
+  reached 90 to 97 % of the context window, and one project's history held 512
+  fix commits with no ticket reference out of 625. The session report now shows
+  the share of turns above 40 and 60 % of the context, the share of the cost held
+  by the ten most expensive sessions, and the count of fix commits with no
+  ticket.
+- **`audit-store-review` skill**: Google Play review rules checked against the
+  build and its declarations.
+- **`ronce` mod 0.7.0 - the project's ticket form, enforced by the harness.** A
   new `ticket` key in `.claude/ronce.json` names the skill that writes the
   project's tickets, the headings their body must hold (a list is a choice) and
   optionally the labels, one of which is required. The new default rule

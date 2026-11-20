@@ -52,6 +52,10 @@ export const DEFAULT_FEATURES: Features = {
   freshness: null,
   agentBudget: null,
   memo: { ticketPattern: '(?:feat|fix|chore)\\/(\\d+)', staleDays: 14 },
+  // Measured on 11 343 turns: 25 % would fire on 64 % of them, 40 % on 42 %, 60 % on 23 %.
+  contextSignal: { thresholds: [40, 60, 75] },
+  // Shadow first: the hit counts show how often it would speak before it is allowed to.
+  fixRepeat: { limit: 3, windowHours: 48, mode: 'shadow' },
   skillHints: [],
   // The project's own skills, then the catalog of the ronce-racine plugin, shipped beside this mod.
   skillCatalog: {
@@ -179,6 +183,32 @@ export const DEFAULT_RULES: readonly Rule[] = [
     examples: {
       match: [{ command: 'git commit -m "feat: x\n\nCo-Authored-By: Claude <noreply@anthropic.com>"' }],
       pass: [{ command: 'git commit -m "feat(api): ajouter le filtre"' }],
+    },
+  },
+  {
+    id: 'fix-needs-ticket',
+    tool: 'Bash',
+    // Only a message given with -m can be read here: --amend, -F and heredocs stay out of reach, so they stay quiet.
+    command: '\\bgit\\s+commit\\b[^|;&]*\\s-m\\s+["\']fix(\\(|:)',
+    unless: '#\\d+|T-[A-Z0-9]{4,}',
+    action: 'warn',
+    mode: 'enforce',
+    message: 'Un commit fix(...) sans référence de ticket (#<n> ou T-<id>) ne dit pas quelle feature il corrige : ajouter (Refs #<n>).',
+    examples: {
+      match: [{ command: 'git commit -m "fix(api): handle null"' }],
+      pass: [{ command: 'git commit -m "fix(api): handle null (Refs #12)"' }, { command: 'git commit --amend --no-edit' }],
+    },
+  },
+  {
+    id: 'sleep-poll',
+    tool: 'Bash',
+    command: '\\bsleep\\s+([5-9]|[1-9]\\d+)(\\s|;|&|$)',
+    action: 'warn',
+    mode: 'enforce',
+    message: 'Un sleep pour attendre coûte un tour à chaque passage, contexte rechargé : utiliser Monitor (until-loop) ou run_in_background.',
+    examples: {
+      match: [{ command: 'sleep 30 && git status' }],
+      pass: [{ command: 'sleep 1' }, { command: 'sleep 0.5' }],
     },
   },
 ]

@@ -1,7 +1,7 @@
 # The full catalog
 
 Every skill that ships, grouped by what you are doing when it fires. The README
-keeps five of them; this is the complete list.
+describes six of them in depth and sums up the rest; this is the complete list.
 
 A skill is loaded on demand: its `description` carries trigger phrases, and the
 agent picks it from what you asked for. None of them is a command you type.
@@ -65,6 +65,7 @@ For the always-on rules and the hooks, see the README, which lists both in full.
 | `daily-workflow-optimization` | reviews recurring friction and cuts the repeated manual steps |
 | `audit-industrialisation` | heavyweight and opt-in: orchestrates the 8 domain audits below and consolidates them |
 | `audit-report` | the template and scoring rules for that consolidated report |
+| `audit-store-review` | standalone: checks an app's build, listing and console declarations against Google Play's review rules before submission |
 
 The 8 domains, each usable on its own: `audit-architecture` ·
 `audit-ci-cd` · `audit-compliance` · `audit-observability` ·
