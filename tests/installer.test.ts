@@ -1015,6 +1015,11 @@ test("the toolkit installed into this repo is current, not a stale snapshot", ()
   //
   // Found stale on 2026-09-02: installed from 0.5.1 while the repo ran 0.8.0,
   // 24 drifted artifacts, 20 of 21 SKILL.md two minor versions behind.
+  //
+  // Not asked of a Stryker sandbox: it runs the suite on a copy of the repo
+  // whose mutated hooks are instrumented, so their content hash can never match
+  // the lockfile. The same test runs on the real tree under `npm test`.
+  if (ROOT.includes(".stryker-tmp")) return;
   const r = cli(["install.ts", "check", ROOT]);
   assert(r.status === 0, `check exit ${r.status}: ${r.stderr}`);
   absent(r.stdout, "drift", "resync the self-install: npx tsx install.ts install .");

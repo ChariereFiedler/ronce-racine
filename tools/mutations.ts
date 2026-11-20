@@ -76,8 +76,8 @@ const MUTATIONS: Mutation[] = [
   {
     name: "installer: a later run overwrites the backup holding the user's work",
     file: "install.ts",
-    find: "    if (!installedBefore.has(token) && existsSync(dst) && !existsSync(backup)) {",
-    replace: "    if (!installedBefore.has(token) && existsSync(dst)) {",
+    find: "    if (!installedBefore.has(token) && existsSync(dst) && !existsSync(backup) && !existsSync(legacyBackup)) {",
+    replace: "    if (!installedBefore.has(token) && existsSync(dst) && !existsSync(legacyBackup)) {",
     test: "tests/installer.test.ts",
   },
   {
@@ -188,8 +188,8 @@ const MUTATIONS: Mutation[] = [
   {
     name: "eval-tasks: the manifest is baked into the image the agent can read",
     file: "tools/eval-tasks.ts",
-    find: '  cpSync(join(ROOT, "skills", m.skill, "eval.yaml"), join(dir, "tests", "eval.yaml"));',
-    replace: '  cpSync(join(ROOT, "skills", m.skill, "eval.yaml"), join(dir, "environment", "eval.yaml"));',
+    find: '  cpSync(manifestPath, join(dir, "tests", "eval.yaml"));',
+    replace: '  cpSync(manifestPath, join(dir, "environment", "eval.yaml"));',
     test: "tests/eval-tasks.test.ts",
   },
   {
@@ -202,8 +202,8 @@ const MUTATIONS: Mutation[] = [
   {
     name: "eval-tasks: the verifier script loses its executable bit",
     file: "tools/eval-tasks.ts",
-    find: '  writeFileSync(join(dir, "tests", "test.sh"), testScript(m.skill), { mode: 0o755 });',
-    replace: '  writeFileSync(join(dir, "tests", "test.sh"), testScript(m.skill));',
+    find: '  writeFileSync(join(dir, "tests", "test.sh"), testScript(m.skill, m.scenario), { mode: 0o755 });',
+    replace: '  writeFileSync(join(dir, "tests", "test.sh"), testScript(m.skill, m.scenario));',
     test: "tests/eval-tasks.test.ts",
   },
   {
@@ -230,8 +230,8 @@ const MUTATIONS: Mutation[] = [
   {
     name: "eval-report: the judge verdict driven by the gate baseline",
     file: "tools/eval-report.ts",
-    find: "      judgeVerdict: verdictFor(judgeLift, without.meanJudge),",
-    replace: "      judgeVerdict: verdictFor(lift, without.meanReward),",
+    find: "    const judgeVerdict = verdictFor(judgeLift, without.meanJudge);",
+    replace: "    const judgeVerdict = verdictFor(lift, without.meanReward);",
     test: "tests/eval.test.ts",
   },
   {
